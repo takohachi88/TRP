@@ -76,9 +76,15 @@ namespace TakoLib.Rp
 
 			//MSAAの設定。
 			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, useIntermediateAttachments);
-			
+
 			//出力先がdepthフォーマットのcamera.targetTextureである。
 			bool isCameraTargetOffscreenDepth = camera.targetTexture && camera.targetTexture.format == RenderTextureFormat.Depth;
+
+			if (camera.cameraType == CameraType.Preview)
+			{
+				camera.clearFlags = CameraClearFlags.Color;
+				camera.backgroundColor = Color.gray.linear;
+			}
 
 			//CameraClearFlagsはSkybox(1)、Color(2)、Depth(3)、Nothing(4)。
 			bool clearColor = camera.clearFlags <= CameraClearFlags.Color;
@@ -124,7 +130,6 @@ namespace TakoLib.Rp
 			TextureHandle targetColor = renderGraph.ImportTexture(targetColorRt, importInfo, importBackbufferParams);
 			TextureHandle targetDepth = renderGraph.ImportTexture(targetDepthRt, importInfoDepth, importBackbufferParamsDepth);
 
-
 			TextureDesc depthDesc = new(attachmentSize.x, attachmentSize.y)
 			{
 				name = "CameraDepthTexture",
@@ -149,7 +154,7 @@ namespace TakoLib.Rp
 					name = "DepthAttachment",
 					format = RenderingUtils.DepthStencilFormat,
 					clearBuffer = clearDepth,
-			};
+				};
 				depthAttachment = renderGraph.CreateTexture(desc);
 			}
 			else
@@ -180,7 +185,7 @@ namespace TakoLib.Rp
 				//TODO:ライティング関係の設定。
 
 
-				if(passData.Camera.targetTexture || passData.IsFirstToBackbuffer)
+				if (passData.Camera.targetTexture || passData.IsFirstToBackbuffer)
 				{
 					//時間変数の設定。
 					cmd.SetGlobalFloat(IdTime, Time.time);
