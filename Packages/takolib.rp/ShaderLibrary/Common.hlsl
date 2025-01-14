@@ -22,6 +22,9 @@
 #define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)
 #define TEXTURE2D_X_FLOAT(textureName) TEXTURE2D_FLOAT(textureName)
 
+//rcp(2 * PI)
+#define PI_TWO_RCP 0.159155
+
 #define SAMPLE_TEXTURE2D_X_LOD(textureName, samplerName, coord2, lod) SAMPLE_TEXTURE2D_LOD(textureName, samplerName, coord2, lod)
 
 float2 _AspectFit;

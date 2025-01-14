@@ -22,6 +22,8 @@ MonoBehaviour:
     _useOpaqueTextureOnReflection: 0
     _useDepthTextureOnReflection: 0
     _useLightPerObject: 0
+    _postFxLutSize: 20
+    _postFxLutFilterMode: 1
   _overridePostFxGroup: {fileID: 0}
   _internalResources: {fileID: 11400000, guid: 7e67ba0e578af814ebe4a8b708832a8a, type: 2}
-  _globalSettings: {fileID: 11400000, guid: 3d29b5adea478b14f889d8f519a90ab1, type: 2}
+  _globalSettings: {fileID: 11400000, guid: b833950a5d798ad4197bf07d7bdf6733, type: 2}

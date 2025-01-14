@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.Rendering;
 
-namespace TakoLib.Rp
+namespace TakoLib.Rp.PostFx
 {
     [Serializable, VolumeComponentMenu("TRP/Mosaic")]
     public class Mosaic : VolumeComponent, IPostProcessComponent
@@ -11,6 +11,5 @@ namespace TakoLib.Rp
         public NoInterpMinIntParameter cellDensity = new(20, 1);
 
         public bool IsActive() => 0 < intensity.value;
-        public bool IsTileCompatible() => true;
     }
 }

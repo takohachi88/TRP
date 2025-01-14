@@ -23,6 +23,8 @@ namespace TakoLib.Rp
 		[SerializeField] private ShadowSettings _shadowSettings;
 		[SerializeField] private bool _useOpaqueTextureOnReflection, _useDepthTextureOnReflection;
 		[SerializeField] private bool _useLightPerObject;
+		[SerializeField, Min(4)] private int _postFxLutSize = 32;
+		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
 
 		public float RenderScale => _renderScale;
 		public bool UseHdr => _useHdr;
@@ -40,6 +42,8 @@ namespace TakoLib.Rp
 		public bool UseDepthTextureOnReflection => _useDepthTextureOnReflection;
 
 		public bool UseLightPerObject => _useLightPerObject;
+		public int PostFxLutSize => _postFxLutSize;
+		public FilterMode PostFxLutFilterMode => _postFxLutFilterMode;
 	}
 
 
@@ -60,11 +64,13 @@ namespace TakoLib.Rp
 			//この処理がないとBlitter.Initializeでエラーになる。
 			if (!_globalSettings)
 			{
-				_globalSettings = RenderPipelineGlobalSettingsUtils.Create<TrpGlobalSettings>("Assets/TrpGlobalSettings.asset");
-				EditorGraphicsSettings.SetRenderPipelineGlobalSettingsAsset<Trp>(_globalSettings);
+				_globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
+				if(RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref _globalSettings, "Assets/TrpGlobalSettings.asset", true))
+				{
+					AssetDatabase.Refresh();
+				}
 			}
 #endif
-
 			return new Trp(_commonSettings, _internalResources, _overridePostFxGroup);
 		}
 	}

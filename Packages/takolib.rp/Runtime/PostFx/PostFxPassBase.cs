@@ -9,8 +9,19 @@ namespace TakoLib.Rp.PostFx
 	/// </summary>
 	public enum LastTarget
 	{
+		/// <summary>
+		/// Blitが発生しなかった。
+		/// </summary>
 		None,
+
+		/// <summary>
+		/// 最後のBlit先が当初のSrcとなった。
+		/// </summary>
 		Src,
+
+		/// <summary>
+		/// 最後のBlit先が当初のDstとなった。
+		/// </summary>
 		Dst,
 	}
 

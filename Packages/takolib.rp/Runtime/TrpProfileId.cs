@@ -9,6 +9,7 @@ public enum TrpProfileId
     Skybox,
 	CopyColorToOpaque,
 	CopyColorToTransparent,
+	CreateLut,
 	CopyDepth,
 	PostProcess,
 	UberPostProcess,

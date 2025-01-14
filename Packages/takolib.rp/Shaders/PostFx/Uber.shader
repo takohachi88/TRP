@@ -1,4 +1,4 @@
-Shader "Hiddden/Trp/PostProcess/Uber"
+ÔªøShader "Hiddden/Trp/PostProcess/Uber"
 {
     SubShader
     {
@@ -23,15 +23,17 @@ Shader "Hiddden/Trp/PostProcess/Uber"
         half _PosterizationIntensity;
         int _ToneCount;
 
-        bool _Nega;
-        half _NegaIntensity;
+        int _UseLut;
+        half3 _LutParams;//(1 / lut_width, 1 / lut_height, lut_height - 1)
 
-        half4 Vignette (Varyings input, half4 destination)
+        TEXTURE2D(_Lut);
+        SAMPLER(sampler_Lut);
+
+
+        half4 Vignette (float2 uv, half4 output)
         {
-            half4 output = destination;
-
-            float2 dist = abs(input.texcoord - _VignetteCenter) * _VignetteIntensity;
-            dist *= _VignetteFitAspect ? _AspectFit : 1;
+            float2 dist = abs(uv - _VignetteCenter) * _VignetteIntensity;
+            dist *= _VignetteFitAspect ? 1 : _AspectFit;
             half vignette = smoothstep(0.5 - _VignetteSmoothness * 0.5, 0.5 + _VignetteSmoothness * 0.5, dot(dist, dist));
             
             half3 color = 0;
@@ -49,31 +51,33 @@ Shader "Hiddden/Trp/PostProcess/Uber"
         {
             float2 uv = input.texcoord;
 
-            //ÉÇÉUÉCÉNÅB
+            //„É¢„Ç∂„Ç§„ÇØ„ÄÇ
             if(0 < _MosaicIntensity)
             {
                 float cellDensity = lerp(_ScreenParams.x, _MosaicCellDensity, _MosaicIntensity);
                 uv -= 0.5;
                 uv *= _AspectFit;
                 uv = round(uv * cellDensity) * rcp(cellDensity);
-                uv.x *= rcp(_AspectFit);
+                uv *= rcp(_AspectFit);
                 uv += 0.5;
             }
 
             half4 output = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv);
 
-            //É|ÉXÉ^ÉâÉCÉYÅB
+            //„Éù„Çπ„Çø„É©„Ç§„Ç∫„ÄÇ
             if(0 < _PosterizationIntensity)
             {
-                output.rgb = lerp(output.rgb, round(output.rgb * _ToneCount) * rcp(_ToneCount), _PosterizationIntensity);
+                output = lerp(output, round(output * _ToneCount) * rcp(_ToneCount), _PosterizationIntensity);
             }
 
-            //ÉlÉKÅB
-            if(_Nega) output.rgb = max(0, lerp(output.rgb, (1 - output.rgb), _NegaIntensity));
+            //LUT„ÅÆÈÅ©Áî®„ÄÇ
+            #if defined(_LUT)
+            output.rgb = ApplyLut2D(TEXTURE2D_ARGS(_Lut, sampler_Lut), output.rgb, _LutParams.xyz);
+            #endif
 
-            //ÉrÉlÉbÉgÅB
-            #if defined(VIGNETTE)
-            output = Vignette(input, output);
+            //„Éì„Éç„ÉÉ„Éà„ÄÇ
+            #if defined(_VIGNETTE)
+            output = Vignette(input.texcoord, output);
             #endif
 
             return output;
@@ -95,7 +99,8 @@ Shader "Hiddden/Trp/PostProcess/Uber"
             #pragma vertex Vert
             #pragma fragment Fragment
 
-            #pragma multi_compile_local _ VIGNETTE
+            #pragma multi_compile_local _ _LUT
+            #pragma multi_compile_local _ _VIGNETTE
             
             ENDHLSL
         }

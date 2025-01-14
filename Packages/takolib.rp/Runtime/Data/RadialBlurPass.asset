@@ -9,9 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 44e73070262b32d4896347b281312d1e, type: 3}
-  m_Name: PostFxPassGroup
+  m_Script: {fileID: 11500000, guid: d29062830279d8b4da2b223957fbb87b, type: 3}
+  m_Name: RadialBlurPass
   m_EditorClassIdentifier: 
-  _passes:
-  - {fileID: 11400000, guid: 873126f12e1d3a64ca0c07b2367ebad6, type: 2}
-  - {fileID: 11400000, guid: 72a3cab51b328d84fb98852913b57535, type: 2}
+  PassShader: {fileID: 4800000, guid: 35241655d6dbcb84a9682e199d816310, type: 3}

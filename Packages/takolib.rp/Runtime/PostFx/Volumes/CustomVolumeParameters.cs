@@ -16,4 +16,18 @@ namespace TakoLib.Rp.PostFx
     {
         public BlendModeParameter(AdvancedVignetteBlendMode value, bool overrideState = false) : base(value, overrideState) { }
     }
+
+	public enum ToneMappingMode
+	{
+		None,
+		Neutral,
+		Reinhard,
+		Aces,
+	}
+
+	[Serializable]
+	public sealed class ToneMappingModeParameter : VolumeParameter<ToneMappingMode>
+	{
+		public ToneMappingModeParameter(ToneMappingMode value, bool overrideState = false) : base(value, overrideState) { }
+	}
 }

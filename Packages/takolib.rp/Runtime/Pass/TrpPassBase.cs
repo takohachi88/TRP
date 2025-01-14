@@ -23,6 +23,7 @@ namespace TakoLib.Rp
 		public readonly bool IsSceneViewOrPreview { get; init; }
 		public readonly CullingResults CullingResults { get; init; }
 		public readonly RenderingLayerMask RenderingLayerMask { get; init; }
+		internal readonly int LutSize { get ; init; }
 	}
 
 	/// <summary>

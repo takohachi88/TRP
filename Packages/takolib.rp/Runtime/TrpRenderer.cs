@@ -3,7 +3,6 @@ using UnityEngine.Rendering;
 using TakoLib.Common.Extensions;
 using TakoLib.Rp.PostFx;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.Experimental.Rendering;
 using System.Diagnostics;
 using TakoLib.Common;
 using UnityEngine.VFX;
@@ -40,6 +39,7 @@ namespace TakoLib.Rp
 		public TextureHandle TextureDepth { get; internal set; }
 		internal TextureHandle TargetColor { get; set; }
 		internal TextureHandle TargetDepth { get; set; }
+		internal TextureHandle PostProcessLut { get; set; }
 	}
 
 
@@ -57,6 +57,7 @@ namespace TakoLib.Rp
 		private PostFxPassGroup _postFxPassGroup;
 
 		private readonly SetupPass _setupPass = new();
+		private readonly CreatePostFxLutPass _lutPass;
 		private readonly DepthOnlyPass _depthOnlyPass = new();
 		private readonly GeometryPass _geometryPass = new();
 		private readonly SkyboxPass _skyboxPass = new();
@@ -82,6 +83,8 @@ namespace TakoLib.Rp
 
 			_copyColorPass = new(_coreBlitMaterial);
 			_copyDepthPass = new(_copyDepthMaterial);
+
+			_lutPass = new(internalResources.PostProcessLutShader);
 		}
 
 		/// <summary>
@@ -213,6 +216,9 @@ namespace TakoLib.Rp
 				currentFrameIndex = Time.frameCount,
 			};
 
+			//Volumeの更新。
+			VolumeManager.instance.Update(VolumeManager.instance.stack, camera.transform, cameraData ? cameraData.VolumeMask : 1);
+
 			using (new ProfilingScope(cmd, sampler))
 			{
 				renderGraph.BeginRecording(renderGraphParameters);
@@ -247,6 +253,7 @@ namespace TakoLib.Rp
 					IsSceneViewOrPreview = isSceneViewOrPreview,
 					CullingResults = cullingResults,
 					RenderingLayerMask = renderingLayerMask,
+					LutSize = _commonSettings.PostFxLutSize,
 				};
 
 				//レンダリングの前段階的な処理。各種テクスチャの確保など。
@@ -256,6 +263,9 @@ namespace TakoLib.Rp
 					_targetDepth,
 					isFirstToBackbuffer
 					);
+
+				//PostProcessで使うLUTの生成。
+				_lutPass.RecordRenderGraph(ref passParams, _commonSettings.PostFxLutFilterMode);
 
 				//Opaqueジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, true);
@@ -353,6 +363,8 @@ namespace TakoLib.Rp
 			_targetDepth?.Release();
 			CoreUtils.Destroy(_coreBlitMaterial);
 			CoreUtils.Destroy(_copyDepthMaterial);
+
+			_lutPass.Dispose();
 		}
 	}
 }

@@ -15,6 +15,5 @@ namespace TakoLib.Rp.PostFx
 		public BlendModeParameter blendMode = new(AdvancedVignetteBlendMode.Multiply);
 
 		public bool IsActive() => 0 < intensity.value;
-		public bool IsTileCompatible() => true;
 	}
 }

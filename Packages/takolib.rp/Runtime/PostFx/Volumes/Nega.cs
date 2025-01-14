@@ -1,7 +1,7 @@
 using System;
 using UnityEngine.Rendering;
 
-namespace TakoLib.Rp
+namespace TakoLib.Rp.PostFx
 {
     [Serializable, VolumeComponentMenu("TRP/Nega")]
     public class Nega : VolumeComponent, IPostProcessComponent
@@ -9,6 +9,5 @@ namespace TakoLib.Rp
         public MinFloatParameter intensity = new(0, 0);
 
         public bool IsActive() => 0 < intensity.value;
-        public bool IsTileCompatible() => true;
     }
 }

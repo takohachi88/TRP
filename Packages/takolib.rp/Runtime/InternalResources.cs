@@ -12,6 +12,7 @@ namespace TakoLib.Rp
 		[SerializeField] private Shader _coreBlitShader;
 		[SerializeField] private Shader _coreBlitColorAndDepthShader;
 		[SerializeField] private Shader _copyDepthShader;
+		[SerializeField] private Shader _postProcessLutShader;
 
 		public Shader CameraBlitShader => _cameraBlitShader;
 		public PostFxPassGroup PostFxGroup => _postFxPassGroup;
@@ -19,5 +20,6 @@ namespace TakoLib.Rp
 		public Shader CoreBlitShader => _coreBlitShader;
 		public Shader CoreBlitColorAndDepthShader => _coreBlitColorAndDepthShader;
 		public Shader CopyDepthShader => _copyDepthShader;
+		public Shader PostProcessLutShader => _postProcessLutShader;
 	}
 }

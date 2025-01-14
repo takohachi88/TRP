@@ -57,7 +57,7 @@ GraphicsSettings:
   m_FogKeepExp2: 1
   m_AlbedoSwatchInfos: []
   m_RenderPipelineGlobalSettingsMap:
-    TakoLib.Rp.Trp: {fileID: 11400000, guid: e81f8cade44fb3247a48cb4608826e6e, type: 2}
+    TakoLib.Rp.Trp: {fileID: 11400000, guid: b833950a5d798ad4197bf07d7bdf6733, type: 2}
   m_LightsUseLinearIntensity: 0
   m_LightsUseColorTemperature: 0
   m_LogWhenShaderIsCompiled: 0

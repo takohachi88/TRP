@@ -2,7 +2,7 @@ using System;
 using UnityEngine.Rendering;
 using UnityEngine;
 
-namespace TakoLib.Rp
+namespace TakoLib.Rp.PostFx
 {
 	[Serializable, VolumeComponentMenu("TRP/Radial Blur")]
 	public class RadialBlur : VolumeComponent, IPostProcessComponent
@@ -25,6 +25,5 @@ namespace TakoLib.Rp
 		public NoInterpClampedFloatParameter chromaticAberrationLimit = new(0.1f, 0, 1);
 
 		public bool IsActive() => 0 < intensity.value;
-		public bool IsTileCompatible() => true;
 	}
 }
