@@ -68,6 +68,7 @@ namespace TakoLib.Rp
 		private readonly WireOverlayPass _wireOverlayPass = new();
 		private readonly GizmoPass _gizmoPass = new();
 		private readonly UiPass _uiPass = new();
+		private readonly SetEditorTargetPass _setEditorTargetPass = new();
 
 		private readonly Material _coreBlitMaterial;
 		private readonly Material _copyDepthMaterial;
@@ -314,8 +315,8 @@ namespace TakoLib.Rp
 				//UIの描画。
 				if(isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
 
-				//
-				if (camera.cameraType == CameraType.SceneView) SetEditorTarget(renderGraph);
+				//SceneView描画時にgridなどのエンジン側の描画処理が適切に行われるようにする。
+				if (camera.cameraType == CameraType.SceneView) _setEditorTargetPass.RecordAndExecute(renderGraph);
 
 				//RenderGraph終了。
 				renderGraph.EndRecordingAndExecute();
@@ -336,24 +337,6 @@ namespace TakoLib.Rp
 			
 			if (depth == null) depth = RTHandles.Alloc(idDepth, "Backbuffer depth");
 			else if (depth.nameID != idDepth) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref depth, idDepth);
-		}
-
-		private class DummyPassData { }
-
-		[Conditional(Defines.UNITY_EDITOR)]
-		private void SetEditorTarget(RenderGraph renderGraph)
-		{
-			using (var builder = renderGraph.AddUnsafePass("SetEditorTarget", out DummyPassData _))
-			{
-				builder.AllowPassCulling(false);
-
-				builder.SetRenderFunc((DummyPassData data, UnsafeGraphContext context) =>
-				{
-					context.cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget,
-						RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, // color
-						RenderBufferLoadAction.Load, RenderBufferStoreAction.DontCare); // depth
-				});
-			}
 		}
 
 		public void Dispose()
