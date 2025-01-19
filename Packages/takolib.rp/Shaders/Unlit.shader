@@ -12,7 +12,7 @@ Shader "TRP/Unlit"
         
         [Toggle] _ZWrite ("Z Write", int) = 1
         
-        [Enum(UnityEngine.Rendering.CullMode)] _CullMode ("Cull Mode", int) = 2
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", int) = 1
 
         _Stencil ("Stencil ID", int) = 0
         [Enum(UnityEngine.Rendering.StencilOp)] _StencilOp("Stencil Operation", int) = 0

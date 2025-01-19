@@ -1,4 +1,4 @@
-﻿Shader "Hiddden/Trp/PostProcess/Uber"
+﻿Shader "Hiddden/Trp/PostFx/Uber"
 {
     SubShader
     {

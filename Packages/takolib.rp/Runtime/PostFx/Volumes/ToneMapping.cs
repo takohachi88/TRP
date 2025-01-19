@@ -9,4 +9,18 @@ namespace TakoLib.Rp.PostFx
 		public ToneMappingModeParameter mode = new(ToneMappingMode.None);
 		public bool IsActive() => mode != ToneMappingMode.None;
 	}
+
+	public enum ToneMappingMode
+	{
+		None,
+		Neutral,
+		Reinhard,
+		Aces,
+	}
+
+	[Serializable]
+	public sealed class ToneMappingModeParameter : VolumeParameter<ToneMappingMode>
+	{
+		public ToneMappingModeParameter(ToneMappingMode value, bool overrideState = false) : base(value, overrideState) { }
+	}
 }

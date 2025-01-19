@@ -12,9 +12,6 @@ namespace TakoLib.Rp
 		private static readonly ProfilingSampler SamplerOpaque = ProfilingSampler.Get(TrpProfileId.CopyColorToOpaque);
 		private static readonly ProfilingSampler SamplerTransparent = ProfilingSampler.Get(TrpProfileId.CopyColorToTransparent);
 
-		private static readonly int IdCameraOpaqueTexture = Shader.PropertyToID("_CameraOpaqueTexture");
-		private static readonly int IdCameraTransparentTexture = Shader.PropertyToID("_CameraTransparentTexture");
-
 		public enum CopyColorMode
 		{
 			Opaque,
@@ -44,7 +41,7 @@ namespace TakoLib.Rp
 						passParams.RenderGraph,
 						passParams.CameraTextures.AttachmentColor,
 						passParams.CameraTextures.TextureOpaque = renderGraph.CreateTexture(opaqueDesc),
-						IdCameraOpaqueTexture,
+						TrpConstants.ShaderIds.CameraOpaqueTexture,
 						SamplerOpaque,
 						passParams.Camera);
 					break;
@@ -58,7 +55,7 @@ namespace TakoLib.Rp
 						passParams.RenderGraph,
 						passParams.CameraTextures.AttachmentColor,
 						passParams.CameraTextures.TextureTransparent = renderGraph.CreateTexture(transparentDesc),
-						IdCameraTransparentTexture,
+						TrpConstants.ShaderIds.CameraTransparentTexture,
 						SamplerTransparent,
 						passParams.Camera);
 					break;

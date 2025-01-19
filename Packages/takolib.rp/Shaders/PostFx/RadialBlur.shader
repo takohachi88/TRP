@@ -1,4 +1,4 @@
-Shader "Hiddden/Trp/PostProcess/RadialBlur"
+Shader "Hiddden/Trp/PostFx/RadialBlur"
 {
     SubShader
     {

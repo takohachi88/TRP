@@ -3,8 +3,6 @@ using UnityEngine.Rendering;
 using TakoLib.Common.Extensions;
 using TakoLib.Rp.PostFx;
 using UnityEngine.Rendering.RenderGraphModule;
-using System.Diagnostics;
-using TakoLib.Common;
 using UnityEngine.VFX;
 
 namespace TakoLib.Rp
