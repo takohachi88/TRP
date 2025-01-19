@@ -1,5 +1,5 @@
-//URP‚ÌCopyDepthƒVƒF[ƒ_[‚ğˆÚAB
-//XRŒn‚Ìˆ—‚Í”rœB
+ï»¿//URPã®CopyDepthã‚·ã‚§ãƒ¼ãƒ€ãƒ¼ã‚’ç§»æ¤ã€‚
+//XRç³»ã®å‡¦ç†ã¯æ’é™¤ã€‚
 Shader "Hidden/Trp/CopyDepth"
 {
     SubShader
@@ -36,16 +36,16 @@ Shader "Hidden/Trp/CopyDepth"
             #define DEPTH_TEXTURE_MS(name, samples) Texture2DMS<float, samples> name
             #define DEPTH_TEXTURE(name) TEXTURE2D_FLOAT(name)
 
-            //MSAAƒTƒ“ƒvƒ‹‚ğs‚¤ƒ}ƒNƒBtexture.Load()‚Ì‘æ“ñˆø”‚ÉMSAAƒTƒ“ƒvƒ‹‚ÌƒCƒ“ƒfƒbƒNƒX‚ğ“n‚·B
-            #define LOAD(uv, sampleIndex) LOAD_TEXTURE2D_MSAA(_CameraDepthAttachment, uv, sampleIndex)
-            #define SAMPLE(uv) SAMPLE_DEPTH_TEXTURE(_CameraDepthAttachment, sampler_CameraDepthAttachment, uv)
+            //MSAAã‚µãƒ³ãƒ—ãƒ«ã‚’è¡Œã†ãƒã‚¯ãƒ­ã€‚texture.Load()ã®ç¬¬äºŒå¼•æ•°ã«MSAAã‚µãƒ³ãƒ—ãƒ«ã®ã‚¤ãƒ³ãƒ‡ãƒƒã‚¯ã‚¹ã‚’æ¸¡ã™ã€‚
+            #define LOAD(uv, sampleIndex) LOAD_TEXTURE2D_MSAA(_DepthAttachment, uv, sampleIndex)
+            #define SAMPLE(uv) SAMPLE_DEPTH_TEXTURE(_DepthAttachment, sampler_DepthAttachment, uv)
             
             #if MSAA_SAMPLES == 1
-                DEPTH_TEXTURE(_CameraDepthAttachment);
-                SAMPLER(sampler_CameraDepthAttachment);
+                DEPTH_TEXTURE(_DepthAttachment);
+                SAMPLER(sampler_DepthAttachment);
             #else
-                DEPTH_TEXTURE_MS(_CameraDepthAttachment, MSAA_SAMPLES);
-                float4 _CameraDepthAttachment_TexelSize;
+                DEPTH_TEXTURE_MS(_DepthAttachment, MSAA_SAMPLES);
+                float4 _DepthAttachment_TexelSize;
             #endif
             
             #if UNITY_REVERSED_Z
@@ -61,11 +61,11 @@ Shader "Hidden/Trp/CopyDepth"
             #if MSAA_SAMPLES == 1
                 return SAMPLE(uv);
             #else
-                int2 coord = int2(uv * _CameraDepthAttachment_TexelSize.zw);
+                int2 coord = int2(uv * _DepthAttachment_TexelSize.zw);
                 float outDepth = DEPTH_DEFAULT_VALUE;
             
-                //Å‚à‰œ‚Ì[“x’l‚ğ“¾‚éB
-                //—á‚¦‚ÎDirectX‚âMetal‚Å‚Íreversed z‚Â‚Ü‚èÅ‚à‹ß‚­‚ª1‚Å‰“‚­‚ª0‚Æ‚È‚é‚Ì‚ÅAMSAAƒTƒ“ƒvƒ‹‚Ì‚¤‚¿Å‚à¬‚³‚¢’liminj‚·‚È‚í‚¿‰“‚­‚Ì’l‚Æ‚È‚éB
+                //æœ€ã‚‚å¥¥ã®æ·±åº¦å€¤ã‚’å¾—ã‚‹ã€‚
+                //ä¾‹ãˆã°DirectXã‚„Metalã§ã¯reversed zã¤ã¾ã‚Šæœ€ã‚‚è¿‘ããŒ1ã§é ããŒ0ã¨ãªã‚‹ã®ã§ã€MSAAã‚µãƒ³ãƒ—ãƒ«ã®ã†ã¡æœ€ã‚‚å°ã•ã„å€¤ï¼ˆminï¼‰ã™ãªã‚ã¡é ãã®å€¤ã¨ãªã‚‹ã€‚
                 UNITY_UNROLL
                 for (int i = 0; i < MSAA_SAMPLES; ++i)
                     outDepth = DEPTH_OP(LOAD(coord, i), outDepth);

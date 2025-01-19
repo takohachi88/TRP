@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.Experimental.Rendering;
 using TakoLib.Common.Extensions;
 
 namespace TakoLib.Rp
@@ -11,10 +10,6 @@ namespace TakoLib.Rp
 	/// </summary>
 	internal class CopyDepthPass
 	{
-		private static readonly int IdDepthTexture = Shader.PropertyToID("_CameraDepthTexture");
-		private static readonly int IdCameraDepthAttachment = Shader.PropertyToID("_CameraDepthAttachment");
-		private static readonly int IdZWrite = Shader.PropertyToID("_ZWrite");
-		
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.CopyDepth);
 
 		private readonly Material _copyDepthMaterial;
@@ -59,7 +54,7 @@ namespace TakoLib.Rp
 					if (passParams.IsSceneViewOrPreview) builder.SetRenderAttachmentDepth(cameraTextures.TextureDepth, AccessFlags.WriteAll);
 					else builder.SetRenderAttachment(cameraTextures.TextureDepth, 0, AccessFlags.WriteAll);
 
-					builder.SetGlobalTextureAfterPass(cameraTextures.TextureDepth, IdDepthTexture);
+					builder.SetGlobalTextureAfterPass(cameraTextures.TextureDepth, TrpConstants.ShaderIds.CameraDepthTexture);
 					break;
 				//TargetDepthへのコピー。現状はシーンのGizmoやgridの適切な描画のために必要な処理。
 				case CopyDepthMode.ToTarget:
@@ -87,8 +82,8 @@ namespace TakoLib.Rp
 				//TODO: MSAA対応。CopyDepthシェーダー側は対応済み。
 
 				context.cmd.SetKeyword(KeywordOutputDepth, dstIsTarget);
-				material.SetTexture(IdCameraDepthAttachment, src);
-				material.SetFloat(IdZWrite, dstIsTarget.ToInt());
+				material.SetTexture(TrpConstants.ShaderIds.DepthAttachment, src);
+				material.SetFloat(TrpConstants.ShaderIds.ZWrite, dstIsTarget.ToInt());
 				Blitter.BlitTexture(context.cmd, passData.Src, scaleBias, material, 0);
 			});
 		}

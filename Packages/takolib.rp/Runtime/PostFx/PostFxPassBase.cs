@@ -36,11 +36,20 @@ namespace TakoLib.Rp.PostFx
 
 		protected Material PassMaterial;
 
+		private static readonly int IdSrcSize = Shader.PropertyToID("_SrcSize");
+
 		public void Initialize()
 		{
 			PassMaterial = CoreUtils.CreateEngineMaterial(PassShader);
 			Sampler = new(GetType().Name);
 			OnInitialize();
+		}
+
+		protected static void SetSrcSize(Material material, RTHandle src)
+		{
+			float width = src.rt.width;
+			float height = src.rt.height;
+			material.SetVector(IdSrcSize, new(width, height, 1f / width, 1f / height));
 		}
 
 		protected virtual void OnInitialize() { }
