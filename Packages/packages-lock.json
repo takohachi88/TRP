@@ -231,15 +231,8 @@
       },
       "url": "https://packages.unity.com"
     },
-    "takolib.common": {
-      "version": "https://github.com/takohachi88/TakoLib.git?path=Packages/takolib.common",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "c1a662019fcead8b5aa2db1a64a6e0cbfe812d43"
-    },
-    "takolib.rp": {
-      "version": "file:takolib.rp",
+    "tako.trp": {
+      "version": "file:tako.trp",
       "depth": 0,
       "source": "embedded",
       "dependencies": {
@@ -248,6 +241,13 @@
         "com.unity.render-pipelines.core": "14.0.7",
         "com.unity.shadergraph": "14.0.7"
       }
+    },
+    "takolib.common": {
+      "version": "https://github.com/takohachi88/TakoLib.git?path=Packages/takolib.common",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "c1a662019fcead8b5aa2db1a64a6e0cbfe812d43"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",
