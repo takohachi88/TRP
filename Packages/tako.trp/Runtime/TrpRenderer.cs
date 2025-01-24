@@ -309,8 +309,6 @@ namespace Trp
 				//Gizmoの描画。
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.TargetDepth, GizmoSubset.PostImageEffects);
 
-				//TODO: CameraCaptureBridgeの実装。
-
 				//UIの描画。
 				if(isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
 

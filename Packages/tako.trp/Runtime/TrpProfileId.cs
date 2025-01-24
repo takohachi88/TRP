@@ -17,5 +17,6 @@ namespace Trp
 		Ui,
 		WireOverlay,
 		Gizmo,
+		CameraCapture,
 	}
 }
