@@ -1,4 +1,3 @@
-using Mono.Cecil;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -8,7 +7,7 @@ namespace Trp.PostFx
 	/// <summary>
 	/// RadialBlurのポストエフェクト。
 	/// </summary>
-	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "RadialBlur")]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "RadialBlur", fileName = nameof(RadialBlurPass))]
 	public class RadialBlurPass : PostFxPassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");

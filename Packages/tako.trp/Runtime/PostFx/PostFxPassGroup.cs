@@ -7,7 +7,7 @@ namespace Trp.PostFx
 	/// <summary>
 	/// ポストエフェクトの処理。
 	/// </summary>
-	[CreateAssetMenu(menuName = "Rendering/Trp/PostFx/PostFxPassGroup")]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "PostFxPassGroup", fileName = nameof(PostFxPassGroup))]
 	public class PostFxPassGroup : ScriptableObject
 	{
 		[SerializeField] private PostFxPassBase[] _passes;
@@ -34,6 +34,7 @@ namespace Trp.PostFx
 			desc.clearBuffer = true;
 			TextureHandle dst = renderGraph.CreateTexture(desc);
 
+			//登録されたパスを全て実行する。
 			foreach (PostFxPassBase pass in _passes)
 			{
 				LastTarget target = pass.RecordRenderGraph(ref passParams, src, dst, volumeStack);

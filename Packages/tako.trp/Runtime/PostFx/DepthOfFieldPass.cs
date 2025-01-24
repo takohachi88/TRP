@@ -3,14 +3,13 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Experimental.Rendering;
-using System.Security.Cryptography;
 
 namespace Trp.PostFx
 {
 	/// <summary>
 	/// 被写界深度のポストエフェクト。
 	/// </summary>
-	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "DepthOfField")]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "DepthOfField", fileName = nameof(DepthOfFieldPass))]
 	internal class DepthOfFieldPass : PostFxPassBase
 	{
 		private static readonly int IdCoCParams = Shader.PropertyToID("_CoCParams");
@@ -110,7 +109,7 @@ namespace Trp.PostFx
 		public override LastTarget RecordRenderGraph(ref PassParams passParams, TextureHandle src, TextureHandle dst, VolumeStack volumeStack)
 		{
 			DepthOfField depthOfField = volumeStack.GetComponent<DepthOfField>();
-			if (!depthOfField || !depthOfField.IsActive()) return LastTarget.None;
+			if (!depthOfField || !depthOfField.IsActive() || passParams.Camera.cameraType != CameraType.Game) return LastTarget.None;
 
 			if (depthOfField.mode.value == DepthOfFieldMode.BokehUrp) return BokehUrp(ref passParams, depthOfField, src, dst);
 			else return LastTarget.None;

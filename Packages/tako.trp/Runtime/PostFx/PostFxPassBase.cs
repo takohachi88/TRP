@@ -45,6 +45,11 @@ namespace Trp.PostFx
 			OnInitialize();
 		}
 
+		/// <summary>
+		/// srcのサイズをシェーダーに転送する。
+		/// </summary>
+		/// <param name="material"></param>
+		/// <param name="src"></param>
 		protected static void SetSrcSize(Material material, RTHandle src)
 		{
 			float width = src.rt.width;

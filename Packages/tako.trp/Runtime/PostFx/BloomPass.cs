@@ -1,4 +1,3 @@
-using Mono.Cecil;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -8,19 +7,15 @@ namespace Trp.PostFx
 	/// <summary>
 	/// Bloomのポストエフェクト。
 	/// </summary>
-	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Bloom")]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Bloom", fileName = nameof(BloomPass))]
 	public class BloomPass : PostFxPassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");
 
 
-		private LocalKeyword _keywordDither;
-		private LocalKeyword _keywordNoiseGradientTexture;
 
 		protected override void OnInitialize()
 		{
-			_keywordDither = new(PassShader, "_DITHER");
-			_keywordNoiseGradientTexture = new(PassShader, "_NOISE_GRADIENT_TEXTURE");
 		}
 
 		public class PassData
@@ -37,7 +32,8 @@ namespace Trp.PostFx
 		public override LastTarget RecordRenderGraph(ref PassParams passParams, TextureHandle src, TextureHandle dst, VolumeStack volumeStack)
 		{
 			Bloom bloom = volumeStack.GetComponent<Bloom>();
-			if (!bloom || !bloom.IsActive()) return LastTarget.None;
+			return LastTarget.None;
+			if (!bloom && !bloom.IsActive()) return LastTarget.None;
 
 			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
 
@@ -50,7 +46,7 @@ namespace Trp.PostFx
 			builder.SetRenderFunc<PassData>(static (passData, context) =>
 			{
 				CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
-				Bloom radialBlur = passData.Bloom;
+				Bloom bloom = passData.Bloom;
 				Material material = passData.Material;
 				TextureHandle src = passData.Src;
 				TextureHandle dst = passData.Dst;

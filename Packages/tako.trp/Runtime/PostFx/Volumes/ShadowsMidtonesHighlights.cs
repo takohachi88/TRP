@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 
 namespace Trp.PostFx
 {
-	[Serializable, VolumeComponentMenu("TRP/ShadowsMidtonesHilights")]
+	[Serializable, VolumeComponentMenu("TRP/Shadows, Midtones, Highlights")]
 	public class ShadowsMidtonesHighlights : VolumeComponent, IPostProcessComponent
 	{
 		public ColorParameter shadows = new(Color.white, false, false, true);
@@ -12,6 +12,11 @@ namespace Trp.PostFx
 		public ColorParameter midtones = new(Color.white, false, false, true);
 		public Vector2Parameter highlightRange = new(new(0.5f, 1f));
 		public ColorParameter highlights = new(Color.white, false, false, true);
+
+		public ShadowsMidtonesHighlights()
+		{
+			displayName = "Shadows, Midtones, Highlights";
+		}
 
 		public bool IsActive() =>
 			shadows.value != Color.white ||

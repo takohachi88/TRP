@@ -10,22 +10,18 @@ namespace Trp
 	/// </summary>
 	public class SetEditorTargetPass
 	{
-		private class DummyPassData { }
+		private class PassData
+		{
+		}
 
 		[Conditional(Defines.UNITY_EDITOR)]
-		public void RecordAndExecute(RenderGraph renderGraph)
+		public void RecordAndExecute(ref PassParams passParams)
 		{
-			using (var builder = renderGraph.AddUnsafePass("SetEditorTarget", out DummyPassData _))
-			{
-				builder.AllowPassCulling(false);
-
-				builder.SetRenderFunc((DummyPassData data, UnsafeGraphContext context) =>
-				{
-					context.cmd.SetRenderTarget(BuiltinRenderTextureType.CameraTarget,
-						RenderBufferLoadAction.Load, RenderBufferStoreAction.Store, // color
-						RenderBufferLoadAction.Load, RenderBufferStoreAction.DontCare); // depth
-				});
-			}
+			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass("SetEditorTarget", out PassData _);
+			builder.SetRenderAttachment(passParams.CameraTextures.TargetColor, 0, AccessFlags.None);
+			builder.SetRenderAttachmentDepth(passParams.CameraTextures.TargetDepth, AccessFlags.None);
+			builder.AllowPassCulling(false);
+			builder.SetRenderFunc<PassData>((_, _) => { });
 		}
 	}
 }

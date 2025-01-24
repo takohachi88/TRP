@@ -167,7 +167,7 @@ namespace Trp
 				useOpaqueTexture = true;
 				useTransparentTexture = true;
 				useDepthTexture = true;
-				usePostFx = true;
+				usePostFx = CoreUtils.ArePostProcessesEnabled(camera);
 			}
 
 			//Preview描画時。
@@ -316,7 +316,7 @@ namespace Trp
 				_cameraCapturePass.RecordRenderGraph(ref passParams);
 
 				//SceneView描画時にgridなどのエンジン側の描画処理が適切に行われるようにする。
-				if (camera.cameraType == CameraType.SceneView) _setEditorTargetPass.RecordAndExecute(renderGraph);
+				if (camera.cameraType == CameraType.SceneView) _setEditorTargetPass.RecordAndExecute(ref passParams);
 
 				//RenderGraph終了。
 				renderGraph.EndRecordingAndExecute();
@@ -331,11 +331,11 @@ namespace Trp
 		{
 			RenderTargetIdentifier idColor = cameraTargetTexture ? new RenderTargetIdentifier(cameraTargetTexture) : BuiltinRenderTextureType.CameraTarget;
 			RenderTargetIdentifier idDepth = cameraTargetTexture ? new RenderTargetIdentifier(cameraTargetTexture) : BuiltinRenderTextureType.Depth;
-			
-			if (color == null) color = RTHandles.Alloc(idColor, "Backbuffer color");
+
+			if (color == null) color = RTHandles.Alloc(idColor, "BackbufferColor");
 			else if (color.nameID != idColor) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref color, idColor);
 			
-			if (depth == null) depth = RTHandles.Alloc(idDepth, "Backbuffer depth");
+			if (depth == null) depth = RTHandles.Alloc(idDepth, "BackbufferDepth");
 			else if (depth.nameID != idDepth) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref depth, idDepth);
 		}
 

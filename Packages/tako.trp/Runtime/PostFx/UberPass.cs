@@ -13,7 +13,7 @@ namespace Trp.PostFx
 	/// LUT
 	/// AdvancedVignette
 	/// </summary>
-	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Uber")]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Uber", fileName = nameof(UberPass))]
 	internal class UberPass : PostFxPassBase
 	{
 		private static readonly int IdMosaicIntensity = Shader.PropertyToID("_MosaicIntensity");

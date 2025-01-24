@@ -26,7 +26,10 @@ MonoBehaviour:
       - rid: 8487532017819320517
       - rid: 8487532017819320518
     m_RuntimeSettings:
-      m_List: []
+      m_List:
+      - rid: 8487532017819320510
+      - rid: 8487532017819320515
+      - rid: 8487532017819320518
   references:
     version: 2
     RefIds:
