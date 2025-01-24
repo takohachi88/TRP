@@ -39,6 +39,7 @@ namespace Trp
 
 			builder.SetRenderFunc<PassData>(static (passData, context) =>
 			{
+				context.cmd.SetWireframe(false);
 				RenderingUtils.BlitToCamera(context.cmd, passData.Src, passData.Dst, passData.Camera, passData.BlendSrc, passData.BlendDst, passData.Camera.pixelRect);
 			});
 		}
