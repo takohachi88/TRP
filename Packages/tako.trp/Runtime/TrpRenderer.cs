@@ -66,6 +66,7 @@ namespace Trp
 		private readonly WireOverlayPass _wireOverlayPass = new();
 		private readonly GizmoPass _gizmoPass = new();
 		private readonly UiPass _uiPass = new();
+		private readonly CameraCapturePass _cameraCapturePass = new();
 		private readonly SetEditorTargetPass _setEditorTargetPass = new();
 
 		private readonly Material _coreBlitMaterial;
@@ -312,6 +313,9 @@ namespace Trp
 
 				//UIの描画。
 				if(isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
+
+				//CameraCaptureBridge対応。
+				_cameraCapturePass.RecordRenderGraph(ref passParams);
 
 				//SceneView描画時にgridなどのエンジン側の描画処理が適切に行われるようにする。
 				if (camera.cameraType == CameraType.SceneView) _setEditorTargetPass.RecordAndExecute(renderGraph);
