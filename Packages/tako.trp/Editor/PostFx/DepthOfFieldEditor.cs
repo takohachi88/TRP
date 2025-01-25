@@ -36,7 +36,7 @@ namespace TrpEditor.PostFx
 
 			switch (_mode.value.intValue)
 			{
-				case (int)DepthOfFieldMode.BokehUrp:
+				case (int)DepthOfField.Mode.BokehUrp:
 					PropertyField(_focusDistance);
 					PropertyField(_focalLength);
 					PropertyField(_aperture);

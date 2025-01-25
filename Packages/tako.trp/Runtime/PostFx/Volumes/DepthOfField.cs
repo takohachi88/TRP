@@ -5,37 +5,31 @@ using UnityEngine.Rendering;
 namespace Trp.PostFx
 {
 	/// <summary>
-	/// 被写界深度の実装モード。
-	/// </summary>
-	public enum DepthOfFieldMode
-	{
-		None,
-
-		/// <summary>
-		/// URPのBokehモードの移植。
-		/// </summary>
-		BokehUrp,
-	}
-
-	[Serializable]
-	public sealed class DepthOfFieldModeParameter : VolumeParameter<DepthOfFieldMode>
-	{
-		public DepthOfFieldModeParameter(DepthOfFieldMode value, bool overrideState = false) : base(value, overrideState) { }
-	}
-
-	/// <summary>
 	/// 被写界深度。
 	/// </summary>
 	[Serializable, VolumeComponentMenu("TRP/DepthOfField"), SupportedOnRenderPipeline(typeof(TrpAsset))]
 	public class DepthOfField : VolumeComponent, IPostProcessComponent
 	{
+		/// <summary>
+		/// 被写界深度の実装モード。
+		/// </summary>
+		public enum Mode
+		{
+			None,
+
+			/// <summary>
+			/// URPのBokehモードの移植。
+			/// </summary>
+			BokehUrp,
+		}
+
 		public static readonly float FocusDistanceMin = 0.1f;
 		public static readonly float ApertureMin = 1f;
 		public static readonly float ApertureMax = 32f;
 		public static readonly float FocalLengthMin = 1f;
 		public static readonly float FocalLengthMax = 300f;
 
-		public DepthOfFieldModeParameter mode = new(DepthOfFieldMode.None);
+		public EnumParameter<Mode> mode = new(Mode.None);
 
 
 		/// <summary>
@@ -74,6 +68,6 @@ namespace Trp.PostFx
 		[Tooltip("The rotation of aperture blades in degrees.")]
 		public ClampedFloatParameter bladeRotation = new ClampedFloatParameter(0f, -180f, 180f);
 
-		public bool IsActive() => mode.value != DepthOfFieldMode.None || SystemInfo.graphicsShaderLevel < 35;
+		public bool IsActive() => mode.value != Mode.None || SystemInfo.graphicsShaderLevel < 35;
 	}
 }

@@ -6,21 +6,15 @@ namespace Trp.PostFx
 	[Serializable, VolumeComponentMenu("TRP/ToneMapping")]
 	public class ToneMapping : VolumeComponent, IPostProcessComponent
 	{
-		public ToneMappingModeParameter mode = new(ToneMappingMode.None);
-		public bool IsActive() => mode != ToneMappingMode.None;
-	}
+		public enum Mode
+		{
+			None,
+			Neutral,
+			Reinhard,
+			Aces,
+		}
 
-	public enum ToneMappingMode
-	{
-		None,
-		Neutral,
-		Reinhard,
-		Aces,
-	}
-
-	[Serializable]
-	public sealed class ToneMappingModeParameter : VolumeParameter<ToneMappingMode>
-	{
-		public ToneMappingModeParameter(ToneMappingMode value, bool overrideState = false) : base(value, overrideState) { }
+		public EnumParameter<Mode> mode = new(Mode.None);
+		public bool IsActive() => mode != Mode.None;
 	}
 }

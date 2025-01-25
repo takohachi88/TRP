@@ -8,7 +8,8 @@ namespace Trp.PostFx
 	public class RadialBlur : VolumeComponent, IPostProcessComponent
 	{
 		public ClampedFloatParameter intensity = new(0, 0, 1);
-		public Vector2Parameter center = new(new Vector2(0.5f, 0.5f));
+
+		public CommonCenterParameter center = new(new Vector2(0.5f, 0.5f));
 
 		[Header("Blur")]
 		public NoInterpClampedFloatParameter blurIntensity = new(0.5f, 0, 1);

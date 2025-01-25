@@ -111,7 +111,7 @@ namespace Trp.PostFx
 			DepthOfField depthOfField = volumeStack.GetComponent<DepthOfField>();
 			if (!depthOfField || !depthOfField.IsActive() || passParams.Camera.cameraType != CameraType.Game) return LastTarget.None;
 
-			if (depthOfField.mode.value == DepthOfFieldMode.BokehUrp) return BokehUrp(ref passParams, depthOfField, src, dst);
+			if (depthOfField.mode.value == DepthOfField.Mode.BokehUrp) return BokehUrp(ref passParams, depthOfField, src, dst);
 			else return LastTarget.None;
 		}
 
