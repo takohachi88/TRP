@@ -21,10 +21,6 @@ namespace Trp.PostFx
 		public TextureParameter noiseGradientTexture = new(null);
 		public NoInterpMinFloatParameter noiseTiling = new(1, Mathf.Epsilon);
 
-		[Header("Chromatic Aberration")]
-		public ClampedFloatParameter chromaticAberrationIntensity = new(0, 0, 1);
-		public NoInterpClampedFloatParameter chromaticAberrationLimit = new(0.1f, 0, 1);
-
 		public bool IsActive() => 0 < intensity.value;
 	}
 }

@@ -32,9 +32,7 @@
 
         half4 Vignette (float2 uv, half4 output)
         {
-            float2 dist = abs(uv - _VignetteCenter) * _VignetteIntensity;
-            dist *= _VignetteFitAspect ? 1 : _AspectFit;
-            half vignette = smoothstep(0.5 - _VignetteSmoothness * 0.5, 0.5 + _VignetteSmoothness * 0.5, dot(dist, dist));
+            half vignette = DotDistance(uv, _VignetteCenter, _VignetteIntensity, _VignetteSmoothness, _VignetteFitAspect);
             
             half3 color = 0;
             color += (_VignetteBlendMode == 0) * lerp(output.rgb, _VignetteColor, vignette);

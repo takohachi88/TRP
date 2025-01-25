@@ -29,4 +29,11 @@
 
 float2 _AspectFit;
 
+half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool fitAspect)
+{
+    float2 dist = abs(uv - center) * sizeInv;
+    dist *= fitAspect ? 1 : _AspectFit;
+    return smoothstep(0.5 - smoothness * 0.5, 0.5 + smoothness * 0.5, dot(dist, dist));
+}
+
 #endif

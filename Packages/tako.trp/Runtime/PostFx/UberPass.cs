@@ -143,8 +143,7 @@ namespace Trp.PostFx
 					material.SetFloat(IdVignetteBlendMode, (int)passData.Vignette.blendMode.value);
 				}
 
-				Vector4 scaleBias = RenderingUtils.GetFinalBlitScaleBias(passData.Src, passData.Dst, passData.Camera);
-				Blitter.BlitTexture(context.cmd, passData.Src, scaleBias, material, 0);
+				Blit(context.cmd, passData.Src, passData.Dst, material, 0, passData.Camera);
 			});
 
 			return LastTarget.Dst;

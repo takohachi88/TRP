@@ -4,7 +4,7 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Trp
 {
-	public readonly ref struct PassParams
+	public ref struct PassParams
 	{
 		public RenderGraph RenderGraph { get; init; }
 		public readonly Camera Camera { get; init; }
@@ -13,6 +13,8 @@ namespace Trp
 		public readonly CameraTextures CameraTextures { get; init; }
 		public readonly bool UseIntermediateAttachments { get; init; }
 		public readonly Vector2Int AttachmentSize { get; init; }
+		public Vector2 AspectFit { get; internal set; }
+		public Vector2 AspectFitRcp { get; internal set; }
 		public readonly CameraClearFlags ClearFlags { get; init; }
 		public readonly bool UseScaledRendering { get; init; }
 		public readonly bool UseOpaqueTexture { get; init; }

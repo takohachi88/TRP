@@ -20,6 +20,7 @@ namespace Trp
 		{
 			public bool UseIntermediateAttachments;
 			public Vector2Int AttachmentSize;
+			public Vector2 AspectFit;
 			public Camera Camera;
 			public bool IsFirstToBackbuffer;
 			public CullingResults CullingResults;
@@ -73,6 +74,14 @@ namespace Trp
 			passData.Camera = camera;
 			passData.IsFirstToBackbuffer = isFirstToBackbuffer;
 			passData.CullingResults = cullingResults;
+
+			//アスペクト比の補正に用いるパラメータ。
+			float attachmentWidthRatio = attachmentSize.x / (float)attachmentSize.y;
+			float attachmentHeightRatio = attachmentSize.y / (float)attachmentSize.x;
+			bool isWide = 1f <= attachmentWidthRatio;
+			passData.AspectFit = isWide ? new(attachmentWidthRatio, 1f) : new(1f, attachmentHeightRatio);
+			passParams.AspectFit = passData.AspectFit;
+			passParams.AspectFitRcp = isWide ? new(attachmentHeightRatio, 1f) : new(1f, attachmentWidthRatio);
 
 			//MSAAの設定。
 			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, useIntermediateAttachments);
@@ -170,17 +179,13 @@ namespace Trp
 
 			builder.AllowPassCulling(false);//副作用があるパスなのでCullしない。
 			builder.AllowGlobalStateModification(true);
-
 			builder.SetRenderFunc<PassData>(static (passData, context) =>
 			{
 				UnsafeCommandBuffer cmd = context.cmd;
 				Vector2Int attachmentSize = passData.AttachmentSize;
 
 				//アスペクト比の補正に用いるパラメータ。
-				float attachmentWidthRatio = attachmentSize.x / (float)attachmentSize.y;
-				float attachmentHeightRatio = attachmentSize.y / (float)attachmentSize.x;
-				bool isWide = 1f <= attachmentWidthRatio;
-				cmd.SetGlobalVector(IdAspectFit, isWide ? new(attachmentWidthRatio, 1f) : new(1f, attachmentHeightRatio));
+				cmd.SetGlobalVector(IdAspectFit, passData.AspectFit);
 
 				//TODO:ライティング関係の設定。
 
