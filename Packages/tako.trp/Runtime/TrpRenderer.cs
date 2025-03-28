@@ -181,6 +181,8 @@ namespace Trp
 			}
 #endif
 
+			RTHandles.SetReferenceSize(attachmentSize.x, attachmentSize.y);
+
 			//VFX Graphのセットアップ。
 			VFXManager.PrepareCamera(camera);
 

@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36af5f82638996642962661c9f06278f, type: 3}
+  m_Name: BloomLfssPass
+  m_EditorClassIdentifier: 
+  PassShader: {fileID: 4800000, guid: 63372c28631eb39469d983388ec9d1a2, type: 3}
+  _bloomShader: {fileID: 4800000, guid: 63372c28631eb39469d983388ec9d1a2, type: 3}
+  _lfssShader: {fileID: 4800000, guid: 514327d38889a9a4a9993948eb35cf2d, type: 3}

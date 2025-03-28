@@ -55,6 +55,11 @@ namespace Trp
 
 		[SerializeField] private TrpGlobalSettings _globalSettings;
 
+		/// <summary>
+		/// シェーダーのRenderPipelineタグで指定するタグ名。
+		/// </summary>
+		public override string renderPipelineShaderTag => "Trp";
+
 		protected override RenderPipeline CreatePipeline()
 		{
 #if UNITY_EDITOR
