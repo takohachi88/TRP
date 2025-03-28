@@ -9,7 +9,7 @@ namespace Trp.PostFx
 	/// RadialBlurのポストエフェクト。
 	/// </summary>
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "ChromaticAberration", fileName = nameof(ChromaticAberration))]
-	public class ChromaticAberrationPass : PostFxPassBase
+	public class ChromaticAberrationPass : PostFxSinglePassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");
 		private static readonly int IdCenter = Shader.PropertyToID("_Center");
@@ -31,6 +31,7 @@ namespace Trp.PostFx
 			_keywordDither = new(PassShader, "_DITHER");
 			_keywordRadial = new(PassShader, "_RADIAL");
 			_keywordDirection = new(PassShader, "_DIRECTION");
+			base.OnInitialize();
 		}
 
 		public class PassData
@@ -90,7 +91,7 @@ namespace Trp.PostFx
 				material.SetKeyword(passData.KeywordRadial, chromaticAberration.mode.value == ChromaticAberration.Mode.Radial);
 				material.SetKeyword(passData.KeywordDirection, chromaticAberration.mode.value == ChromaticAberration.Mode.Direction);
 
-				Blit(context.cmd, src, passData.Dst, material, 0, passData.Camera);
+				Blit(context.cmd, src, material, 0);
 			});
 
 			return LastTarget.Dst;

@@ -1,4 +1,4 @@
-Shader "Hiddden/Trp/PostFx/CreateLut"
+Shader "Hidden/Trp/PostFx/CreateLut"
 {
     SubShader
     {

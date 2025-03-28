@@ -1,5 +1,5 @@
 ﻿//URPのDepthOfFieldのBokehモードを移植。
-Shader "Hiddden/Trp/PostFx/DepthOfFieldBokehUrp"
+Shader "Hidden/Trp/PostFx/DepthOfFieldBokehUrp"
 {
     SubShader
     {

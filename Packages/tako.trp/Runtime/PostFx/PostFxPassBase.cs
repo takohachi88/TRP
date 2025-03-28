@@ -30,18 +30,10 @@ namespace Trp.PostFx
 	/// </summary>
 	public abstract class PostFxPassBase : ScriptableObject
 	{
-		[SerializeField] protected Shader PassShader;
-
-		protected ProfilingSampler Sampler;
-
-		protected Material PassMaterial;
-
 		private static readonly int IdSrcSize = Shader.PropertyToID("_SrcSize");
 
 		public void Initialize()
 		{
-			PassMaterial = CoreUtils.CreateEngineMaterial(PassShader);
-			Sampler = new(GetType().Name);
 			OnInitialize();
 		}
 
@@ -57,19 +49,26 @@ namespace Trp.PostFx
 			material.SetVector(IdSrcSize, new(width, height, 1f / width, 1f / height));
 		}
 
-		protected static void Blit(RasterCommandBuffer cmd, TextureHandle src, TextureHandle dst, Material material, int passIndex, Camera camera)
+		protected static void FinalBlit(RasterCommandBuffer cmd, TextureHandle src, TextureHandle dst, Material material, int passIndex, Camera camera)
 		{
 			Vector4 scaleBias = RenderingUtils.GetFinalBlitScaleBias(src, dst, camera);
 			Blitter.BlitTexture(cmd, src, scaleBias, material, passIndex);
+		}
+
+		protected static void Blit(RasterCommandBuffer cmd, TextureHandle src, Material material, int passIndex)
+		{
+			Blitter.BlitTexture(cmd, src, Vector2.one, material, passIndex);
 		}
 
 		protected virtual void OnInitialize() { }
 
 		public abstract LastTarget RecordRenderGraph(ref PassParams passParams, TextureHandle src, TextureHandle dst, VolumeStack volumeStack);
 
-		public virtual void Dispose()
+		public void Dispose()
 		{
-			CoreUtils.Destroy(PassMaterial);
+			OnDispose();
 		}
+
+		protected virtual void OnDispose() { }
 	}
 }

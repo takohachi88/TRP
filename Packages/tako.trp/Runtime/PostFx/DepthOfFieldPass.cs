@@ -10,7 +10,7 @@ namespace Trp.PostFx
 	/// 被写界深度のポストエフェクト。
 	/// </summary>
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "DepthOfField", fileName = nameof(DepthOfFieldPass))]
-	internal class DepthOfFieldPass : PostFxPassBase
+	internal class DepthOfFieldPass : PostFxSinglePassBase
 	{
 		private static readonly int IdCoCParams = Shader.PropertyToID("_CoCParams");
 		private static readonly int IdBokehKernel = Shader.PropertyToID("_BokehKernel");

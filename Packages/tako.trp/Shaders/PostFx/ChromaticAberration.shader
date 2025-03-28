@@ -1,4 +1,4 @@
-﻿Shader "Hiddden/Trp/PostFx/ChromaticAberrarion"
+﻿Shader "Hidden/Trp/PostFx/ChromaticAberrarion"
 {
     HLSLINCLUDE
 

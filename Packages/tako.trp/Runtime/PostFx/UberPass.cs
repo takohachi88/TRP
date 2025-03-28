@@ -14,7 +14,7 @@ namespace Trp.PostFx
 	/// AdvancedVignette
 	/// </summary>
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Uber", fileName = nameof(UberPass))]
-	internal class UberPass : PostFxPassBase
+	internal class UberPass : PostFxSinglePassBase
 	{
 		private static readonly int IdMosaicIntensity = Shader.PropertyToID("_MosaicIntensity");
 		private static readonly int IdMosaicCellDensity = Shader.PropertyToID("_MosaicCellDensity");
@@ -39,6 +39,7 @@ namespace Trp.PostFx
 		{
 			_keywordLut = new(PassShader, "_LUT");
 			_keywordVignette = new(PassShader, "_VIGNETTE");
+			base.OnInitialize();
 		}
 
 		public class PassData
@@ -71,11 +72,7 @@ namespace Trp.PostFx
 			bool useVignette = advancedVignette && advancedVignette.IsActive();
 			bool useLut = passParams.CameraTextures.PostProcessLut.IsValid();
 
-			if (!useMosaic &&
-				!usePosterization &&
-				!useVignette &&
-				!useLut)
-				return LastTarget.None;
+			if (!useLut) return LastTarget.None;
 
 			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
 
@@ -143,7 +140,7 @@ namespace Trp.PostFx
 					material.SetFloat(IdVignetteBlendMode, (int)passData.Vignette.blendMode.value);
 				}
 
-				Blit(context.cmd, passData.Src, passData.Dst, material, 0, passData.Camera);
+				Blit(context.cmd, passData.Src, material, 0);
 			});
 
 			return LastTarget.Dst;

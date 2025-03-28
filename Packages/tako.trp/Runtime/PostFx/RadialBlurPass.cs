@@ -8,7 +8,7 @@ namespace Trp.PostFx
 	/// RadialBlurのポストエフェクト。
 	/// </summary>
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "RadialBlur", fileName = nameof(RadialBlurPass))]
-	public class RadialBlurPass : PostFxPassBase
+	public class RadialBlurPass : PostFxSinglePassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");
 		private static readonly int IdBlurIntensity = Shader.PropertyToID("_BlurIntensity");
@@ -26,6 +26,7 @@ namespace Trp.PostFx
 		{
 			_keywordDither = new(PassShader, "_DITHER");
 			_keywordNoiseGradientTexture = new(PassShader, "_NOISE_GRADIENT_TEXTURE");
+			base.OnInitialize();
 		}
 
 		public class PassData
@@ -77,7 +78,7 @@ namespace Trp.PostFx
 					material.SetFloat(IdNoiseIntensity, radialBlur.noiseIntensity.value);
 				}
 
-				Blit(context.cmd, src, passData.Dst, material, 0, passData.Camera);
+				Blit(context.cmd, src, material, 0);
 			});
 
 			return LastTarget.Dst;

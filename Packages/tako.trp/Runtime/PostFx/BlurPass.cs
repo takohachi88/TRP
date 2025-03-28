@@ -8,7 +8,7 @@ namespace Trp.PostFx
 	/// Blurのポストエフェクト。
 	/// </summary>
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Blur", fileName = nameof(BlurPass))]
-	public class BlurPass : PostFxPassBase
+	public class BlurPass : PostFxSinglePassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");
 

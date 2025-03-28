@@ -36,4 +36,7 @@ float4 _ProjectionParams;
 //w: y / far
 float4 _ZBufferParams;
 
+float4 _ScreenSize;
+float4 _RTHandleScale;
+
 #endif
