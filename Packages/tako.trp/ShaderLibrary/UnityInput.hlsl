@@ -39,4 +39,9 @@ float4 _ZBufferParams;
 float4 _ScreenSize;
 float4 _RTHandleScale;
 
+float4x4 unity_WorldToCamera;
+float4x4 unity_CameraToWorld;
+
+float4 _FrustumPlanes[6]; // {(a, b, c) = N, d = -dot(N, P)} [L, R, T, B, N, F]
+
 #endif

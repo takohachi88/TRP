@@ -202,6 +202,9 @@ namespace Trp
 				//画面サイズをGPUに送信。
 				cmd.SetGlobalVector(IdAttachmentSize, new(1f / attachmentSize.x, 1f / attachmentSize.y, attachmentSize.x, attachmentSize.y));
 
+				//VFX Graphのセットアップ。
+				VFXManager.PrepareCamera(passData.Camera);
+
 				//VFX Graph。
 				CommandBufferHelpers.VFXManager_ProcessCameraCommand(passData.Camera, cmd, default, passData.CullingResults);
 			});

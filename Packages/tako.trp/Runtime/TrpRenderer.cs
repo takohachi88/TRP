@@ -183,9 +183,6 @@ namespace Trp
 
 			RTHandles.SetReferenceSize(attachmentSize.x, attachmentSize.y);
 
-			//VFX Graphのセットアップ。
-			VFXManager.PrepareCamera(camera);
-
 			if (camera.cameraType is CameraType.Reflection or CameraType.Preview) ScriptableRenderContext.EmitGeometryForCamera(camera);
 
 			//カリング。

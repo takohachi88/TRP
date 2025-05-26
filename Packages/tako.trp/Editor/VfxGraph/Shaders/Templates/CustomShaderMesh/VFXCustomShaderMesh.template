@@ -1,0 +1,11 @@
+{
+	SubShader
+	{	
+		${VFXInclude("Shaders/VFXParticleHeader.template")}
+		${VFXInclude("Shaders/ParticleMeshes/PassDepth.template"),IS_OPAQUE_PARTICLE}
+		${VFXInclude("Shaders/ParticleMeshes/PassDepthNormal.template"),IS_OPAQUE_PARTICLE}
+		${VFXInclude("Shaders/ParticleMeshes/PassSelection.template")}
+		${VFXIncludeRP("Templates/CustomShaderMesh/PassCustomMesh1.template"),TRP_CUSTOM_PASS_1}
+		${VFXIncludeRP("Templates/CustomShaderMesh/PassCustomMesh2.template"),TRP_CUSTOM_PASS_2}
+	}
+}

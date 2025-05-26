@@ -1,0 +1,17 @@
+// TRP Custom pass 2
+Pass
+{
+    Name "${VFXCustomPassLightMode2}"
+	Tags { "LightMode" = "${VFXCustomPassLightMode2}" }
+
+	${VFXStencilForward}
+
+	HLSLPROGRAM
+	#pragma target 4.5
+	${VFXPassForwardAdditionalPragma}
+
+	#define TRP_CUSTOM_PASS_FRAGMENT_2 1
+
+	${VFXIncludeRP("Templates/CustomShaderPlanarPrimitive/PassCustomPlanarPrimitiveCommon.template")}
+	ENDHLSL
+}

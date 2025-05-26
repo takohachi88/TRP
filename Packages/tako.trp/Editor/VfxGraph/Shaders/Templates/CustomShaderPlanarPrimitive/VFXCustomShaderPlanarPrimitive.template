@@ -1,0 +1,11 @@
+{
+	SubShader
+	{	
+		${VFXInclude("Shaders/VFXParticleHeader.template")}
+		${VFXInclude("Shaders/ParticlePlanarPrimitives/PassDepth.template"),IS_OPAQUE_PARTICLE}
+		${VFXInclude("Shaders/ParticlePlanarPrimitives/PassDepthNormal.template"),IS_OPAQUE_PARTICLE}
+		${VFXInclude("Shaders/ParticlePlanarPrimitives/PassSelection.template")}
+		${VFXIncludeRP("Templates/CustomShaderPlanarPrimitive/PassCustomPlanarPrimitive1.template"),TRP_CUSTOM_PASS_1}
+		${VFXIncludeRP("Templates/CustomShaderPlanarPrimitive/PassCustomPlanarPrimitive2.template"),TRP_CUSTOM_PASS_2}
+	}
+}

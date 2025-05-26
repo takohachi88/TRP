@@ -1,0 +1,5 @@
+${VFXBegin:VFXPassForward}"SRPDefaultUnlit"${VFXEnd}
+
+${VFXBegin:VFXPassForwardAdditionalPragma}
+#pragma multi_compile_fog
+${VFXEnd}
