@@ -15,8 +15,8 @@ namespace Trp
 
 		private static readonly ShaderTagId[] ShaderTagIds =
 		{
-			new ("SRPDefaultUnlit"),
-			new ("Lit"),
+			new (TrpConstants.PassNames.SRP_DEFAULT_UNLIT),
+			new (TrpConstants.PassNames.LIT),
 		};
 
 		private class PassData
