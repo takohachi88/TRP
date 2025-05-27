@@ -1,14 +1,14 @@
-#ifndef TRP_UNITY_INPUT
+﻿#ifndef TRP_UNITY_INPUT
 #define TRP_UNITY_INPUT
 
 //https://docs.unity3d.com/ja/2023.2/Manual/SL-UnityShaderVariables.html
 
+//UnityPerDrawはこの組み合わせでなければならない。（こうでないとSRPBatcherは機能しない。）
 CBUFFER_START(UnityPerDraw)
-
 float4x4 unity_ObjectToWorld;
 float4x4 unity_WorldToObject;
+float4 unity_LODFade;
 real4 unity_WorldTransformParams;
-
 CBUFFER_END
 
 float4x4 unity_MatrixVP;
