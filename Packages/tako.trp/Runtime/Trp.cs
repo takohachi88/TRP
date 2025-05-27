@@ -43,6 +43,8 @@ namespace Trp
 			VolumeManager.instance.Initialize();
 
 			_renderGraph.nativeRenderPassesEnabled = true;
+
+			GraphicsSettings.useScriptableRenderPipelineBatching = true;
 		}
 
 		public class CameraComparer : IComparer<Camera>
