@@ -35,10 +35,10 @@ namespace TrpEditor.VfxGraph
 			[VFXSetting, SerializeField] public string Name;
 		}
 
-
 		[VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField, Multiline]
 		protected string _shaderHeader;
 
+		//配列はグラフ内で表示できない。
 		[VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField]
 		protected ShaderProperty[] _shaderProperties;
 

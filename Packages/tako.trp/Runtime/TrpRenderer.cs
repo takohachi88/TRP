@@ -3,7 +3,6 @@ using UnityEngine.Rendering;
 using TakoLib.Common.Extensions;
 using Trp.PostFx;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.VFX;
 
 namespace Trp
 {
@@ -49,8 +48,6 @@ namespace Trp
 		private RTHandle _targetColor, _targetDepth;
 
 		private TrpCommonSettings _commonSettings;
-
-		private InternalResources _internalResources;
 
 		private PostFxPassGroup _postFxPassGroup;
 
@@ -142,7 +139,6 @@ namespace Trp
 				sampler = ProfilingSampler.Get(camera.cameraType);
 			}
 
-			bool useIntermediateAttachments;
 			bool useScaledRendering = !renderScale.IsInRange(0.9f, 1.1f);
 			Vector2Int attachmentSize = new (camera.pixelWidth, camera.pixelHeight);
 			CullingResults cullingResults;
@@ -203,9 +199,6 @@ namespace Trp
 			//RTHandleのreferenceSizeの指定。
 			RTHandles.SetReferenceSize(attachmentSize.x, attachmentSize.y);
 
-			//中間バッファを使うかどうか。
-			useIntermediateAttachments = useScaledRendering || useOpaqueTexture || useTransparentTexture || useDepthTexture || usePostFx;
-
 			//RenderGraphの登録と実行。
 			RenderGraphParameters renderGraphParameters = new()
 			{
@@ -241,7 +234,6 @@ namespace Trp
 					CameraData = cameraData,
 					ColorDescriptor = colorDescriptor,
 					CameraTextures = _cameraTextures,
-					UseIntermediateAttachments = useIntermediateAttachments,
 					AttachmentSize = attachmentSize,
 					UseScaledRendering = useScaledRendering,
 					UseOpaqueTexture = useOpaqueTexture,
@@ -293,11 +285,8 @@ namespace Trp
 					TextureHandle src = _postFxPassGroup.RecordRenderGraph(ref passParams);
 					_finalBlitPass.RecordRenderGraph(ref passParams, src, blendSrc, blendDst);
 				}
-				else if (useIntermediateAttachments)
-				{
-					//中間バッファから画面への描画。
-					_finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
-				}
+				//中間バッファから画面への描画。
+				_finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);

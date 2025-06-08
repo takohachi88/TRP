@@ -22,6 +22,8 @@ namespace Trp
 		private readonly List<Camera> _otherCameras = new(16);
 		private readonly List<Camera> _gameViewCameras = new(16);
 
+		private static readonly ProfilingSampler Sampler = new("TRP");
+
 		internal Trp(TrpCommonSettings commonSettings, InternalResources internalResources, PostFxPassGroup overridePostFxGroup)
 		{
 			//MSAAの設定。
@@ -97,7 +99,7 @@ namespace Trp
 					InternalResources = _internalResources,
 					PostFxPassGroup = _postFxPassGroup,
 				};
-				using (new ProfilingScope(new ProfilingSampler("aaa")))
+				using (new ProfilingScope(Sampler))
 				{
 					_renderer.Render(renderParams);
 				}
@@ -107,7 +109,6 @@ namespace Trp
 			string s=null;
 			foreach (var v in _otherCameras) s+= v.ToString();
 			foreach (var v in _gameViewCameras) s += v.ToString();
-			//Debug.Log(s);
 		}
 
 		protected override void Dispose(bool disposing)

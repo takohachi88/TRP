@@ -11,7 +11,6 @@ namespace Trp
 		public readonly TrpCameraData CameraData { get; init; }
 		public readonly TextureDesc ColorDescriptor { get; init; }
 		public readonly CameraTextures CameraTextures { get; init; }
-		public readonly bool UseIntermediateAttachments { get; init; }
 		public readonly Vector2Int AttachmentSize { get; init; }
 		public Vector2 AspectFit { get; internal set; }
 		public Vector2 AspectFitRcp { get; internal set; }

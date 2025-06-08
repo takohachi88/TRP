@@ -58,7 +58,6 @@ namespace Trp
 			bool isFirstToBackbuffer)
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
-			bool useIntermediateAttachments = passParams.UseIntermediateAttachments;
 			Camera camera = passParams.Camera;
 			Vector2Int attachmentSize = passParams.AttachmentSize;
 			CullingResults cullingResults = passParams.CullingResults;
@@ -69,7 +68,6 @@ namespace Trp
 
 			TextureHandle colorAttachment = default, depthAttachment = default;
 
-			passData.UseIntermediateAttachments = useIntermediateAttachments;
 			passData.AttachmentSize = attachmentSize;
 			passData.Camera = camera;
 			passData.IsFirstToBackbuffer = isFirstToBackbuffer;
@@ -84,7 +82,7 @@ namespace Trp
 			passParams.AspectFitRcp = isWide ? new(attachmentHeightRatio, 1f) : new(1f, attachmentWidthRatio);
 
 			//MSAAの設定。
-			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, useIntermediateAttachments);
+			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, true);
 
 			//出力先がdepthフォーマットのcamera.targetTextureである。
 			bool isCameraTargetOffscreenDepth = camera.targetTexture && camera.targetTexture.format == RenderTextureFormat.Depth;
@@ -147,30 +145,22 @@ namespace Trp
 			};
 			cameraTextures.TextureDepth = renderGraph.CreateTexture(depthDesc);
 
-			if (useIntermediateAttachments)
+			TextureDesc desc = new(attachmentSize.x, attachmentSize.y)
 			{
-				TextureDesc desc = new(attachmentSize.x, attachmentSize.y)
-				{
-					name = "ColorAttachment",
-					format = GraphicsFormat.R16G16B16A16_SFloat,
-					clearBuffer = clearColor,
-					clearColor = clearColor ? camera.backgroundColor.linear : Color.clear,
-				};
-				colorAttachment = renderGraph.CreateTexture(desc);
+				name = "ColorAttachment",
+				format = GraphicsFormat.R16G16B16A16_SFloat,
+				clearBuffer = clearColor,
+				clearColor = clearColor ? camera.backgroundColor.linear : Color.clear,
+			};
+			colorAttachment = renderGraph.CreateTexture(desc);
 
-				desc = new(attachmentSize.x, attachmentSize.y)
-				{
-					name = "DepthAttachment",
-					format = RenderingUtils.DepthStencilFormat,
-					clearBuffer = clearDepth,
-				};
-				depthAttachment = renderGraph.CreateTexture(desc);
-			}
-			else
+			desc = new(attachmentSize.x, attachmentSize.y)
 			{
-				colorAttachment = targetColor;
-				depthAttachment = targetDepth;
-			}
+				name = "DepthAttachment",
+				format = RenderingUtils.DepthStencilFormat,
+				clearBuffer = clearDepth,
+			};
+			depthAttachment = renderGraph.CreateTexture(desc);
 
 			cameraTextures.AttachmentColor = colorAttachment;
 			cameraTextures.AttachmentDepth = depthAttachment;
