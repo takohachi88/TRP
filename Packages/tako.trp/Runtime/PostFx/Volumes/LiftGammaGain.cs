@@ -7,9 +7,12 @@ namespace Trp.PostFx
 	[Serializable, VolumeComponentMenu("TRP/Lift, Gamma, Gain")]
 	public class LiftGammaGain : VolumeComponent, IPostProcessComponent
 	{
-		public ColorParameter lift = new(new(1, 1, 1, 0));
-		public ColorParameter gamma = new(new(1, 1, 1, 0));
-		public ColorParameter gain = new(new(1, 1, 1, 0));
+		//LUTはrgbだが、ColorUtils.PrepareLiftGammaGainではα値も影響する。
+		private static readonly Color defaultColor = new (1, 1, 1, 0);
+
+		public ColorParameter lift = new(defaultColor);
+		public ColorParameter gamma = new(defaultColor);
+		public ColorParameter gain = new(defaultColor);
 
 		public LiftGammaGain()
 		{
@@ -17,8 +20,8 @@ namespace Trp.PostFx
 		}
 
 		public bool IsActive() =>
-			lift.value != Color.white ||
-			gamma.value != Color.white ||
-			gain.value != Color.white;
+			lift.value != defaultColor ||
+			gamma.value != defaultColor ||
+			gain.value != defaultColor;
 	}
 }

@@ -1,3 +1,4 @@
+﻿//LUTなので描画面積は小さい。条件分岐による処理負荷を多少許容し、バリアント増大によるメモリ負荷の回避を重視。
 Shader "Hidden/Trp/PostFx/CreateLut"
 {
     SubShader
@@ -24,7 +25,7 @@ Shader "Hidden/Trp/PostFx/CreateLut"
 		half3 _SmhHighlights;
 		half4 _SmhRange;
         
-        //Contrast�AHue�ASaturation�B
+        //Contrast、Hue、Saturation。
         half4 _ColorAdjustmentParams;
         
         half3 _ColorFilter;
@@ -47,7 +48,7 @@ Shader "Hidden/Trp/PostFx/CreateLut"
         bool _Nega;
         half _NegaIntensity;
 
-        //�P�x���擾����B
+        //輝度を取得する。
         half GetLuminance(half3 colorLinear)
         {
             return TONEMAPPING_ACES ? AcesLuminance(colorLinear) : dot(colorLinear, _SaturationFactor);
@@ -88,7 +89,7 @@ Shader "Hidden/Trp/PostFx/CreateLut"
 
             //LiftGammaGain
             lut = lut * _LggGain + _LggLift;
-            lut = sign(lut) * pow(abs(lut), _LggGamma);//LUT�Ȃ̂ő����̏d���������͋������B
+            lut = sign(lut) * pow(abs(lut), _LggGamma);//LUTなので多少の重たい処理は許される。
 
             //Hue
             half3 hsv = RgbToHsv(lut);

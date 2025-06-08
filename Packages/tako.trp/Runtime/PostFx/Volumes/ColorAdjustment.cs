@@ -12,14 +12,16 @@ namespace Trp.PostFx
 		public ClampedFloatParameter hue = new(0, -1, 1);
 		public ClampedFloatParameter saturation = new(1, 0, 2);
 
+		private static readonly Vector3 defaultSaturationFactor = new(0.2126729f, 0.7151522f, 0.0721750f);
 
 		[Tooltip("ACES使用時には適用されません。")]
-		public NoInterpVector3Parameter SaturationFactor = new(new(0.2126729f, 0.7151522f, 0.0721750f));
+		public NoInterpVector3Parameter SaturationFactor = new(defaultSaturationFactor);
 
 		public bool IsActive() =>
 			0 < contrast.value ||
-			colorFilter.value == Color.white ||
+			colorFilter.value != Color.white ||
 			0 < hue.value ||
-			0 < saturation.value;
+			1 != saturation.value ||
+			defaultSaturationFactor != SaturationFactor.value;
     }
 }
