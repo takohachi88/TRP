@@ -72,7 +72,7 @@ namespace Trp.PostFx
 			bool useVignette = advancedVignette && advancedVignette.IsActive();
 			bool useLut = passParams.CameraTextures.PostProcessLut.IsValid();
 
-			if (!useLut) return LastTarget.None;
+			if (!useLut && !useMosaic && !usePosterization && !useVignette) return LastTarget.None;
 
 			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
 
