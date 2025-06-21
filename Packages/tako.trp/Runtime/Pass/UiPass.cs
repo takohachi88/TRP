@@ -17,7 +17,7 @@ namespace Trp
 		{
 			using (IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler))
 			{
-				passData.RendererList = passParams.RenderGraph.CreateUIOverlayRendererList(passParams.Camera);
+				passData.RendererList = passParams.RenderGraph.CreateUIOverlayRendererList(passParams.Camera, UISubset.UIToolkit_UGUI);
 
 				builder.UseAllGlobalTextures(true);
 				builder.SetRenderAttachment(passParams.CameraTextures.TargetColor, 0, AccessFlags.Write);
@@ -26,7 +26,7 @@ namespace Trp
 				builder.SetRenderFunc<PassData>(static (passData, context) => context.cmd.DrawRendererList(passData.RendererList));
 			}
 
-			//TODO: IMGUIの描画もRenderGraphでカバーする？（URPのDrawScreenSpaceUIPassによればIMGUIではカバーしておいた方が安全ではあるらしい。）
+			//TODO: IMGUIの描画もRenderGraphでカバーする？（URPのDrawScreenSpaceUIPassによればIMGUIもカバーしておいた方が安全ではあるらしい。）
 		}
 	}
 }

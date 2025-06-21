@@ -20,6 +20,8 @@ namespace Trp
 		internal class PassData
 		{
 			public RendererListHandle GizmoRendererList;
+			public TextureHandle Color;
+			public TextureHandle Depth;
 		}
 
 		[Conditional(Defines.UNITY_EDITOR)]
@@ -29,17 +31,22 @@ namespace Trp
 			//TODO: SceneViewFilterModeが何なのか不明だがURPの実装を参考に一応記述。
 			if (!Handles.ShouldRenderGizmos() || passParams.Camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered) return;
 
-			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			//Rasterパスでもいけそうに見えるが、Unity6000.1.6ではUnsafeパスにしないとエラーが出た。
+			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
 
 			passData.GizmoRendererList = passParams.RenderGraph.CreateGizmoRendererList(passParams.Camera, gizmoSubset);
+			passData.Color = passParams.CameraTextures.TargetColor;
+			passData.Depth = dstDepth;
 
-			builder.SetRenderAttachment(passParams.CameraTextures.TargetColor, 0, AccessFlags.Write);
-			builder.SetRenderAttachmentDepth(dstDepth, AccessFlags.ReadWrite);
+			builder.UseTexture(passData.Color, AccessFlags.Write);
+			builder.UseTexture(dstDepth, AccessFlags.ReadWrite);
 			builder.UseRendererList(passData.GizmoRendererList);
-
 			builder.AllowPassCulling(false);
-
-			builder.SetRenderFunc<PassData>(static (passData, context) => context.cmd.DrawRendererList(passData.GizmoRendererList));
+			builder.SetRenderFunc<PassData>(static (passData, context) =>
+			{
+				context.cmd.SetRenderTarget(passData.Color, passData.Depth);
+				context.cmd.DrawRendererList(passData.GizmoRendererList);
+			});
 #endif
 		}
 	}

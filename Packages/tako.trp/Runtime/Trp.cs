@@ -54,7 +54,6 @@ namespace Trp
 			public int Compare(Camera a, Camera b) => a.depth.CompareTo(b.depth);
 		}
 
-		protected override void Render(ScriptableRenderContext context, Camera[] cameras) { }
 		protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
 		{
 			//UIオーバーレイをTRP側で描画するため、エンジン側の描画はオフにする。ただしCameraが無いならオンにしておく。

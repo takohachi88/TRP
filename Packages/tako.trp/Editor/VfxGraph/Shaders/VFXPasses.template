@@ -1,5 +1,6 @@
-${VFXBegin:VFXPassForward}"SRPDefaultUnlit"${VFXEnd}
+﻿${VFXBegin:VFXPassForward}"SRPDefaultUnlit"${VFXEnd}
 
 ${VFXBegin:VFXPassForwardAdditionalPragma}
 #pragma multi_compile_fog
 ${VFXEnd}
+//${VFXEnd}が最後の行になるとUnity6000.1.6ではエラーになるため注意。

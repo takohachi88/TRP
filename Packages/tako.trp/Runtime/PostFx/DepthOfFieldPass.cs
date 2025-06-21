@@ -30,6 +30,7 @@ namespace Trp.PostFx
 
 		protected override void OnInitialize()
 		{
+			base.OnInitialize();
 			_bokehKernels = new Vector4[SampleCount];
 		}
 

@@ -285,8 +285,9 @@ namespace Trp
 					TextureHandle src = _postFxPassGroup.RecordRenderGraph(ref passParams);
 					_finalBlitPass.RecordRenderGraph(ref passParams, src, blendSrc, blendDst);
 				}
+
 				//中間バッファから画面への描画。
-				_finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
+				if (camera.cameraType != CameraType.Game) _finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);
