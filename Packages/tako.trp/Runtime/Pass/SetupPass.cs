@@ -99,14 +99,14 @@ namespace Trp
 
 			ImportResourceParams importBackbufferParams = new()
 			{
-				clearOnFirstUse = clearColor,
+				clearOnFirstUse = false,
 				clearColor = clearColor ? Color.clear : camera.backgroundColor.linear,
 				discardOnLastUse = false,
 			};
 
 			ImportResourceParams importBackbufferParamsDepth = new()
 			{
-				clearOnFirstUse = clearDepth,
+				clearOnFirstUse = false,
 				discardOnLastUse = false,
 			};
 
