@@ -287,7 +287,7 @@ namespace Trp
 				}
 
 				//中間バッファから画面への描画。
-				if (camera.cameraType != CameraType.Game) _finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
+				_finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);
