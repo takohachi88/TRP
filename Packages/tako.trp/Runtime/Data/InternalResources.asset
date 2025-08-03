@@ -18,3 +18,5 @@ MonoBehaviour:
   _coreBlitColorAndDepthShader: {fileID: 4800000, guid: 9e98a857e08dace4286b14299287a83d, type: 3}
   _copyDepthShader: {fileID: 4800000, guid: cec0e7a07808a0f4e9870e0abd01f4b5, type: 3}
   _postProcessLutShader: {fileID: 4800000, guid: 3711d3bc7f160e1458cd1858bf603541, type: 3}
+  _spriteUnlitMaterial: {fileID: 2100000, guid: 643cf33ea64fe9743b295759d930099e, type: 2}
+  _uiMaterial: {fileID: 2100000, guid: 57cbf722553ebd54daf0395e57296468, type: 2}

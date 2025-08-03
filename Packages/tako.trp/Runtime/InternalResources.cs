@@ -14,6 +14,9 @@ namespace Trp
 		[SerializeField] private Shader _copyDepthShader;
 		[SerializeField] private Shader _postProcessLutShader;
 
+		[SerializeField] private Material _spriteUnlitMaterial;
+		[SerializeField] private Material _uiMaterial;
+
 		public Shader CameraBlitShader => _cameraBlitShader;
 		public PostFxPassGroup PostFxGroup => _postFxPassGroup;
 
@@ -21,5 +24,8 @@ namespace Trp
 		public Shader CoreBlitColorAndDepthShader => _coreBlitColorAndDepthShader;
 		public Shader CopyDepthShader => _copyDepthShader;
 		public Shader PostProcessLutShader => _postProcessLutShader;
+
+		public Material SpriteUnlitMaterial => _spriteUnlitMaterial;
+		public Material UIMaterial => _uiMaterial;
 	}
 }

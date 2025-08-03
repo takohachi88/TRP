@@ -60,6 +60,10 @@ namespace Trp
 		/// </summary>
 		public override string renderPipelineShaderTag => "Trp";
 
+		public override Material defaultMaterial => base.defaultMaterial;
+		public override Material default2DMaterial => _internalResources.SpriteUnlitMaterial;
+		public override Material defaultUIMaterial => _internalResources.UIMaterial;
+
 		protected override RenderPipeline CreatePipeline()
 		{
 #if UNITY_EDITOR
