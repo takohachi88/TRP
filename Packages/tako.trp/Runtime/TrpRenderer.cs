@@ -22,7 +22,7 @@ namespace Trp
 		/// backbufferに描画する最後のGameカメラであるかどうか。
 		/// </summary>
 		public bool IsLastToBackbuffer { get; init; }
-		internal InternalResources InternalResources { get; init; }
+		internal TrpResources Resources { get; init; }
 		public PostFxPassGroup PostFxPassGroup { get; init; }
 	}
 
@@ -71,17 +71,17 @@ namespace Trp
 
 		private readonly CameraTextures _cameraTextures = new();
 
-		internal TrpRenderer(TrpCommonSettings commonSettings, InternalResources internalResources)
+		internal TrpRenderer(TrpCommonSettings commonSettings, TrpResources resources)
 		{
 			_commonSettings = commonSettings;
 
-			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(internalResources.CoreBlitShader);
-			_copyDepthMaterial = CoreUtils.CreateEngineMaterial(internalResources.CopyDepthShader);
+			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CoreBlitShader);
+			_copyDepthMaterial = CoreUtils.CreateEngineMaterial(resources.CopyDepthShader);
 
 			_copyColorPass = new(_coreBlitMaterial);
 			_copyDepthPass = new(_copyDepthMaterial);
 
-			_lutPass = new(internalResources.PostProcessLutShader);
+			_lutPass = new(resources.PostFxLutShader);
 		}
 
 		/// <summary>
@@ -283,7 +283,6 @@ namespace Trp
 				if (usePostFx)
 				{
 					TextureHandle src = _postFxPassGroup.RecordRenderGraph(ref passParams);
-					_finalBlitPass.RecordRenderGraph(ref passParams, src, blendSrc, blendDst);
 				}
 
 				//中間バッファから画面への描画。

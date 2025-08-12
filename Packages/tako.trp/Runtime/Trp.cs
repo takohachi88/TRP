@@ -12,7 +12,7 @@ namespace Trp
 	public class Trp : RenderPipeline
 	{
 		private TrpRenderer _renderer;
-		private InternalResources _internalResources;
+		private TrpResources _resources;
 		private PostFxPassGroup _postFxPassGroup;
 
 		private readonly CameraComparer _comparer = new();
@@ -24,8 +24,10 @@ namespace Trp
 
 		private static readonly ProfilingSampler Sampler = new("TRP");
 
-		internal Trp(TrpCommonSettings commonSettings, InternalResources internalResources, PostFxPassGroup overridePostFxGroup)
+		internal Trp(TrpCommonSettings commonSettings, TrpResources resources)
 		{
+			_resources = resources;
+
 			//MSAAの設定。
 			int qualitySettingsMsaaSampleCount = QualitySettings.antiAliasing > 0 ? QualitySettings.antiAliasing : 1;
 			if (qualitySettingsMsaaSampleCount != (int)commonSettings.Msaa)
@@ -33,13 +35,12 @@ namespace Trp
 				QualitySettings.antiAliasing = (int)commonSettings.Msaa;
 			}
 
-			_renderer = new(commonSettings, internalResources);
-			RenderingUtils.Initialize(internalResources.CameraBlitShader);
-			Blitter.Initialize(internalResources.CoreBlitShader, internalResources.CoreBlitColorAndDepthShader);
+			_renderer = new(commonSettings, _resources);
+			RenderingUtils.Initialize(_resources.CameraBlitShader);
+			Blitter.Initialize(_resources.CoreBlitShader, _resources.CoreBlitColorAndDepthShader);
 			RTHandles.Initialize(Screen.width, Screen.height);
 			CameraCaptureBridge.enabled = true;
-			_internalResources = internalResources;
-			_postFxPassGroup = overridePostFxGroup ? overridePostFxGroup : internalResources.PostFxGroup;
+			_postFxPassGroup = _resources.PostFxGroup;
 			_postFxPassGroup.Initialize();
 
 			VolumeManager.instance.Initialize();
@@ -79,7 +80,7 @@ namespace Trp
 					Camera = _otherCameras[i],
 					IsFirstToBackbuffer = false,
 					IsLastToBackbuffer = false,
-					InternalResources = _internalResources,
+					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
 				};
 				_renderer.Render(renderParams);
@@ -95,7 +96,7 @@ namespace Trp
 					Camera = _gameViewCameras[i],
 					IsFirstToBackbuffer = i == 0,
 					IsLastToBackbuffer = i == _gameViewCameras.Count - 1,
-					InternalResources = _internalResources,
+					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
 				};
 				using (new ProfilingScope(Sampler))

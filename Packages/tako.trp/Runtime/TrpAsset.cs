@@ -50,36 +50,31 @@ namespace Trp
 	public class TrpAsset : RenderPipelineAsset<Trp>
 	{
 		[SerializeField] private TrpCommonSettings _commonSettings;
-		[SerializeField] private PostFxPassGroup _overridePostFxGroup;
-		[SerializeField, HideInInspector] private InternalResources _internalResources;
-
-		[SerializeField] private TrpGlobalSettings _globalSettings;
 
 		/// <summary>
 		/// シェーダーのRenderPipelineタグで指定するタグ名。
 		/// </summary>
 		public override string renderPipelineShaderTag => "Trp";
 
+		private TrpResources _resources;
+
 		public override Material defaultMaterial => base.defaultMaterial;
-		public override Material default2DMaterial => _internalResources.SpriteUnlitMaterial;
-		public override Material defaultUIMaterial => _internalResources.UIMaterial;
+		public override Material default2DMaterial => _resources?.SpriteUnlitMaterial;
+		public override Material defaultUIMaterial => _resources?.UIMaterial;
 
 		protected override RenderPipeline CreatePipeline()
 		{
 #if UNITY_EDITOR
-			_internalResources = AssetDatabase.LoadAssetAtPath<InternalResources>("Packages/tako.trp/Runtime/Data/InternalResources.asset");
-
 			//この処理がないとBlitter.Initializeでエラーになる。
-			if (!_globalSettings)
+			TrpGlobalSettings globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
+			if (RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref globalSettings, "Assets/TrpGlobalSettings.asset", true))
 			{
-				_globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
-				if(RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref _globalSettings, "Assets/TrpGlobalSettings.asset", true))
-				{
-					AssetDatabase.Refresh();
-				}
+				AssetDatabase.SaveAssetIfDirty(globalSettings);
 			}
 #endif
-			return new Trp(_commonSettings, _internalResources, _overridePostFxGroup);
+			_resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+
+			return new Trp(_commonSettings, _resources);
 		}
 	}
 }
