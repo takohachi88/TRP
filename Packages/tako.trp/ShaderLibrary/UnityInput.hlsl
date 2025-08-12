@@ -9,6 +9,12 @@ float4x4 unity_ObjectToWorld;
 float4x4 unity_WorldToObject;
 float4 unity_LODFade;
 real4 unity_WorldTransformParams;
+
+float4 unity_SpriteColor;
+//x : FlipX
+//y : FlipY
+//zw: 未使用
+float4 unity_SpriteProps;
 CBUFFER_END
 
 float4x4 unity_MatrixVP;
