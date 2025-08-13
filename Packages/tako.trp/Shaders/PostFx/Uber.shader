@@ -70,7 +70,7 @@
 
             //LUTの適用。
             #if defined(_LUT)
-            output.rgb = ApplyLut2D(TEXTURE2D_ARGS(_Lut, sampler_Lut), output.rgb, _LutParams.xyz);
+            output.rgb = ApplyLut2D(TEXTURE2D_ARGS(_Lut, sampler_Lut), saturate(LinearToLogC(output.rgb)), _LutParams.xyz);
             #endif
 
             //ビネット。

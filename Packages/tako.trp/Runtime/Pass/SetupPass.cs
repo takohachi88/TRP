@@ -148,7 +148,7 @@ namespace Trp
 			TextureDesc desc = new(attachmentSize.x, attachmentSize.y)
 			{
 				name = "ColorAttachment",
-				format = GraphicsFormat.R16G16B16A16_SFloat,
+				format = RenderingUtils.ColorFormat(passParams.UseHdr),
 				clearBuffer = clearColor,
 				clearColor = clearColor ? camera.backgroundColor.linear : Color.clear,
 			};

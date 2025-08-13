@@ -3,7 +3,7 @@ Shader "TRP/Unlit"
     Properties
     {
         [MainTexture][NoScaleOfset] _BaseMap ("Base Map", 2D) = "white" {}
-        [MainColor] _BaseColor ("Base Color", color) = (1, 1, 1, 1)
+        [MainColor][HDR] _BaseColor ("Base Color", color) = (1, 1, 1, 1)
 
 
         [Header(Common Settings)]

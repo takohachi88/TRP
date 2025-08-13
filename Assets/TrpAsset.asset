@@ -15,13 +15,12 @@ MonoBehaviour:
   _commonSettings:
     _renderScale: 1
     _useHdr: 1
-    _msaaSamples: 0
+    _msaaSamples: 1
     _depthBits: 32
     _shadowSettings:
       MaxShadowDistance: 50
     _useOpaqueTextureOnReflection: 0
     _useDepthTextureOnReflection: 0
     _useLightPerObject: 0
-    _postFxLutSize: 32
+    _postFxLutSize: 20
     _postFxLutFilterMode: 1
-  _globalSettings: {fileID: 0}

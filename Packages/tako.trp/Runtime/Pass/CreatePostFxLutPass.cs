@@ -100,8 +100,9 @@ namespace Trp.PostFx
 			TextureDesc desc = new(lutSize * lutSize, lutSize)
 			{
 				name = "PostProcessLut",
-				format = passParams.UseHdr ? GraphicsFormat.R8G8B8A8_UNorm : GraphicsFormat.B10G11R11_UFloatPack32,
+				format = RenderingUtils.ColorFormat(true),
 				filterMode = lutFilterMode,
+				wrapMode = TextureWrapMode.Clamp,
 			};
 			passData.Lut = passParams.CameraTextures.PostProcessLut = renderGraph.CreateTexture(desc);
 			passData.Material = _material;

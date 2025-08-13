@@ -39,8 +39,6 @@ namespace Trp.PostFx
 		[SerializeField] private Shader _lfssShader;
 		private Material _lfssMaterial;
 
-		private static readonly GraphicsFormat _colorFormat = GraphicsFormat.R16G16B16A16_SFloat;
-
 		private static readonly ProfilingSampler SamplerBlitBloomMipmaps = ProfilingSampler.Get(TrpProfileId.BlitBloomMipmaps);
 		private static readonly ProfilingSampler SamplerBloomComposite = ProfilingSampler.Get(TrpProfileId.BloomComposite);
 		private static readonly ProfilingSampler SamplerLfss = ProfilingSampler.Get(TrpProfileId.LensFlareScreenSpace);
@@ -51,8 +49,8 @@ namespace Trp.PostFx
 			for (int i = 0; i < MAX_PYRAMID_SIZE; i++)
 			{
 				_bloomUpsampleMaterials[i] = CoreUtils.CreateEngineMaterial(_bloomShader);
-				_bloomMipUpNames[i] = $"_BloomMipUp{i}";
-				_bloomMipDownNames[i] = $"_BloomMipDown{i}";
+				_bloomMipUpNames[i] = $"BloomMipUp{i}";
+				_bloomMipDownNames[i] = $"BloomMipDown{i}";
 			}
 
 			_lfssMaterial = CoreUtils.CreateEngineMaterial(_lfssShader);
@@ -190,7 +188,7 @@ namespace Trp.PostFx
 			{
 				TextureDesc desc = new(tw, th)
 				{
-					format = _colorFormat,
+					format = RenderingUtils.ColorFormat(true),
 					name = _bloomMipDownNames[0],
 					filterMode = FilterMode.Bilinear,
 				};
@@ -408,7 +406,7 @@ namespace Trp.PostFx
 
 			TextureDesc streakTextureDesc = new(width, height)
 			{
-				format = _colorFormat,
+				format = RenderingUtils.ColorFormat(true),
 				clearBuffer = true,
 				filterMode = FilterMode.Bilinear,
 			};

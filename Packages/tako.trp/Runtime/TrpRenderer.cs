@@ -279,14 +279,16 @@ namespace Trp
 				//Gizmoの描画。
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentDepth, GizmoSubset.PreImageEffects);
 
+
+				TextureHandle postFxDst = passParams.CameraTextures.AttachmentColor;
 				//ポストエフェクトの描画。
 				if (usePostFx)
 				{
-					TextureHandle src = _postFxPassGroup.RecordRenderGraph(ref passParams);
+					postFxDst = _postFxPassGroup.RecordRenderGraph(ref passParams);
 				}
 
 				//中間バッファから画面への描画。
-				_finalBlitPass.RecordRenderGraph(ref passParams, passParams.CameraTextures.AttachmentColor, blendSrc, blendDst);
+				_finalBlitPass.RecordRenderGraph(ref passParams, postFxDst, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);

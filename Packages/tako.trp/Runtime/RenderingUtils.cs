@@ -60,7 +60,7 @@ namespace Trp
 			return !isBackbuffer;
 		}
 
-		public static GraphicsFormat ColorFormat(bool useHdr) => useHdr ? GraphicsFormat.R16G16B16A16_UNorm : GraphicsFormat.R8G8B8A8_UNorm;
+		public static GraphicsFormat ColorFormat(bool useHdr) => useHdr ? GraphicsFormat.B10G11R11_UFloatPack32 : GraphicsFormat.R8G8B8A8_UNorm;
 		public static GraphicsFormat DepthStencilFormat => GraphicsFormat.D32_SFloat_S8_UInt;
 		public static GraphicsFormat DepthFormat => GraphicsFormat.R32_SFloat;
 
