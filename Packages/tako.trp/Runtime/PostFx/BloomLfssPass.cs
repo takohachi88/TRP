@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
@@ -10,7 +9,7 @@ namespace Trp.PostFx
 	/// BloomとScreenSpaceLensFlareのポストエフェクト。
 	/// URPから移植。
 	/// </summary>
-	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Bloom", fileName = nameof(BloomLfssPass))]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "BloomLfss", fileName = nameof(BloomLfssPass))]
 	public class BloomLfssPass : PostFxPassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");
@@ -449,7 +448,7 @@ namespace Trp.PostFx
 					Camera camera = data.camera;
 					LensFlareScreenSpace lfss = data.ScreenSpaceLensFlare;
 
-					LensFlareTrp.DoLensFlareScreenSpaceCommon(
+					LensFlareScreenSpaceTrp.DoLensFlareScreenSpaceCommon(
 						data.material,
 						camera,
 						data.AttachmentSize.x,

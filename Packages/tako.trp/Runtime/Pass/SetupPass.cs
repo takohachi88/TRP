@@ -14,6 +14,7 @@ namespace Trp
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Setup);
 		private static readonly int IdAttachmentSize = Shader.PropertyToID("_AttachmentSize");
 		private static readonly int IdAspectFit = Shader.PropertyToID("_AspectFit");
+		private static readonly int IdScaledScreenParams = Shader.PropertyToID("_ScaledScreenParams");
 		private static readonly int IdTime = Shader.PropertyToID("_Time");
 
 		private class PassData
@@ -176,6 +177,9 @@ namespace Trp
 
 				//アスペクト比の補正に用いるパラメータ。
 				cmd.SetGlobalVector(IdAspectFit, passData.AspectFit);
+
+				//dynamic scaling非対応だが、LensFlareなどで用いられるため必要。
+				cmd.SetGlobalVector(IdScaledScreenParams, new (attachmentSize.x, attachmentSize.y, 1.0f + 1.0f / attachmentSize.x, 1.0f + 1.0f / attachmentSize.y));
 
 				//TODO:ライティング関係の設定。
 

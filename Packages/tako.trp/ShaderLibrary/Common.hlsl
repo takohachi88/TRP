@@ -22,21 +22,30 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
-#define TEXTURE2D_X(textureName) TEXTURE2D(textureName)
-#define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)
-#define TEXTURE2D_X_FLOAT(textureName) TEXTURE2D_FLOAT(textureName)
 #include "Packages/takolib.common/ShaderLibrary/Common.hlsl"
 
 //rcp(2 * PI)
 #define PI_TWO_RCP 0.159155
 
+//XR対応ないので「_X」は基本使わないが、LensFlareCommon.hlslなどで必要になってしまうので定義する。
+#define TEXTURE2D_X(textureName) TEXTURE2D(textureName)
+#define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)
+#define TEXTURE2D_X_FLOAT(textureName) TEXTURE2D_FLOAT(textureName)
+static uint unity_StereoEyeIndex;
+#define SLICE_ARRAY_INDEX   unity_StereoEyeIndex
 #define SAMPLE_TEXTURE2D_X(textureName, samplerName, coord2) SAMPLE_TEXTURE2D(textureName, samplerName, coord2)
 #define SAMPLE_TEXTURE2D_X_LOD(textureName, samplerName, coord2, lod) SAMPLE_TEXTURE2D_LOD(textureName, samplerName, coord2, lod)
+#define LOAD_TEXTURE2D_X(textureName, unCoord2) LOAD_TEXTURE2D_ARRAY(textureName, unCoord2, SLICE_ARRAY_INDEX)
+#define LOAD_TEXTURE2D_X_LOD(textureName, unCoord2, lod) LOAD_TEXTURE2D_ARRAY_LOD(textureName, unCoord2, SLICE_ARRAY_INDEX, lod)
 
 float2 _AspectFit;
 
 float4 unity_FogParams;
 real4  unity_FogColor;
+
+float4 _ScaledScreenParams;
+
+float4 _Time;
 
 half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool fitAspect)
 {
@@ -177,5 +186,10 @@ half UiAlphaRoundUp(half alpha)
     return round(alpha * alphaPrecision) * invAlphaPrecision;
 }
 
+//LensFlareCommonで必要な関数。
+float4 GetScaledScreenParams()
+{
+    return _ScaledScreenParams;
+}
 
 #endif

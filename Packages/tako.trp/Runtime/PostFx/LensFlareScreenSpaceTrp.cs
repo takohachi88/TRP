@@ -1,9 +1,13 @@
-namespace UnityEngine.Rendering
+using UnityEngine;
+using UnityEngine.Rendering;
+
+namespace Trp.PostFx
 {
 	/// <summary>
-	/// Core RP LibraryのLensFlareCommonSRP.csを改造。ScreenSpaceLensFlareの部分のみ抜き出し。
+	/// Core RP LibraryのLensFlareCommonSRP.csのScreenSpaceLensFlareの部分のみ抜き出して改造。
+	/// Streakを複数出せるなど、機能の拡張を行っている。
 	/// </summary>
-	public sealed class LensFlareTrp
+	public sealed class LensFlareScreenSpaceTrp
 	{
 		internal static readonly int _LensFlareScreenSpaceBloomMipTexture = Shader.PropertyToID("_LensFlareScreenSpaceBloomMipTexture");
 		internal static readonly int _LensFlareScreenSpaceResultTexture = Shader.PropertyToID("_LensFlareScreenSpaceResultTexture");
@@ -64,7 +68,7 @@ namespace UnityEngine.Rendering
 			Vector4 parameters5,
 			int streaksCount,
 			float streaksSampleCountMultiplier,
-			Rendering.CommandBuffer cmd,
+			CommandBuffer cmd,
 			RTHandle result,
 			bool debugView)
 		{
@@ -142,7 +146,7 @@ namespace UnityEngine.Rendering
 					cmd.SetGlobalFloat(IdStreaksOrientation, orientation + (j / (float)streaksCount) * 2f);
 
 					// Prefilter
-					Rendering.CoreUtils.SetRenderTarget(cmd, streakTextureTmp);
+					CoreUtils.SetRenderTarget(cmd, streakTextureTmp);
 					DrawQuad(cmd, lensFlareShader, prefilterPass);
 
 					int startIndex = 0;
@@ -154,7 +158,7 @@ namespace UnityEngine.Rendering
 						even = (i % 2 == 0);
 						cmd.SetGlobalInt(_LensFlareScreenSpaceMipLevel, i);
 						cmd.SetGlobalTexture(_LensFlareScreenSpaceStreakTex, even ? streakTextureTmp : streakTextureTmp2);
-						Rendering.CoreUtils.SetRenderTarget(cmd, even ? streakTextureTmp2 : streakTextureTmp);
+						CoreUtils.SetRenderTarget(cmd, even ? streakTextureTmp2 : streakTextureTmp);
 
 						DrawQuad(cmd, lensFlareShader, downSamplePass);
 					}
@@ -169,7 +173,7 @@ namespace UnityEngine.Rendering
 						even = (i % 2 == 0);
 						cmd.SetGlobalInt(_LensFlareScreenSpaceMipLevel, (i - startIndex));
 						cmd.SetGlobalTexture(_LensFlareScreenSpaceStreakTex, even ? streakTextureTmp : streakTextureTmp2);
-						Rendering.CoreUtils.SetRenderTarget(cmd, even ? streakTextureTmp2 : streakTextureTmp);
+						CoreUtils.SetRenderTarget(cmd, even ? streakTextureTmp2 : streakTextureTmp);
 						DrawQuad(cmd, lensFlareShader, upSamplePass);
 					}
 
@@ -182,12 +186,12 @@ namespace UnityEngine.Rendering
 			}
 
 			// Composition (Flares + Streaks)
-			Rendering.CoreUtils.SetRenderTarget(cmd, result);
+			CoreUtils.SetRenderTarget(cmd, result);
 			DrawQuad(cmd, lensFlareShader, compositionPass);
 
 			// Final pass, we add the result of the previous pass to the Original Bloom Texture.
 			cmd.SetGlobalTexture(_LensFlareScreenSpaceResultTexture, result);
-			Rendering.CoreUtils.SetRenderTarget(cmd, originalBloomTexture);
+			CoreUtils.SetRenderTarget(cmd, originalBloomTexture);
 			DrawQuad(cmd, lensFlareShader, writeToBloomPass);
 		}
 

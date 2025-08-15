@@ -16,6 +16,8 @@ namespace Trp
 		BlitBloomMipmaps,
 		BloomComposite,
 		LensFlareScreenSpace,
+		LensFlareDataDrivenOcclusion,
+		LensFlareDataDriven,
 		FinalBlit,
 		Ui,
 		WireOverlay,

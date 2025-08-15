@@ -43,11 +43,26 @@ namespace Trp
 			_postFxPassGroup = _resources.PostFxGroup;
 			_postFxPassGroup.Initialize();
 
+			LensFlareCommonSRP.mergeNeeded = 0;
+			LensFlareCommonSRP.maxLensFlareWithOcclusionTemporalSample = 1;
+			LensFlareCommonSRP.Initialize();
 			VolumeManager.instance.Initialize();
 
 			_renderGraph.nativeRenderPassesEnabled = true;
 
 			GraphicsSettings.useScriptableRenderPipelineBatching = true;
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			base.Dispose(disposing);
+			LensFlareCommonSRP.Dispose();
+			VolumeManager.instance.Deinitialize();
+			_renderer.Dispose();
+			CameraCaptureBridge.enabled = false;
+			_renderGraph.Cleanup();
+			RenderingUtils.Dispose();
+			Blitter.Cleanup();
 		}
 
 		public class CameraComparer : IComparer<Camera>
@@ -109,17 +124,6 @@ namespace Trp
 			string s=null;
 			foreach (var v in _otherCameras) s+= v.ToString();
 			foreach (var v in _gameViewCameras) s += v.ToString();
-		}
-
-		protected override void Dispose(bool disposing)
-		{
-			base.Dispose(disposing);
-			VolumeManager.instance.Deinitialize();
-			_renderer.Dispose();
-			CameraCaptureBridge.enabled = false;
-			_renderGraph.Cleanup();
-			RenderingUtils.Dispose();
-			Blitter.Cleanup();
 		}
 	}
 }
