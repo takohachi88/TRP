@@ -7,7 +7,10 @@ Shader "TRP/Custom/UI/#NAME#"
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 10
+        [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
         [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
+        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
+        [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
 
         _StencilComp ("Stencil Comparison", Float) = 8
         _Stencil ("Stencil ID", Float) = 0
@@ -45,6 +48,7 @@ Shader "TRP/Custom/UI/#NAME#"
         ZWrite Off
         ZTest [unity_GUIZTestMode]
         Blend [_BlendSrc][_BlendDst]
+        BlendOp [_BlendOp]
         ColorMask [_ColorMask]
 
         Pass
@@ -82,6 +86,7 @@ Shader "TRP/Custom/UI/#NAME#"
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
             half _MultiplyRgbA;
+            int _VertexColorBlend;
             half4 _TextureSampleAdd;
             float4 _ClipRect;
             float4 _MainTex_ST;
@@ -113,22 +118,24 @@ Shader "TRP/Custom/UI/#NAME#"
             {
                 input.color.a = UiAlphaRoundUp(input.color.a);
 
-                half4 color = input.color * (SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv) + _TextureSampleAdd);
+                half4 output = (SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv) + _TextureSampleAdd);
+                VERTEX_COLOR_BLEND(output, input.color);
 
                 #ifdef UNITY_UI_CLIP_RECT
                 half2 m = saturate((_ClipRect.zw - _ClipRect.xy - abs(input.mask.xy)) * input.mask.zw);
-                color.a *= m.x * m.y;
+                output.a *= m.x * m.y;
                 #endif
 
                 #ifdef UNITY_UI_ALPHACLIP
-                clip (color.a - 0.001);
+                clip (output.a - 0.001);
                 #endif
 
-                if(_MultiplyRgbA) color.rgb *= color.a;
+                MULTIPLY_RGB_A(output);
 
-                return color;
+                return output;
             }
         ENDHLSL
         }
     }
+    CustomEditor "TakoLibEditor.Common.TakoLibShaderGui"
 }

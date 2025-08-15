@@ -2,12 +2,15 @@ Shader "TRP/Sprite/#NAME#"
 {
     Properties
     {
-        [MainTexture][NoScaleOffset] _MainTex ("Sprite Texture", 2D) = "white" {}
+        [MainTexture][NoScaleOffset][PerRendererData] _MainTex ("Sprite Texture", 2D) = "white" {}
 
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 10
+        [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
         [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
+        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
+        [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
     }
 
     SubShader
@@ -20,6 +23,7 @@ Shader "TRP/Sprite/#NAME#"
         }
 
         Blend [_BlendSrc][_BlendDst]
+        BlendOp [_BlendOp]
         Cull Off
         ZWrite Off
 
@@ -58,6 +62,7 @@ Shader "TRP/Sprite/#NAME#"
             
             CBUFFER_START(UnityPerMaterial)
             half _MultiplyRgbA;
+            int _VertexColorBlend;
             CBUFFER_END
 
             Varyings UnlitVertex(Attributes input)
@@ -76,11 +81,13 @@ Shader "TRP/Sprite/#NAME#"
 
             half4 UnlitFragment(Varyings input) : SV_Target
             {
-                half4 output = input.color * SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
-                if (_MultiplyRgbA) output.rgb *= output.a;
+                half4 output = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, input.uv);
+                VERTEX_COLOR_BLEND(output, input.color);
+                MULTIPLY_RGB_A(output);
                 return output;
             }
             ENDHLSL
         }
     }
+    CustomEditor "TakoLibEditor.Common.TakoLibShaderGui"
 }

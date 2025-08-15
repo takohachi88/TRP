@@ -8,7 +8,11 @@ Shader "TRP/Unlit"
 
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
-        [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 0
+        [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 10
+        [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
+        [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
+        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
+        [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
         
         [Toggle] _ZWrite ("Z Write", int) = 1
         
@@ -40,6 +44,7 @@ Shader "TRP/Unlit"
         Pass
         {
             Blend [_BlendSrc][_BlendDst]
+            BlendOp [_BlendOp]
             ZWrite [_ZWrite]
             Cull [_Cull]
 
@@ -65,9 +70,9 @@ Shader "TRP/Unlit"
             SAMPLER(sampler_BaseMap);
 
             CBUFFER_START(UnityPerMaterial)
-
             half4 _BaseColor;
-
+            int _MultiplyRgbA;
+            int _VertexColorBlend;
             CBUFFER_END
 
 
@@ -81,7 +86,9 @@ Shader "TRP/Unlit"
 
             half4 Fragment (Varyings input) : SV_Target
             {
-                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_LinearClamp, input.uv) * _BaseColor;
+                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_LinearClamp, input.uv);
+                VERTEX_COLOR_BLEND(output, _BaseColor);
+                MULTIPLY_RGB_A(output);
                 return output;
             }
 
@@ -113,4 +120,5 @@ Shader "TRP/Unlit"
         }
 
     }
+    CustomEditor "TakoLibEditor.Common.TakoLibShaderGui"
 }

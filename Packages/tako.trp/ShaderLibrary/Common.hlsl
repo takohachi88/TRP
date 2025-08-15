@@ -25,6 +25,7 @@
 #define TEXTURE2D_X(textureName) TEXTURE2D(textureName)
 #define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)
 #define TEXTURE2D_X_FLOAT(textureName) TEXTURE2D_FLOAT(textureName)
+#include "Packages/takolib.common/ShaderLibrary/Common.hlsl"
 
 //rcp(2 * PI)
 #define PI_TWO_RCP 0.159155
