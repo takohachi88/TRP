@@ -17,7 +17,7 @@ namespace Trp
 
 		private readonly CameraComparer _comparer = new();
 
-		private static readonly RenderGraph _renderGraph = new RenderGraph("TRP Render Graph");
+		private readonly RenderGraph _renderGraph = new RenderGraph("TRP Render Graph");
 
 		private readonly List<Camera> _renderTextureCameras;//描画先がRenderTexture。
 		private readonly List<Camera> _backbufferCameras;//描画先がbackbuffer。
