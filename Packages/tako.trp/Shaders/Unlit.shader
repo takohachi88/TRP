@@ -16,7 +16,7 @@ Shader "TRP/Unlit"
         
         [Toggle] _ZWrite ("Z Write", int) = 1
         
-        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", int) = 1
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", int) = 2
 
         _Stencil ("Stencil ID", int) = 0
         [Enum(UnityEngine.Rendering.StencilOp)] _StencilOp("Stencil Operation", int) = 0
@@ -31,6 +31,7 @@ Shader "TRP/Unlit"
         {
             "Queue" = "Geometry"
             "PreviewType" = "Sphere"
+            "RenderPipeline" = "Trp"
         }
         Stencil
         {

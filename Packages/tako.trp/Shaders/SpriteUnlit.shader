@@ -19,7 +19,7 @@ Shader "TRP/Sprite/SpriteUnlit"
         {
             "Queue" = "Transparent"
             "RenderType" = "Transparent"
-            "RenderPipeline" = "UniversalPipeline"
+            "RenderPipeline" = "Trp"
         }
 
         Blend [_BlendSrc][_BlendDst]

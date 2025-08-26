@@ -32,6 +32,7 @@ Shader "TRP/UI/Default"
             "RenderType" = "Transparent"
             "PreviewType" = "Plane"
             "CanUseSpriteAtlas" = "True"
+            "RenderPipeline" = "Trp"
         }
 
         Stencil

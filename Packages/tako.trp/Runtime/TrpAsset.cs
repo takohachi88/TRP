@@ -59,7 +59,8 @@ namespace Trp
 
 		private TrpResources _resources;
 
-		public override Material defaultMaterial => base.defaultMaterial;
+		public override Shader defaultShader => _resources?.UnlitShader;
+		public override Material defaultMaterial => _resources?.UnlitMaterial; //TODO:Litにする。
 		public override Material default2DMaterial => _resources?.SpriteUnlitMaterial;
 		public override Material defaultUIMaterial => _resources?.UIMaterial;
 

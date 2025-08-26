@@ -27,6 +27,8 @@ namespace Trp
 		[SerializeField][ResourcePath("Shaders/Utilities/CopyDepth.shader")] private Shader _copyDepthShader;
 		[SerializeField][ResourcePath("Shaders/PostFx/CreatePostFxLut.shader")] private Shader _postFxLutShader;
 
+		[SerializeField][ResourcePath("Shaders/Unlit.shader")] private Shader _unlitShader;
+		[SerializeField][ResourcePath("Materials/trp_unlit.mat")] private Material _unlitMaterial;
 		[SerializeField][ResourcePath("Materials/trp_sprite_unlit.mat")] private Material _spriteUnlitMaterial;
 		[SerializeField][ResourcePath("Materials/trp_ui_default.mat")] private Material _uiMaterial;
 
@@ -38,6 +40,8 @@ namespace Trp
 		public Shader CopyDepthShader => _copyDepthShader;
 		public Shader PostFxLutShader => _postFxLutShader;
 
+		public Shader UnlitShader => _unlitShader;
+		public Material UnlitMaterial => _unlitMaterial;
 		public Material SpriteUnlitMaterial => _spriteUnlitMaterial;
 		public Material UIMaterial => _uiMaterial;
 	}
