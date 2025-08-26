@@ -26,7 +26,7 @@ namespace Trp
 		internal CopyDepthPass(Shader copyDepthShader)
 		{
 			_copyDepthToTargetMaterial = CoreUtils.CreateEngineMaterial(copyDepthShader);
-			_copyDepthToTextureMaterial = new(_copyDepthToTargetMaterial);
+			_copyDepthToTextureMaterial = CoreUtils.CreateEngineMaterial(copyDepthShader);
 		}
 
 		internal void Dispose()
@@ -62,9 +62,7 @@ namespace Trp
 					passData.Src = cameraTextures.AttachmentDepth;
 					passData.Material = _copyDepthToTextureMaterial;
 
-					if (passParams.IsSceneViewOrPreview) builder.SetRenderAttachmentDepth(cameraTextures.TextureDepth, AccessFlags.WriteAll);
-					else builder.SetRenderAttachment(cameraTextures.TextureDepth, 0, AccessFlags.WriteAll);
-
+					builder.SetRenderAttachment(cameraTextures.TextureDepth, 0, AccessFlags.WriteAll);
 					builder.SetGlobalTextureAfterPass(cameraTextures.TextureDepth, TrpConstants.ShaderIds.CameraDepthTexture);
 					break;
 				//TargetDepthへのコピー。現状はシーンのGizmoやgridの適切な描画のために必要な処理。

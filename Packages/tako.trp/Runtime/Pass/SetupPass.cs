@@ -161,7 +161,7 @@ namespace Trp
 			TextureDesc depthDesc = new(attachmentSize.x, attachmentSize.y)
 			{
 				name = "CameraDepthTexture",
-				format = camera.cameraType == CameraType.Game ? RenderingUtils.DepthFormat : RenderingUtils.DepthStencilFormat,
+				format = RenderingUtils.DepthFormat,
 				clearBuffer = true,
 			};
 			cameraTextures.TextureDepth = renderGraph.CreateTexture(depthDesc);
