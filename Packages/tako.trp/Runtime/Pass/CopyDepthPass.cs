@@ -12,7 +12,8 @@ namespace Trp
 	{
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.CopyDepth);
 
-		private readonly Material _copyDepthMaterial;
+		private readonly Material _copyDepthToTargetMaterial;
+		private readonly Material _copyDepthToTextureMaterial;
 
 		private static readonly GlobalKeyword KeywordOutputDepth = GlobalKeyword.Create("_OUTPUT_DEPTH");
 
@@ -22,9 +23,16 @@ namespace Trp
 			ToTarget,
 		}
 
-		internal CopyDepthPass(Material coreBlitMaterial)
+		internal CopyDepthPass(Shader copyDepthShader)
 		{
-			_copyDepthMaterial = coreBlitMaterial;
+			_copyDepthToTargetMaterial = CoreUtils.CreateEngineMaterial(copyDepthShader);
+			_copyDepthToTextureMaterial = new(_copyDepthToTargetMaterial);
+		}
+
+		internal void Dispose()
+		{
+			CoreUtils.Destroy(_copyDepthToTargetMaterial);
+			CoreUtils.Destroy(_copyDepthToTextureMaterial);
 		}
 
 		public class PassData
@@ -37,6 +45,8 @@ namespace Trp
 
 		internal void RecordRenderGraph(ref PassParams passParams, CopyDepthMode mode)
 		{
+			if (!passParams.UseDepthTexture) return;
+
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
@@ -50,6 +60,7 @@ namespace Trp
 				//DepthTextureへのコピー。
 				case CopyDepthMode.ToDepthTexture:
 					passData.Src = cameraTextures.AttachmentDepth;
+					passData.Material = _copyDepthToTextureMaterial;
 
 					if (passParams.IsSceneViewOrPreview) builder.SetRenderAttachmentDepth(cameraTextures.TextureDepth, AccessFlags.WriteAll);
 					else builder.SetRenderAttachment(cameraTextures.TextureDepth, 0, AccessFlags.WriteAll);
@@ -59,12 +70,13 @@ namespace Trp
 				//TargetDepthへのコピー。現状はシーンのGizmoやgridの適切な描画のために必要な処理。
 				case CopyDepthMode.ToTarget:
 					passData.Src = cameraTextures.AttachmentDepth;
+					passData.Material = _copyDepthToTargetMaterial;
+
 					builder.SetRenderAttachmentDepth(cameraTextures.TargetDepth, AccessFlags.WriteAll);
 					//何かセットしないと警告が出る。
 					builder.SetRenderAttachment(cameraTextures.TargetColor, 0, AccessFlags.Write);
 					break;
 			}
-			passData.Material = _copyDepthMaterial;
 			passData.Camera = passParams.Camera;
 
 			builder.UseTexture(passData.Src, AccessFlags.Read);

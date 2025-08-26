@@ -61,7 +61,6 @@ namespace Trp
 		private readonly SetEditorTargetPass _setEditorTargetPass = new();
 
 		private readonly Material _coreBlitMaterial;
-		private readonly Material _copyDepthMaterial;
 
 		private readonly CameraTextures _cameraTextures = new();
 
@@ -70,10 +69,9 @@ namespace Trp
 			_commonSettings = commonSettings;
 
 			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CoreBlitShader);
-			_copyDepthMaterial = CoreUtils.CreateEngineMaterial(resources.CopyDepthShader);
 
 			_copyColorPass = new(_coreBlitMaterial);
-			_copyDepthPass = new(_copyDepthMaterial);
+			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
 		}
 
@@ -309,9 +307,9 @@ namespace Trp
 		public void Dispose()
 		{
 			_setupPass.Dispose();
+			_copyDepthPass.Dispose();
 			_postFxPassGroup.Dispose();
 			CoreUtils.Destroy(_coreBlitMaterial);
-			CoreUtils.Destroy(_copyDepthMaterial);
 			_lutPass.Dispose();
 		}
 	}
