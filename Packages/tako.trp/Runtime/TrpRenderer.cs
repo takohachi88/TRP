@@ -1,8 +1,9 @@
-using UnityEngine;
-using UnityEngine.Rendering;
+using System.Collections.Generic;
 using Trp.PostFx;
-using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine;
 using UnityEngine.Experimental.Rendering;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Trp
 {
@@ -11,15 +12,18 @@ namespace Trp
 	/// </summary>
 	internal readonly ref struct RendererParams
 	{
-		public RenderGraph RenderGraph { get; init; }
-		public ScriptableRenderContext Context { get; init; }
+		public readonly RenderGraph RenderGraph { get; init; }
+		public readonly ScriptableRenderContext Context { get; init; }
 		public Camera Camera { get; init; }
 		public bool IsFirstToBackbuffer { get; init; }
 		public bool IsLastToBackbuffer { get; init; }
 		public bool IsFirstCamera { get; init; }
-		internal TrpResources Resources { get; init; }
+		internal readonly TrpResources Resources { get; init; }
 		public PostFxPassGroup PostFxPassGroup { get; init; }
 		public bool TargetIsGameRenderTexture { get; init; }
+		public readonly IReadOnlyList<Camera> BackbufferCameras { get; init; }
+		public readonly IReadOnlyList<Camera> RenderTextureCameras { get; init; }
+		public readonly IReadOnlyList<Camera> EditorCameras { get; init; }
 	}
 
 
@@ -79,7 +83,7 @@ namespace Trp
 		/// カメラ一つ分の描画。
 		/// </summary>
 		/// <param name="rendererParams"></param>
-		internal void Render(RendererParams rendererParams)
+		internal void Render(ref RendererParams rendererParams)
 		{
 			//ローカル変数群。再取得・再定義せず必ずこれらを使うこと。
 			RenderGraph renderGraph = rendererParams.RenderGraph;
@@ -229,6 +233,9 @@ namespace Trp
 					IsFirstToBackbuffer = isFirstToBackbuffer,
 					IsLastToBackbuffer = isLastToBackbuffer,
 					IsFirstCamera = rendererParams.IsFirstCamera,
+					EditorCameras = rendererParams.BackbufferCameras,
+					RenderTextureCameras = rendererParams.RenderTextureCameras,
+					BackbufferCameras = rendererParams.BackbufferCameras,
 				};
 
 				//レンダリングの前段階的な処理。各種テクスチャの確保など。
@@ -263,12 +270,11 @@ namespace Trp
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentDepth, GizmoSubset.PreImageEffects);
 
 				//ポストエフェクトの描画。
-				TextureHandle postFxDst = passParams.CameraTextures.AttachmentColor;
-				if (usePostFx) postFxDst = _postFxPassGroup.RecordRenderGraph(ref passParams);
+				if (usePostFx) _postFxPassGroup.RecordRenderGraph(ref passParams);
 				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingPostProcessing);
 
 				//中間バッファから画面への描画。
-				if(isLastToBackbuffer || isSceneViewOrPreview) _finalBlitPass.RecordRenderGraph(ref passParams, postFxDst, blendSrc, blendDst);
+				if(isLastToBackbuffer || isSceneViewOrPreview) _finalBlitPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentColor, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
-using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Trp
 {
@@ -16,11 +15,9 @@ namespace Trp
 
 	public class RenderingUtils
 	{
-		private static readonly int IdBlitTexture = Shader.PropertyToID("_BlitTexture");
 		private static int IdSrcBlend = Shader.PropertyToID("_CameraSrcBlend");
 		private static int IdDstBlend = Shader.PropertyToID("_CameraDstBlend");
 
-		private static MaterialPropertyBlock _block = new();
 		private static Material _cameraBlitMaterial;
 		public static Rect FullViewRect => new(0, 0, 1, 1);
 
@@ -68,35 +65,10 @@ namespace Trp
 			{
 				(true, true) => GraphicsFormat.R16G16B16A16_UNorm,
 				(true, false) => GraphicsFormat.B10G11R11_UFloatPack32,
-				(false, true) => GraphicsFormat.R8G8B8A8_SRGB,
-				(false, false) => GraphicsFormat.R8G8B8_SRGB,
+				(false, true) => GraphicsFormat.R8G8B8A8_UNorm,
+				(false, false) => SystemInfo.GetCompatibleFormat(GraphicsFormat.R8G8B8_UNorm, GraphicsFormatUsage.Render),
 			};
 
-
-		public static void AllocateColorHandle(
-			ref RTHandle handle,
-			int width,
-			int height,
-			MSAASamples msaaSamples = MSAASamples.None,
-			FilterMode filterMode = FilterMode.Bilinear,
-			TextureWrapMode wrapMode = TextureWrapMode.Clamp,
-			string name = "")
-		{
-			if (handle != null && handle.rt != null) return;
-
-			handle = RTHandles.Alloc(
-				width,
-				height,
-				depthBufferBits: DepthBits.None,
-				colorFormat: ColorFormat(true, true),
-				filterMode: filterMode,
-				wrapMode: wrapMode,
-				useMipMap: false,
-				autoGenerateMips: false,
-				msaaSamples: msaaSamples,
-				memoryless: RenderTextureMemoryless.None,
-				name: name);
-		}
 
 		public static void BlitToCamera(
 			RasterCommandBuffer cmd,

@@ -49,12 +49,6 @@ namespace Trp.PostFx
 			material.SetVector(IdSrcSize, new(width, height, 1f / width, 1f / height));
 		}
 
-		protected static void FinalBlit(RasterCommandBuffer cmd, TextureHandle src, TextureHandle dst, Material material, int passIndex, Camera camera)
-		{
-			Vector4 scaleBias = RenderingUtils.GetFinalBlitScaleBias(src, dst, camera);
-			Blitter.BlitTexture(cmd, src, scaleBias, material, passIndex);
-		}
-
 		protected static void Blit(RasterCommandBuffer cmd, TextureHandle src, Material material, int passIndex)
 		{
 			Blitter.BlitTexture(cmd, src, Vector2.one, material, passIndex);

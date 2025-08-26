@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -22,7 +23,7 @@ namespace Trp
 		}
 	}
 
-	public ref struct PassParams
+	public struct PassParams
 	{
 		public RenderGraph RenderGraph { get; init; }
 		public readonly Camera Camera { get; init; }
@@ -57,5 +58,9 @@ namespace Trp
 		/// TRPにおいてもっとも最初に処理されるカメラかどうか。
 		/// </summary>
 		public readonly bool IsFirstCamera { get; init; }
+
+		public readonly IReadOnlyList<Camera> BackbufferCameras { get; init; }
+		public readonly IReadOnlyList<Camera> RenderTextureCameras { get; init; }
+		public readonly IReadOnlyList<Camera> EditorCameras { get; init; }
 	}
 }

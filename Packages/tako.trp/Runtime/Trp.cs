@@ -112,8 +112,11 @@ namespace Trp
 					TargetIsGameRenderTexture = false,
 					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
+					EditorCameras = _editorCameras,
+					RenderTextureCameras = _renderTextureCameras,
+					BackbufferCameras = _backbufferCameras,
 				};
-				_renderer.Render(renderParams);
+				_renderer.Render(ref renderParams);
 			}
 #endif
 
@@ -131,10 +134,13 @@ namespace Trp
 					TargetIsGameRenderTexture = true,
 					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
+					EditorCameras = _editorCameras,
+					RenderTextureCameras = _renderTextureCameras,
+					BackbufferCameras = _backbufferCameras,
 				};
 				using (new ProfilingScope(SamplerRenderTexture))
 				{
-					_renderer.Render(renderParams);
+					_renderer.Render(ref renderParams);
 
 				}
 			}
@@ -154,10 +160,13 @@ namespace Trp
 					TargetIsGameRenderTexture = false,
 					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
+					EditorCameras = _editorCameras,
+					RenderTextureCameras = _renderTextureCameras,
+					BackbufferCameras = _backbufferCameras,
 				};
 				using (new ProfilingScope(Sampler))
 				{
-					_renderer.Render(renderParams);
+					_renderer.Render(ref renderParams);
 				}
 			}
 			_renderGraph.EndFrame();
