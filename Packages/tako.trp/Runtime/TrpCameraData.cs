@@ -27,8 +27,6 @@ namespace Trp
 		[SerializeField] private bool _bilinear = true;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private bool _usePostx = true;
-		[SerializeField] private BlendMode _blendSrc = BlendMode.One;
-		[SerializeField] private BlendMode _blendDst = BlendMode.Zero;
 		[SerializeField] private CustomPass[] _customPasses;
 
 		private string _cameraName;
@@ -56,10 +54,6 @@ namespace Trp
 		public bool Bilinear => _bilinear;
 		public bool UseHdr => _useHdr;
 		public bool UsePostx => _usePostx;
-
-		public BlendMode BlendSrc => _blendSrc;
-		public BlendMode BlendDst => _blendDst;
-
 		public LayerMask VolumeMask => _volumeMask;
 		public IReadOnlyList<CustomPass> AllCustomPasses => _customPasses;
 

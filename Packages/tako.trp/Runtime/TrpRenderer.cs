@@ -123,8 +123,6 @@ namespace Trp
 				useHdr &= cameraData.UseHdr;
 				usePostFx = cameraData.UsePostx;
 				bilinear = cameraData.Bilinear;
-				blendSrc = cameraData.BlendSrc;
-				blendDst = cameraData.BlendDst;
 
 				useOpaqueTexture = cameraData.UseOpaqueTexture;
 				useTransparentTexture = cameraData.UseTransparentTexture;
