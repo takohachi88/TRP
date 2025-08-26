@@ -75,7 +75,7 @@ namespace Trp.PostFx
 
 			if (bloomActive || lfssActive)
 			{
-				BloomTexture(renderGraph, src, out TextureHandle bloomTexture, bloom, passParams.AttachmentSize);
+				BloomTexture(renderGraph, src, out TextureHandle bloomTexture, bloom, passParams.AttachmentSize, passParams.UseAlpha);
 				if (lfssActive)
 				{
 					int maxBloomMip = Mathf.Clamp(lfss.bloomMip.value, 0, bloom.maxIterations.value / 2);
@@ -86,7 +86,8 @@ namespace Trp.PostFx
 						_bloomMipUps[0],
 						_bloomMipUps[maxBloomMip],
 						lfss,
-						passParams.AttachmentSize);
+						passParams.AttachmentSize,
+						passParams.UseAlpha);
 				}
 				BloomCompositePass(renderGraph, in bloomTexture, bloom, passParams.AttachmentSize, src, dst, passParams.Camera);
 
@@ -124,7 +125,7 @@ namespace Trp.PostFx
 			}
 		}
 
-		private void BloomTexture(RenderGraph renderGraph, in TextureHandle src, out TextureHandle dst, Bloom bloom, Vector2Int attachmentSize)
+		private void BloomTexture(RenderGraph renderGraph, in TextureHandle src, out TextureHandle dst, Bloom bloom, Vector2Int attachmentSize, bool useAlpha)
 		{
 			// Start at half-res
 			int downres = 1;
@@ -187,7 +188,7 @@ namespace Trp.PostFx
 			{
 				TextureDesc desc = new(tw, th)
 				{
-					format = RenderingUtils.ColorFormat(true),
+					format = RenderingUtils.ColorFormat(true, useAlpha),
 					name = _bloomMipDownNames[0],
 					filterMode = FilterMode.Bilinear,
 				};
@@ -396,7 +397,8 @@ namespace Trp.PostFx
 			TextureHandle bloomTexture,
 			TextureHandle sslfBloomMipTexture,
 			LensFlareScreenSpace lfss,
-			Vector2Int attachmentSize)
+			Vector2Int attachmentSize,
+			bool useAlpha)
 		{
 			var downsample = (int)lfss.resolution.value;
 
@@ -405,7 +407,7 @@ namespace Trp.PostFx
 
 			TextureDesc streakTextureDesc = new(width, height)
 			{
-				format = RenderingUtils.ColorFormat(true),
+				format = RenderingUtils.ColorFormat(true, useAlpha),
 				clearBuffer = true,
 				filterMode = FilterMode.Bilinear,
 			};

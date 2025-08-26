@@ -1,8 +1,8 @@
 using UnityEngine;
 using UnityEngine.Rendering;
-using TakoLib.Common.Extensions;
 using Trp.PostFx;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Experimental.Rendering;
 
 namespace Trp
 {
@@ -14,16 +14,12 @@ namespace Trp
 		public RenderGraph RenderGraph { get; init; }
 		public ScriptableRenderContext Context { get; init; }
 		public Camera Camera { get; init; }
-		/// <summary>
-		/// backbufferに描画する最初のGameカメラであるかどうか。
-		/// </summary>
 		public bool IsFirstToBackbuffer { get; init; }
-		/// <summary>
-		/// backbufferに描画する最後のGameカメラであるかどうか。
-		/// </summary>
 		public bool IsLastToBackbuffer { get; init; }
+		public bool IsFirstCamera { get; init; }
 		internal TrpResources Resources { get; init; }
 		public PostFxPassGroup PostFxPassGroup { get; init; }
+		public bool TargetIsGameRenderTexture { get; init; }
 	}
 
 
@@ -45,8 +41,6 @@ namespace Trp
 	/// </summary>
 	public class TrpRenderer
 	{
-		private RTHandle _targetColor, _targetDepth;
-
 		private TrpCommonSettings _commonSettings;
 
 		private PostFxPassGroup _postFxPassGroup;
@@ -80,7 +74,6 @@ namespace Trp
 
 			_copyColorPass = new(_coreBlitMaterial);
 			_copyDepthPass = new(_copyDepthMaterial);
-
 			_lutPass = new(resources.PostFxLutShader);
 		}
 
@@ -97,7 +90,8 @@ namespace Trp
 			bool isLastToBackbuffer = rendererParams.IsLastToBackbuffer;
 			bool usePostFx = false;
 			bool useHdr = _commonSettings.UseHdr;
-			float renderScale = _commonSettings.RenderScale;
+			bool useAlpha = false;
+			float renderScale = 1;
 			bool bilinear = true;
 			BlendMode blendSrc = BlendMode.One;
 			BlendMode blendDst = BlendMode.Zero;
@@ -106,7 +100,7 @@ namespace Trp
 			bool useDepthTexture = true;
 			int renderingLayerMask = -1;
 
-			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、cmdには名前を付けてはならない。
+			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
 			CommandBuffer cmd = CommandBufferPool.Get();
 			ProfilingSampler sampler;
 
@@ -115,13 +109,17 @@ namespace Trp
 			Camera camera = rendererParams.Camera;
 			TrpCameraData cameraData = camera.GetComponent<TrpCameraData>();
 
+			Vector2Int attachmentSize = new(camera.pixelWidth, camera.pixelHeight);
+			bool useScaledRendering = false;
+
 			//カメラごとの設定値を適用する。
 			//cameraDataがある=CameraType.Gameである。
 			if (cameraData)
 			{
+				useScaledRendering = cameraData.UseScaledRenering;
+				if(useScaledRendering) renderScale = cameraData.RenderScale / 100f;
 				useHdr &= cameraData.UseHdr;
 				usePostFx = cameraData.UsePostx;
-				renderScale *= cameraData.RenderScale;
 				bilinear = cameraData.Bilinear;
 				blendSrc = cameraData.BlendSrc;
 				blendDst = cameraData.BlendDst;
@@ -139,8 +137,6 @@ namespace Trp
 				sampler = ProfilingSampler.Get(camera.cameraType);
 			}
 
-			bool useScaledRendering = !renderScale.IsInRange(0.9f, 1.1f);
-			Vector2Int attachmentSize = new (camera.pixelWidth, camera.pixelHeight);
 			CullingResults cullingResults;
 			bool isSceneViewOrPreview = camera.cameraType is CameraType.SceneView or CameraType.Preview;
 
@@ -159,7 +155,6 @@ namespace Trp
 			{
 				ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
 				
-				useScaledRendering = false;//Sceneウィンドウ描画時はScaledRenderingしない。
 				useOpaqueTexture = true;
 				useTransparentTexture = true;
 				useDepthTexture = true;
@@ -169,15 +164,12 @@ namespace Trp
 			//Preview描画時。
 			if (camera.cameraType == CameraType.Preview)
 			{
-				useScaledRendering = false;
 				useOpaqueTexture = false;
 				useTransparentTexture = false;
 				useDepthTexture = true;
 				usePostFx = false;
 			}
 #endif
-
-			RTHandles.SetReferenceSize(attachmentSize.x, attachmentSize.y);
 
 			if (camera.cameraType is CameraType.Reflection or CameraType.Preview) ScriptableRenderContext.EmitGeometryForCamera(camera);
 
@@ -199,32 +191,21 @@ namespace Trp
 			//RTHandleのreferenceSizeの指定。
 			RTHandles.SetReferenceSize(attachmentSize.x, attachmentSize.y);
 
+			//Volumeの更新。
+			VolumeManager.instance.Update(VolumeManager.instance.stack, camera.transform, cameraData ? cameraData.VolumeMask : 1);
+
 			//RenderGraphの登録と実行。
 			RenderGraphParameters renderGraphParameters = new()
 			{
-				executionName = cameraData ? cameraData.CameraName : "Scene View",
+				executionName = cameraData ? cameraData.CameraName : camera.cameraType.ToString(),
 				commandBuffer = cmd,
 				scriptableRenderContext = context,
 				currentFrameIndex = Time.frameCount,
 			};
 
-			//Volumeの更新。
-			VolumeManager.instance.Update(VolumeManager.instance.stack, camera.transform, cameraData ? cameraData.VolumeMask : 1);
-
 			using (new ProfilingScope(cmd, sampler))
 			{
 				renderGraph.BeginRecording(renderGraphParameters);
-
-				TextureDesc colorDescriptor = new(attachmentSize.x, attachmentSize.y)
-				{
-					//TODO: GetCompatibleFormatにする？
-					colorFormat = RenderingUtils.ColorFormat(useHdr),
-					clearBuffer = true,
-					clearColor = Color.clear,
-				};
-
-				//各種RTHandleの確保。
-				AllocTargets(ref _targetColor, ref _targetDepth, camera.targetTexture);
 
 				//Passに渡すデータの構築。
 				PassParams passParams = new()
@@ -232,7 +213,6 @@ namespace Trp
 					RenderGraph = renderGraph,
 					Camera = camera,
 					CameraData = cameraData,
-					ColorDescriptor = colorDescriptor,
 					CameraTextures = _cameraTextures,
 					AttachmentSize = attachmentSize,
 					UseScaledRendering = useScaledRendering,
@@ -241,28 +221,32 @@ namespace Trp
 					UseTransparentTexture = useTransparentTexture,
 					RenderScale = renderScale,
 					UseHdr = useHdr,
+					UseAlpha = useAlpha,
+					UsePostFx = usePostFx,
 					IsSceneViewOrPreview = isSceneViewOrPreview,
 					CullingResults = cullingResults,
 					RenderingLayerMask = renderingLayerMask,
 					LutSize = _commonSettings.PostFxLutSize,
+					TargetIsGameRenderTexture = rendererParams.TargetIsGameRenderTexture,
+					IsFirstToBackbuffer = isFirstToBackbuffer,
+					IsLastToBackbuffer = isLastToBackbuffer,
+					IsFirstCamera = rendererParams.IsFirstCamera,
 				};
 
 				//レンダリングの前段階的な処理。各種テクスチャの確保など。
-				_setupPass.RecordRenderGraph(
-					ref passParams,
-					_targetColor,
-					_targetDepth,
-					isFirstToBackbuffer
-					);
+				_setupPass.RecordRenderGraph(ref passParams);
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterSetup);
 
 				//PostProcessで使うLUTの生成。
 				_lutPass.RecordRenderGraph(ref passParams, _commonSettings.PostFxLutFilterMode);
 
 				//Opaqueジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, true);
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingOpaques);
 
 				//Skyboxの描画。
 				if (camera.clearFlags == CameraClearFlags.Skybox) _skyboxPass.RecordRenderGraph(ref passParams);
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingSkybox);
 
 				//OpaqueTextureへのコピー。
 				_copyColorPass.RecordRenderGraph(ref passParams, CopyColorPass.CopyColorMode.Opaque);
@@ -272,6 +256,7 @@ namespace Trp
 
 				//Transparentジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, false);
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingTransparents);
 
 				//TransparentTextureへのコピー。
 				_copyColorPass.RecordRenderGraph(ref passParams, CopyColorPass.CopyColorMode.Transparent);
@@ -279,16 +264,13 @@ namespace Trp
 				//Gizmoの描画。
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentDepth, GizmoSubset.PreImageEffects);
 
-
-				TextureHandle postFxDst = passParams.CameraTextures.AttachmentColor;
 				//ポストエフェクトの描画。
-				if (usePostFx)
-				{
-					postFxDst = _postFxPassGroup.RecordRenderGraph(ref passParams);
-				}
+				TextureHandle postFxDst = passParams.CameraTextures.AttachmentColor;
+				if (usePostFx) postFxDst = _postFxPassGroup.RecordRenderGraph(ref passParams);
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingPostProcessing);
 
 				//中間バッファから画面への描画。
-				_finalBlitPass.RecordRenderGraph(ref passParams, postFxDst, blendSrc, blendDst);
+				if(isLastToBackbuffer || isSceneViewOrPreview) _finalBlitPass.RecordRenderGraph(ref passParams, postFxDst, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);
@@ -299,11 +281,13 @@ namespace Trp
 				//Gizmoの描画。
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.TargetDepth, GizmoSubset.PostImageEffects);
 
-				//UIの描画。
+				//OverlayなUIの描画。
 				if(isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
 
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRendering);
+
 				//CameraCaptureBridge対応。
-				_cameraCapturePass.RecordRenderGraph(ref passParams);
+				if(isLastToBackbuffer) _cameraCapturePass.RecordRenderGraph(ref passParams);
 
 				//SceneView描画時にgridなどのエンジン側の描画処理が適切に行われるようにする。
 				if (camera.cameraType == CameraType.SceneView) _setEditorTargetPass.RecordAndExecute(ref passParams);
@@ -317,26 +301,17 @@ namespace Trp
 			context.Submit();
 		}
 
-		private void AllocTargets(ref RTHandle color, ref RTHandle depth, RenderTexture cameraTargetTexture)
+		private void ExecuteCustomPasses(TrpCameraData cameraData, ref PassParams passParams, ExecutionPhase phase)
 		{
-			RenderTargetIdentifier idColor = cameraTargetTexture ? new RenderTargetIdentifier(cameraTargetTexture) : BuiltinRenderTextureType.CameraTarget;
-			RenderTargetIdentifier idDepth = cameraTargetTexture ? new RenderTargetIdentifier(cameraTargetTexture) : BuiltinRenderTextureType.Depth;
-
-			if (color == null) color = RTHandles.Alloc(idColor, "BackbufferColor");
-			else if (color.nameID != idColor) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref color, idColor);
-			
-			if (depth == null) depth = RTHandles.Alloc(idDepth, "BackbufferDepth");
-			else if (depth.nameID != idDepth) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref depth, idDepth);
+			if (cameraData) cameraData.ExecuteCustomPasses(ref passParams, phase);
 		}
 
 		public void Dispose()
 		{
+			_setupPass.Dispose();
 			_postFxPassGroup.Dispose();
-			_targetColor?.Release();
-			_targetDepth?.Release();
 			CoreUtils.Destroy(_coreBlitMaterial);
 			CoreUtils.Destroy(_copyDepthMaterial);
-
 			_lutPass.Dispose();
 		}
 	}

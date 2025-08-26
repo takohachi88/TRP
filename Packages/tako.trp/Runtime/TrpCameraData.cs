@@ -1,9 +1,17 @@
 using System;
+using System.Collections.Generic;
+using TakoLib.Common.Extensions;
 using UnityEngine;
 using UnityEngine.Rendering;
 
 namespace Trp
 {
+	public enum ResolusionMode
+	{
+		Scale,
+		Resolusion,
+	}
+
 	/// <summary>
 	/// TRPにおけるカメラごとの設定。
 	/// Camera型は継承できないのでこのような形に。
@@ -14,12 +22,14 @@ namespace Trp
 		[SerializeField] private LayerMask _volumeMask = 1;
 		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
-		[SerializeField, Range(TrpConstants.RENDER_SCALE_MIN, TrpConstants.RENDER_SCALE_MAX)] private float _renderScale = 1;
+		[SerializeField] private ResolusionMode _resolusionMode = ResolusionMode.Resolusion;
+		[SerializeField, Range(1, 100)] private int _renderScale = 100;
 		[SerializeField] private bool _bilinear = true;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private bool _usePostx = true;
 		[SerializeField] private BlendMode _blendSrc = BlendMode.One;
 		[SerializeField] private BlendMode _blendDst = BlendMode.Zero;
+		[SerializeField] private CustomPass[] _customPasses;
 
 		private string _cameraName;
 		private Camera _camera;
@@ -28,6 +38,7 @@ namespace Trp
 		public ProfilingSampler Sampler => _sampler ?? new(CameraName);
 
 		public string CameraName => string.IsNullOrEmpty(_cameraName) ? gameObject.name : _cameraName;
+
 
 		private void Awake()
 		{
@@ -39,8 +50,9 @@ namespace Trp
 		public bool UseTransparentTexture => _useTransparentTexture;
 		public bool UseDepthTexture => _useDepthTexture;
 		public int RenderingLayerMask => _renderinLayerMask;
-
-		public float RenderScale => _renderScale;
+		public ResolusionMode ResolusionMode => _resolusionMode;
+		public int RenderScale => _renderScale;
+		public bool UseScaledRenering => _renderScale == 100;
 		public bool Bilinear => _bilinear;
 		public bool UseHdr => _useHdr;
 		public bool UsePostx => _usePostx;
@@ -49,5 +61,21 @@ namespace Trp
 		public BlendMode BlendDst => _blendDst;
 
 		public LayerMask VolumeMask => _volumeMask;
+		public IReadOnlyList<CustomPass> AllCustomPasses => _customPasses;
+
+		/// <summary>
+		/// このカメラに登録されたアクティブなパスを全て実行する。
+		/// </summary>
+		/// <param name="phase"></param>
+		/// <param name="output"></param>
+		/// <returns></returns>
+		public void ExecuteCustomPasses(ref PassParams passParams, ExecutionPhase phase)
+		{
+			if (_customPasses.IsNullOrEmpty()) return;
+			foreach (CustomPass pass in _customPasses)
+			{
+				if (pass.Phase == phase && pass.Enabled) pass.Execute(ref passParams);
+			}
+		}
 	}
 }

@@ -19,10 +19,14 @@ namespace Trp
 
 		private readonly RenderGraph _renderGraph = new RenderGraph("TRP Render Graph");
 
-		private readonly List<Camera> _otherCameras = new(16);
-		private readonly List<Camera> _gameViewCameras = new(16);
+		private readonly List<Camera> _renderTextureCameras;//描画先がRenderTexture。
+		private readonly List<Camera> _backbufferCameras;//描画先がbackbuffer。
+#if UNITY_EDITOR
+		private readonly List<Camera> _editorCameras = new(3); //描画先がSceneやPreview。
+#endif
 
 		private static readonly ProfilingSampler Sampler = new("TRP");
+		private static readonly ProfilingSampler SamplerRenderTexture = new("TRP RenderTexture");
 
 		internal Trp(TrpCommonSettings commonSettings, TrpResources resources)
 		{
@@ -51,6 +55,9 @@ namespace Trp
 			_renderGraph.nativeRenderPassesEnabled = true;
 
 			GraphicsSettings.useScriptableRenderPipelineBatching = true;
+
+			_renderTextureCameras = new(commonSettings.DefaultMaxRenderTextureCameraCount);
+			_backbufferCameras = new(commonSettings.DefaultMaxbackbufferCameraCount);
 		}
 
 		protected override void Dispose(bool disposing)
@@ -76,41 +83,75 @@ namespace Trp
 			SupportedRenderingFeatures.active.rendersUIOverlay = 0 < cameras.Count;
 
 			cameras.Sort(_comparer);
-			_otherCameras.Clear();
-			_gameViewCameras.Clear();
+#if UNITY_EDITOR
+			_editorCameras.Clear();
+#endif
+			_renderTextureCameras.Clear();
+			_backbufferCameras.Clear();
 
+			//TODO: Reflectionの場合の処理。
 			foreach (Camera camera in cameras)
 			{
-				if (camera.cameraType == CameraType.Game && !camera.targetTexture) _gameViewCameras.Add(camera);
-				else if(camera.cameraType != CameraType.VR) _otherCameras.Add(camera); //VR非対応のため、CameraType.VRは無視。
+				if (camera.cameraType == CameraType.Game && camera.targetTexture) _renderTextureCameras.Add(camera);
+				else if (camera.cameraType == CameraType.Game && !camera.targetTexture) _backbufferCameras.Add(camera);
+				else if (camera.cameraType is CameraType.SceneView or CameraType.Preview) _editorCameras.Add(camera); //VR非対応のため、CameraType.VRは含めない。
 			}
 
-			//Game画面（backbuffer）を描画先としないカメラ。
-			for (int i = 0; i < _otherCameras.Count; i++)
+#if UNITY_EDITOR
+			//SceneViewやPreviewなどエディタ用の描画のカメラの描画。
+			for (int i = 0; i < _editorCameras.Count; i++)
 			{
 				RendererParams renderParams = new()
 				{
 					RenderGraph = _renderGraph,
 					Context = context,
-					Camera = _otherCameras[i],
+					Camera = _editorCameras[i],
 					IsFirstToBackbuffer = false,
 					IsLastToBackbuffer = false,
+					IsFirstCamera = i == 0,
+					TargetIsGameRenderTexture = false,
 					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
 				};
 				_renderer.Render(renderParams);
 			}
+#endif
 
-			//Game画面（backbuffer）を描画先とするカメラ。
-			for (int i = 0; i < _gameViewCameras.Count; i++)
+			//RenderTextureを描画先とするカメラの描画。
+			for (int i = 0; i < _renderTextureCameras.Count; i++)
 			{
 				RendererParams renderParams = new()
 				{
 					RenderGraph = _renderGraph,
 					Context = context,
-					Camera = _gameViewCameras[i],
+					Camera = _renderTextureCameras[i],
+					IsFirstToBackbuffer = false,
+					IsLastToBackbuffer = false,
+					IsFirstCamera = i == 0,
+					TargetIsGameRenderTexture = true,
+					Resources = _resources,
+					PostFxPassGroup = _postFxPassGroup,
+				};
+				using (new ProfilingScope(SamplerRenderTexture))
+				{
+					_renderer.Render(renderParams);
+
+				}
+			}
+
+			//Game画面（backbuffer）を描画先とするカメラの描画。
+			//実際にはURPのCameraStackのように、一枚の中間テクスチャに描画していき、最後のCameraの処理においてbackbufferに描画する。
+			for (int i = 0; i < _backbufferCameras.Count; i++)
+			{
+				RendererParams renderParams = new()
+				{
+					RenderGraph = _renderGraph,
+					Context = context,
+					Camera = _backbufferCameras[i],
 					IsFirstToBackbuffer = i == 0,
-					IsLastToBackbuffer = i == _gameViewCameras.Count - 1,
+					IsLastToBackbuffer = i == _backbufferCameras.Count - 1,
+					IsFirstCamera = i == 0 && _renderTextureCameras.Count == 0,
+					TargetIsGameRenderTexture = false,
 					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
 				};
@@ -120,10 +161,6 @@ namespace Trp
 				}
 			}
 			_renderGraph.EndFrame();
-
-			string s=null;
-			foreach (var v in _otherCameras) s+= v.ToString();
-			foreach (var v in _gameViewCameras) s += v.ToString();
 		}
 	}
 }

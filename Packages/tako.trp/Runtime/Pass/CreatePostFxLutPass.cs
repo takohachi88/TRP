@@ -99,7 +99,7 @@ namespace Trp.PostFx
 			TextureDesc desc = new(lutSize * lutSize, lutSize)
 			{
 				name = "PostProcessLut",
-				format = RenderingUtils.ColorFormat(true),
+				format = RenderingUtils.ColorFormat(false, false),
 				filterMode = lutFilterMode,
 				wrapMode = TextureWrapMode.Clamp,
 			};

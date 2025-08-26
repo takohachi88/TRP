@@ -12,8 +12,6 @@ namespace Trp.PostFx
 	{
 		[SerializeField] private PostFxPassBase[] _passes;
 
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.PostProcess);
-
 		public void Initialize()
 		{
 			foreach (PostFxPassBase pass in _passes)
@@ -29,7 +27,10 @@ namespace Trp.PostFx
 
 			VolumeStack volumeStack = VolumeManager.instance.stack;
 
-			TextureDesc desc = passParams.ColorDescriptor;
+			TextureDesc desc = new(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
+			{
+				format = RenderingUtils.ColorFormat(passParams.UseHdr, passParams.UseAlpha),
+			};
 			desc.name = "PostProcessDst";
 			desc.clearBuffer = true;
 			TextureHandle dst = renderGraph.CreateTexture(desc);

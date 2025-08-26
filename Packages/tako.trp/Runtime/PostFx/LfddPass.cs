@@ -49,7 +49,7 @@ namespace Trp.PostFx
 
 		public override LastTarget RecordRenderGraph(ref PassParams passParams, TextureHandle src, TextureHandle dst, VolumeStack volumeStack)
 		{
-			if (!LensFlareCommonSRP.IsOcclusionRTCompatible()) return LastTarget.None;
+			if (LensFlareCommonSRP.Instance.IsEmpty() || !LensFlareCommonSRP.IsOcclusionRTCompatible()) return LastTarget.None;
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 
@@ -66,6 +66,7 @@ namespace Trp.PostFx
 				passData.Height = passParams.AttachmentSize.y;
 				passData.XrPass = _xrPass;
 				passData.Camera = passParams.Camera;
+				//TODO: Paniniの対応。
 				/*if (m_PaniniProjection.IsActive())
 				{
 					passData.UsePanini = true;
@@ -80,7 +81,7 @@ namespace Trp.PostFx
 				}
 
 				builder.UseTexture(passParams.CameraTextures.TextureDepth, AccessFlags.Read);
-
+				builder.AllowPassCulling(false);
 				builder.SetRenderFunc<PassData>(static (passData, context) =>
 				{
 					Camera camera = passData.Camera;
@@ -113,6 +114,7 @@ namespace Trp.PostFx
 				passData.Viewport.height = desc.height;
 				passData.XrPass = _xrPass;
 				passData.Camera = passParams.Camera;
+				//TODO: Paniniの対応。
 				/*if (m_PaniniProjection.IsActive())
 				{
 					passData.usePanini = true;
@@ -134,7 +136,7 @@ namespace Trp.PostFx
 				{
 					builder.UseTexture(passParams.CameraTextures.TextureDepth, AccessFlags.Read);
 				}
-
+				builder.AllowPassCulling(false);
 				builder.SetRenderFunc<PassData>(static (passData, context) =>
 				{
 					Camera camera = passData.Camera;

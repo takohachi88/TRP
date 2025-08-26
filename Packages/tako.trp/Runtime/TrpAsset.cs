@@ -2,7 +2,6 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Trp.PostFx;
 
 #if UNITY_EDITOR
 using UnityEditor.Rendering;
@@ -16,7 +15,6 @@ namespace Trp
 	[Serializable]
 	public class TrpCommonSettings
 	{
-		[SerializeField, Range(TrpConstants.RENDER_SCALE_MIN, TrpConstants.RENDER_SCALE_MAX)] private float _renderScale = 1f;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private MSAASamples _msaaSamples;
 		[SerializeField] private DepthBits _depthBits = DepthBits.Depth32;
@@ -25,8 +23,9 @@ namespace Trp
 		[SerializeField] private bool _useLightPerObject;
 		[SerializeField, Min(4)] private int _postFxLutSize = 32;
 		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
+		[SerializeField, Min(1)] private int _defaultMaxBackbufferCameraCount = 16;
+		[SerializeField, Min(1)] private int _defaultMaxRenderTextureCameraCount = 16;
 
-		public float RenderScale => _renderScale;
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public DepthBits DepthBits => _depthBits;
@@ -44,6 +43,8 @@ namespace Trp
 		public bool UseLightPerObject => _useLightPerObject;
 		public int PostFxLutSize => _postFxLutSize;
 		public FilterMode PostFxLutFilterMode => _postFxLutFilterMode;
+		public int DefaultMaxbackbufferCameraCount => _defaultMaxBackbufferCameraCount;
+		public int DefaultMaxRenderTextureCameraCount => _defaultMaxRenderTextureCameraCount;
 	}
 
 	[CreateAssetMenu(menuName = "Rendering/Trp/TrpAsset", fileName = "TrpAsset")]
