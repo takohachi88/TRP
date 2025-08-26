@@ -199,7 +199,8 @@ namespace Trp
 			//RenderGraphの登録と実行。
 			RenderGraphParameters renderGraphParameters = new()
 			{
-				executionName = cameraData ? cameraData.CameraName : camera.cameraType.ToString(),
+				executionId = camera.GetEntityId(),
+				generateDebugData = camera.cameraType != CameraType.Preview && !camera.isProcessingRenderRequest,
 				commandBuffer = cmd,
 				scriptableRenderContext = context,
 				currentFrameIndex = Time.frameCount,

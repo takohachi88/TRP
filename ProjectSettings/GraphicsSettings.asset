@@ -59,6 +59,8 @@ GraphicsSettings:
   m_RenderPipelineGlobalSettingsMap:
     Trp.Trp: {fileID: 11400000, guid: b833950a5d798ad4197bf07d7bdf6733, type: 2}
     TakoLib.Rp.Trp: {fileID: 0}
+  m_ShaderBuildSettings:
+    keywordDeclarationOverrides: []
   m_LightsUseLinearIntensity: 0
   m_LightsUseColorTemperature: 0
   m_LogWhenShaderIsCompiled: 0

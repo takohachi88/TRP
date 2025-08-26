@@ -7,7 +7,7 @@ Shader "Hidden/Trp/CoreBlitColorAndDepth"
         #pragma editor_sync_compilation
 
         #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
-        #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/BlitColorAndDepth.hlsl"
+        #include_with_pragmas "Packages/com.unity.render-pipelines.core/Runtime/Utilities/BlitColorAndDepth.hlsl"
 
     ENDHLSL
 
