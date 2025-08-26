@@ -66,9 +66,8 @@ namespace Trp
 				(true, true) => GraphicsFormat.R16G16B16A16_UNorm,
 				(true, false) => GraphicsFormat.B10G11R11_UFloatPack32,
 				(false, true) => GraphicsFormat.R8G8B8A8_UNorm,
-				(false, false) => SystemInfo.GetCompatibleFormat(GraphicsFormat.R8G8B8_UNorm, GraphicsFormatUsage.Render),
+				(false, false) => GraphicsFormat.R8G8B8A8_UNorm,
 			};
-
 
 		public static void BlitToCamera(
 			RasterCommandBuffer cmd,
