@@ -1,6 +1,8 @@
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.VFX;
 
 namespace Trp
@@ -20,11 +22,17 @@ namespace Trp
 		/// </summary>
 		private RTHandle _attachmentColorRt, _attachmentDepthRt;
 
+		/// <summary>
+		/// フル解像度UIモードのカメラで用いる中間テクスチャ。
+		/// </summary>
+		private RTHandle _attachmentColorScaledRt, _attachmentDepthScaledRt;
+
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Setup);
 		private static readonly int IdAttachmentSize = Shader.PropertyToID("_AttachmentSize");
 		private static readonly int IdAspectFit = Shader.PropertyToID("_AspectFit");
 		private static readonly int IdScaledScreenParams = Shader.PropertyToID("_ScaledScreenParams");
 		private static readonly int IdTime = Shader.PropertyToID("_Time");
+		private static readonly int IdRTHandleScale = Shader.PropertyToID("_RTHandleScale");
 
 		private class PassData
 		{
@@ -79,27 +87,12 @@ namespace Trp
 			Vector2Int attachmentSize = passParams.AttachmentSize;
 			CullingResults cullingResults = passParams.CullingResults;
 			CameraTextures cameraTextures = passParams.CameraTextures;
+			TrpCommonSettings commonSettings = passParams.CommonSettings;
 
 			TextureHandle attachmentColor, attachmentDepth;
 
 			//最終描画先をRTHandleとして確保。
 			AllocTargets(ref _targetColorRt, ref _targetDepthRt, camera.targetTexture);
-
-			//RasterPassはSetRenderAttachmentが必須だが、このパスではその必要がないためUnsafePassにする。RGViewerの表記の観点からもその方が良い。
-			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
-
-			passData.AttachmentSize = attachmentSize;
-			passData.Camera = camera;
-			passData.IsFirstCamera = passParams.IsFirstCamera;
-			passData.CullingResults = cullingResults;
-
-			//アスペクト比の補正に用いるパラメータ。
-			float attachmentWidthRatio = attachmentSize.x / (float)attachmentSize.y;
-			float attachmentHeightRatio = attachmentSize.y / (float)attachmentSize.x;
-			bool isWide = 1f <= attachmentWidthRatio;
-			passData.AspectFit = isWide ? new(attachmentWidthRatio, 1f) : new(1f, attachmentHeightRatio);
-			passParams.AspectFit = passData.AspectFit;
-			passParams.AspectFitRcp = isWide ? new(attachmentHeightRatio, 1f) : new(1f, attachmentWidthRatio);
 
 			//MSAAの設定。
 			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, true);
@@ -158,31 +151,54 @@ namespace Trp
 			TextureHandle targetColor = renderGraph.ImportTexture(_targetColorRt, importInfoColor, importParamsColor);
 			TextureHandle targetDepth = renderGraph.ImportTexture(_targetDepthRt, importInfoDepth, importParamsDepth);
 
-			TextureDesc depthDesc = new(attachmentSize.x, attachmentSize.y)
-			{
-				name = "CameraDepthTexture",
-				format = RenderingUtils.DepthFormat,
-				clearBuffer = true,
-			};
-			cameraTextures.TextureDepth = renderGraph.CreateTexture(depthDesc);
+			const string attachmentColorName = "AttachmentColor", attachmentDepthName = "AttachmentDepth", attachmentColorScaledName = "AttachmentColorScaled", attachmentDepthScaledName = "AttachmentDepthScaled";
 
-			//backbufferへ書き込む用のカメラである場合。
+			//backbufferへ書き込む用のカメラである場合。一枚のバッファをカメラ間で使い回す。
 			if (camera.cameraType == CameraType.Game && !passParams.TargetIsGameRenderTexture)
 			{
-				if (_attachmentColorRt == null) _attachmentColorRt = RTHandles.Alloc(passParams.AttachmentSize.x, passParams.AttachmentSize.y, importInfoColor.format, name: "AttachmentColor");
-				if (_attachmentDepthRt == null) _attachmentDepthRt = RTHandles.Alloc(passParams.AttachmentSize.x, passParams.AttachmentSize.y, importInfoDepth.format, name: "AttachmentDepth");
+				bool needsScaling = passParams.CommonSettings.UseScaledRendering && passParams.CameraData.IsFinalUiCamera;
+				RTHandle attachmentColorRt = RtHandlePool.Instance.Get(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentColorScaledName : attachmentColorName)
+				{
+					format = importInfoColor.format,
+					msaaSamples = (MSAASamples)msaa,
+				});
 
-				//こちらはRenderTargetInfoを渡すとエラー。
+				RTHandle attachmentDepthRt = RtHandlePool.Instance.Get(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentDepthScaledName : attachmentDepthName)
+				{
+					format = importInfoDepth.format,
+				});
+
 				importParamsColor.clearOnFirstUse = clearColor;
 				importParamsDepth.clearOnFirstUse = clearDepth;
-				attachmentColor = renderGraph.ImportTexture(_attachmentColorRt, importParamsColor);
-				attachmentDepth = renderGraph.ImportTexture(_attachmentDepthRt, importParamsDepth);
+
+				//解像度を落としている場合、最後のUI用のカメラ（フル解像度）に拡大Blitする。
+				if (needsScaling)
+				{
+					_attachmentColorScaledRt = attachmentColorRt;
+					_attachmentDepthScaledRt = attachmentDepthRt;
+
+					//RenderTargetInfoを渡すとエラー。
+					attachmentColor = renderGraph.ImportTexture(attachmentColorRt, importParamsColor);
+					attachmentDepth = renderGraph.ImportTexture(attachmentDepthRt, importParamsDepth);
+
+					RenderingUtils.AddBlitPass(renderGraph, renderGraph.ImportTexture(_attachmentColorRt, importParamsColor), attachmentColor, true, "ScaleAttachmentColor");
+					RenderingUtils.AddBlitDepthPass(renderGraph, renderGraph.ImportTexture(_attachmentDepthRt, importParamsDepth), attachmentDepth, "ScaleAttachmentDepth");
+				}
+				else
+				{
+					_attachmentColorRt = attachmentColorRt;
+					_attachmentDepthRt = attachmentDepthRt;
+
+					//RenderTargetInfoを渡すとエラー。
+					attachmentColor = renderGraph.ImportTexture(attachmentColorRt, importParamsColor);
+					attachmentDepth = renderGraph.ImportTexture(attachmentDepthRt, importParamsDepth);
+				}
 			}
 			else
 			{
 				TextureDesc desc = new(attachmentSize.x, attachmentSize.y)
 				{
-					name = "AttachmentColor",
+					name = attachmentColorName,
 					format = importInfoColor.format,
 					clearBuffer = clearColor,
 					clearColor = clearColor ? camera.backgroundColor.linear : Color.clear,
@@ -191,7 +207,7 @@ namespace Trp
 
 				desc = new(attachmentSize.x, attachmentSize.y)
 				{
-					name = "AttachmentDepth",
+					name = attachmentDepthName,
 					format = importInfoDepth.format,
 					clearBuffer = clearDepth,
 				};
@@ -202,6 +218,22 @@ namespace Trp
 			cameraTextures.AttachmentDepth = attachmentDepth;
 			cameraTextures.TargetColor = targetColor;
 			cameraTextures.TargetDepth = targetDepth;
+
+			//RasterPassはSetRenderAttachmentが必須だが、このパスではその必要がないためUnsafePassにする。RGViewerの表記の観点からもその方が良い。
+			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
+
+			passData.AttachmentSize = attachmentSize;
+			passData.Camera = camera;
+			passData.IsFirstCamera = passParams.IsFirstCamera;
+			passData.CullingResults = cullingResults;
+
+			//アスペクト比の補正に用いるパラメータ。
+			float attachmentWidthRatio = attachmentSize.x / (float)attachmentSize.y;
+			float attachmentHeightRatio = attachmentSize.y / (float)attachmentSize.x;
+			bool isWide = 1f <= attachmentWidthRatio;
+			passData.AspectFit = isWide ? new(attachmentWidthRatio, 1f) : new(1f, attachmentHeightRatio);
+			passParams.AspectFit = passData.AspectFit;
+			passParams.AspectFitRcp = isWide ? new(attachmentHeightRatio, 1f) : new(1f, attachmentWidthRatio);
 
 			builder.AllowPassCulling(false);//副作用があるパスなのでCullしない。
 			builder.AllowGlobalStateModification(true);
@@ -227,6 +259,9 @@ namespace Trp
 
 				//カメラのVP行列の値などをGPUに送信。
 				cmd.SetupCameraProperties(passData.Camera);
+
+				//RTHandleのスケール値。
+				cmd.SetGlobalVector(IdRTHandleScale, RTHandles.rtHandleProperties.rtHandleScale);
 
 				//画面サイズをGPUに送信。
 				cmd.SetGlobalVector(IdAttachmentSize, new(1f / attachmentSize.x, 1f / attachmentSize.y, attachmentSize.x, attachmentSize.y));

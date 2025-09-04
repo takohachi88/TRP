@@ -25,6 +25,7 @@ namespace Trp
 
 	public struct PassParams
 	{
+		public TrpCommonSettings CommonSettings { get; init; }
 		public RenderGraph RenderGraph { get; init; }
 		public readonly Camera Camera { get; init; }
 		public readonly TrpCameraData CameraData { get; init; }

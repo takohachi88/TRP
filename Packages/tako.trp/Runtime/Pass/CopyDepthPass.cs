@@ -62,6 +62,14 @@ namespace Trp
 					passData.Src = cameraTextures.AttachmentDepth;
 					passData.Material = _copyDepthToTextureMaterial;
 
+					TextureDesc depthDesc = new(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
+					{
+						name = "CameraDepthTexture",
+						format = RenderingUtils.DepthFormat,
+						clearBuffer = true,
+					};
+					cameraTextures.TextureDepth = renderGraph.CreateTexture(depthDesc);
+
 					builder.SetRenderAttachment(cameraTextures.TextureDepth, 0, AccessFlags.WriteAll);
 					builder.SetGlobalTextureAfterPass(cameraTextures.TextureDepth, TrpConstants.ShaderIds.CameraDepthTexture);
 					break;

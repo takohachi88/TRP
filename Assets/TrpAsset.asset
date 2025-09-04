@@ -21,6 +21,7 @@ MonoBehaviour:
       MaxShadowDistance: 50
     _useOpaqueTextureOnReflection: 0
     _useDepthTextureOnReflection: 0
-    _useLightPerObject: 0
     _postFxLutSize: 20
     _postFxLutFilterMode: 1
+    _defaultMaxBackbufferCameraCount: 16
+    _defaultMaxRenderTextureCameraCount: 16

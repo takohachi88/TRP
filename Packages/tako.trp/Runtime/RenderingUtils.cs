@@ -1,6 +1,8 @@
+using TakoLib.Common.Extensions;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Trp
 {
@@ -102,6 +104,92 @@ namespace Trp
 			if (viewPort.HasValue) cmd.SetViewport(viewPort.Value);
 
 			Blitter.BlitTexture(cmd, src, GetFinalBlitScaleBias(src, dst, camera), _cameraBlitMaterial, (int)CopyPassMode.Color);
+		}
+
+		public static void SetResolusion(int width, int height, FullScreenMode fullScreenMode)
+		{
+			Screen.SetResolution(width, height, fullScreenMode);
+			RtHandlePool.Instance.Dispose();
+		}
+
+		private class RasterPassData
+		{
+			public TextureHandle Src;
+			public TextureHandle Dst;
+			public Material Material;
+			public int PassIndex;
+		}
+
+		/// <summary>
+		/// RenderGraphに単純なBlitを行うパスを追加する。
+		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
+		/// </summary>
+		/// <param name="renderGraph"></param>
+		/// <param name="src"></param>
+		/// <param name="dst"></param>
+		/// <param name="material"></param>
+		/// <param name="passIndex"></param>
+		/// <param name="passName"></param>
+		/// <returns></returns>
+		public static IRasterRenderGraphBuilder AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, Material material, int passIndex, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		{
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
+			passData.Src = src;
+			passData.Material = material;
+			passData.PassIndex = passIndex;
+			builder.UseTexture(src, AccessFlags.Read);
+			builder.SetRenderAttachment(dst, 0, dstAccess);
+			builder.AllowPassCulling(false);
+			builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
+			return builder;
+		}
+
+		/// <summary>
+		/// RenderGraphに単純なBlitを行うパスを追加する。
+		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
+		/// </summary>
+		/// <param name="renderGraph"></param>
+		/// <param name="src"></param>
+		/// <param name="dst"></param>
+		/// <param name="passName"></param>
+		/// <returns></returns>
+		public static IRasterRenderGraphBuilder AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, bool linear, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		{
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
+			passData.Src = src;
+			passData.Material = Blitter.GetBlitMaterial(TextureDimension.Tex2D);
+			passData.PassIndex = linear.ToInt();
+			builder.UseTexture(src, AccessFlags.Read);
+			builder.SetRenderAttachment(dst, 0, dstAccess);
+			builder.AllowPassCulling(false);
+			builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
+			return builder;
+		}
+
+		/// <summary>
+		/// RenderGraphに単純なBlitを行うパスを追加する。
+		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
+		/// </summary>
+		/// <param name="renderGraph"></param>
+		/// <param name="src"></param>
+		/// <param name="dst"></param>
+		/// <param name="passName"></param>
+		/// <returns></returns>
+		public static IRasterRenderGraphBuilder AddBlitDepthPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		{
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
+			passData.Src = src;
+			passData.Dst = dst;
+			passData.Material = Blitter.GetBlitMaterial(TextureDimension.Tex2D);
+			builder.UseTexture(src, AccessFlags.Read);
+			builder.SetRenderAttachmentDepth(dst, dstAccess);
+			builder.AllowPassCulling(false);
+			//builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
+			builder.SetRenderFunc<RasterPassData>(static (passData, context) =>
+			{
+				Blitter.BlitColorAndDepth(context.cmd, passData.Src, passData.Dst, Vector2.one, 0, true);
+			});
+			return builder;
 		}
 	}
 }

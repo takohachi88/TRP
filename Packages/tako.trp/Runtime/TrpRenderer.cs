@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using Trp.PostFx;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
@@ -118,8 +117,8 @@ namespace Trp
 			//cameraDataがある=CameraType.Gameである。
 			if (cameraData)
 			{
-				useScaledRendering = cameraData.UseScaledRenering;
-				if(useScaledRendering) renderScale = cameraData.RenderScale / 100f;
+				useScaledRendering = _commonSettings.UseScaledRendering && !cameraData.IsFinalUiCamera;
+				if(useScaledRendering) renderScale = _commonSettings.RenderScale;
 				useHdr &= cameraData.UseHdr;
 				usePostFx = cameraData.UsePostx;
 				bilinear = cameraData.Bilinear;
@@ -211,6 +210,7 @@ namespace Trp
 				//Passに渡すデータの構築。
 				PassParams passParams = new()
 				{
+					CommonSettings = _commonSettings,
 					RenderGraph = renderGraph,
 					Camera = camera,
 					CameraData = cameraData,

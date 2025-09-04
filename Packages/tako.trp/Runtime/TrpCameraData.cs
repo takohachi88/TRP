@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using TakoLib.Common.Extensions;
 using UnityEngine;
@@ -6,12 +5,6 @@ using UnityEngine.Rendering;
 
 namespace Trp
 {
-	public enum ResolusionMode
-	{
-		Scale,
-		Resolusion,
-	}
-
 	/// <summary>
 	/// TRPにおけるカメラごとの設定。
 	/// Camera型は継承できないのでこのような形に。
@@ -19,11 +12,10 @@ namespace Trp
 	[RequireComponent(typeof(Camera)), DisallowMultipleComponent, ExecuteAlways]
 	public class TrpCameraData : MonoBehaviour
 	{
+		[SerializeField] private bool _isFinalUiCamera;
 		[SerializeField] private LayerMask _volumeMask = 1;
 		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
-		[SerializeField] private ResolusionMode _resolusionMode = ResolusionMode.Resolusion;
-		[SerializeField, Range(1, 100)] private int _renderScale = 100;
 		[SerializeField] private bool _bilinear = true;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private bool _usePostx = true;
@@ -44,13 +36,11 @@ namespace Trp
 			_camera = GetComponent<Camera>();
 		}
 
+		public bool IsFinalUiCamera => _isFinalUiCamera;
 		public bool UseOpaqueTexture => _useOpaqueTexture;
 		public bool UseTransparentTexture => _useTransparentTexture;
 		public bool UseDepthTexture => _useDepthTexture;
 		public int RenderingLayerMask => _renderinLayerMask;
-		public ResolusionMode ResolusionMode => _resolusionMode;
-		public int RenderScale => _renderScale;
-		public bool UseScaledRenering => _renderScale == 100;
 		public bool Bilinear => _bilinear;
 		public bool UseHdr => _useHdr;
 		public bool UsePostx => _usePostx;

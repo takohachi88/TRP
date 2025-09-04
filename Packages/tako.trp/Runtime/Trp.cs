@@ -37,6 +37,7 @@ namespace Trp
 			if (qualitySettingsMsaaSampleCount != (int)commonSettings.Msaa)
 			{
 				QualitySettings.antiAliasing = (int)commonSettings.Msaa;
+				Debug.Log(QualitySettings.antiAliasing);
 			}
 
 			_renderer = new(commonSettings, _resources);
@@ -51,6 +52,7 @@ namespace Trp
 			LensFlareCommonSRP.maxLensFlareWithOcclusionTemporalSample = 1;
 			LensFlareCommonSRP.Initialize();
 			VolumeManager.instance.Initialize();
+			RtHandlePool.Instance.Initialize();
 
 			_renderGraph.nativeRenderPassesEnabled = true;
 
@@ -65,6 +67,7 @@ namespace Trp
 			base.Dispose(disposing);
 			LensFlareCommonSRP.Dispose();
 			VolumeManager.instance.Deinitialize();
+			RtHandlePool.Instance.Dispose();
 			_renderer.Dispose();
 			CameraCaptureBridge.enabled = false;
 			_renderGraph.Cleanup();
