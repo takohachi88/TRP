@@ -184,7 +184,6 @@ namespace Trp
 			builder.UseTexture(src, AccessFlags.Read);
 			builder.SetRenderAttachmentDepth(dst, dstAccess);
 			builder.AllowPassCulling(false);
-			//builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
 			builder.SetRenderFunc<RasterPassData>(static (passData, context) =>
 			{
 				Blitter.BlitColorAndDepth(context.cmd, passData.Src, passData.Dst, Vector2.one, 0, true);
