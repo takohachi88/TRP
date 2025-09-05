@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -27,7 +28,7 @@ namespace Trp
 			_pool = new(capacity);
 		}
 
-		public RTHandle Get(Vector2Int size, RTHandleAllocInfo allocInfo)
+		public RTHandle GetOrAlloc(Vector2Int size, RTHandleAllocInfo allocInfo)
 		{
 			var key = (size.x, size.y, allocInfo);
 			if (_pool.ContainsKey(key)) return _pool[key];
@@ -44,6 +45,7 @@ namespace Trp
 			foreach (RTHandle handle in _pool.Values) handle.Release();
 			_pool.Clear();
 			_instance = null;
+			GC.Collect();
 		}
 	}
 }

@@ -21,9 +21,7 @@ namespace Trp
 
 		private readonly List<Camera> _renderTextureCameras;//描画先がRenderTexture。
 		private readonly List<Camera> _backbufferCameras;//描画先がbackbuffer。
-#if UNITY_EDITOR
 		private readonly List<Camera> _editorCameras = new(3); //描画先がSceneやPreview。
-#endif
 
 		private static readonly ProfilingSampler Sampler = new("TRP");
 		private static readonly ProfilingSampler SamplerRenderTexture = new("TRP RenderTexture");
@@ -66,8 +64,8 @@ namespace Trp
 		{
 			base.Dispose(disposing);
 			LensFlareCommonSRP.Dispose();
-			VolumeManager.instance.Deinitialize();
-			RtHandlePool.Instance.Dispose();
+			VolumeManager.instance?.Deinitialize();
+			RtHandlePool.Instance?.Dispose();
 			_renderer.Dispose();
 			CameraCaptureBridge.enabled = false;
 			_renderGraph.Cleanup();
@@ -86,9 +84,7 @@ namespace Trp
 			SupportedRenderingFeatures.active.rendersUIOverlay = 0 < cameras.Count;
 
 			cameras.Sort(_comparer);
-#if UNITY_EDITOR
 			_editorCameras.Clear();
-#endif
 			_renderTextureCameras.Clear();
 			_backbufferCameras.Clear();
 
@@ -100,7 +96,6 @@ namespace Trp
 				else if (camera.cameraType is CameraType.SceneView or CameraType.Preview) _editorCameras.Add(camera); //VR非対応のため、CameraType.VRは含めない。
 			}
 
-#if UNITY_EDITOR
 			//SceneViewやPreviewなどエディタ用の描画のカメラの描画。
 			for (int i = 0; i < _editorCameras.Count; i++)
 			{
@@ -121,7 +116,6 @@ namespace Trp
 				};
 				_renderer.Render(ref renderParams);
 			}
-#endif
 
 			//RenderTextureを描画先とするカメラの描画。
 			for (int i = 0; i < _renderTextureCameras.Count; i++)

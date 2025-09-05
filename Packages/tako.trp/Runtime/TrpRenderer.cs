@@ -313,7 +313,7 @@ namespace Trp
 		{
 			_setupPass.Dispose();
 			_copyDepthPass.Dispose();
-			_postFxPassGroup.Dispose();
+			if(_postFxPassGroup) _postFxPassGroup.Dispose();
 			CoreUtils.Destroy(_coreBlitMaterial);
 			_lutPass.Dispose();
 		}

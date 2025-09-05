@@ -1,8 +1,6 @@
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.VFX;
 
 namespace Trp
@@ -157,13 +155,13 @@ namespace Trp
 			if (camera.cameraType == CameraType.Game && !passParams.TargetIsGameRenderTexture)
 			{
 				bool needsScaling = passParams.CommonSettings.UseScaledRendering && passParams.CameraData.IsFinalUiCamera;
-				RTHandle attachmentColorRt = RtHandlePool.Instance.Get(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentColorScaledName : attachmentColorName)
+				RTHandle attachmentColorRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentColorScaledName : attachmentColorName)
 				{
 					format = importInfoColor.format,
 					msaaSamples = (MSAASamples)msaa,
 				});
 
-				RTHandle attachmentDepthRt = RtHandlePool.Instance.Get(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentDepthScaledName : attachmentDepthName)
+				RTHandle attachmentDepthRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentDepthScaledName : attachmentDepthName)
 				{
 					format = importInfoDepth.format,
 				});
@@ -174,9 +172,6 @@ namespace Trp
 				//解像度を落としている場合、最後のUI用のカメラ（フル解像度）に拡大Blitする。
 				if (needsScaling)
 				{
-					_attachmentColorScaledRt = attachmentColorRt;
-					_attachmentDepthScaledRt = attachmentDepthRt;
-
 					//RenderTargetInfoを渡すとエラー。
 					attachmentColor = renderGraph.ImportTexture(attachmentColorRt, importParamsColor);
 					attachmentDepth = renderGraph.ImportTexture(attachmentDepthRt, importParamsDepth);
