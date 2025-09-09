@@ -16,7 +16,7 @@ namespace Trp
 		public Camera Camera { get; init; }
 		public bool IsFirstToBackbuffer { get; init; }
 		public bool IsLastToBackbuffer { get; init; }
-		public bool IsFirstCamera { get; init; }
+		public bool IsFirstRuntimeCamera { get; init; }
 		internal readonly TrpResources Resources { get; init; }
 		public PostFxPassGroup PostFxPassGroup { get; init; }
 		public bool TargetIsGameRenderTexture { get; init; }
@@ -48,7 +48,7 @@ namespace Trp
 
 		private PostFxPassGroup _postFxPassGroup;
 
-		private readonly SetupPass _setupPass = new();
+		private readonly SetupPass _setupPass;
 		private readonly CreatePostFxLutPass _lutPass;
 		private readonly DepthOnlyPass _depthOnlyPass = new();
 		private readonly GeometryPass _geometryPass = new();
@@ -73,6 +73,7 @@ namespace Trp
 
 			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CoreBlitShader);
 
+			_setupPass = new(commonSettings.DefaultMaxBackbufferCameraCount);
 			_copyColorPass = new(_coreBlitMaterial);
 			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
@@ -109,6 +110,12 @@ namespace Trp
 
 			Camera camera = rendererParams.Camera;
 			TrpCameraData cameraData = camera.GetComponent<TrpCameraData>();
+			if (camera.cameraType == CameraType.Game && !cameraData)
+			{
+				//エラーとしたいところだが、ビルド時に複数カメラがあると一瞬TrpCameraDataが取得できなくなるフレームがあり、その度にエラーログが出ても困るため通常のログ表示にする。
+				Debug.Log($"{camera.name} has no {nameof(TrpCameraData)}.");
+				return;
+			}
 
 			Vector2Int attachmentSize = new(camera.pixelWidth, camera.pixelHeight);
 			bool useScaledRendering = false;
@@ -117,8 +124,8 @@ namespace Trp
 			//cameraDataがある=CameraType.Gameである。
 			if (cameraData)
 			{
-				useScaledRendering = _commonSettings.UseScaledRendering && !cameraData.IsFinalUiCamera;
-				if(useScaledRendering) renderScale = _commonSettings.RenderScale;
+				useScaledRendering = cameraData.UseScaledRendering;
+				if(useScaledRendering) renderScale = cameraData.RenderScale;
 				useHdr &= cameraData.UseHdr;
 				usePostFx = cameraData.UsePostx;
 				bilinear = cameraData.Bilinear;
@@ -231,7 +238,7 @@ namespace Trp
 					TargetIsGameRenderTexture = rendererParams.TargetIsGameRenderTexture,
 					IsFirstToBackbuffer = isFirstToBackbuffer,
 					IsLastToBackbuffer = isLastToBackbuffer,
-					IsFirstCamera = rendererParams.IsFirstCamera,
+					IsFirstRuntimeCamera = rendererParams.IsFirstRuntimeCamera,
 					EditorCameras = rendererParams.BackbufferCameras,
 					RenderTextureCameras = rendererParams.RenderTextureCameras,
 					BackbufferCameras = rendererParams.BackbufferCameras,

@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -16,14 +17,12 @@ namespace Trp
 		/// </summary>
 		private RTHandle _targetColorRt, _targetDepthRt;
 		/// <summary>
-		/// 中間テクスチャ。CameraStack的な状況では1枚を使い回す。
+		/// 中間テクスチャ。
+		/// Backbufferを描画対象とするカメラ間において用いる。
 		/// </summary>
-		private RTHandle _attachmentColorRt, _attachmentDepthRt;
+		private RTHandle _prevAttachmentColorRt, _prevAttachmentDepthRt;
 
-		/// <summary>
-		/// フル解像度UIモードのカメラで用いる中間テクスチャ。
-		/// </summary>
-		private RTHandle _attachmentColorScaledRt, _attachmentDepthScaledRt;
+		private Vector2Int _prevAttachmentSize;
 
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Setup);
 		private static readonly int IdAttachmentSize = Shader.PropertyToID("_AttachmentSize");
@@ -32,13 +31,17 @@ namespace Trp
 		private static readonly int IdTime = Shader.PropertyToID("_Time");
 		private static readonly int IdRTHandleScale = Shader.PropertyToID("_RTHandleScale");
 
+		public SetupPass(int maxBackbufferCameraCount)
+		{
+		}
+
 		private class PassData
 		{
 			public bool UseIntermediateAttachments;
 			public Vector2Int AttachmentSize;
 			public Vector2 AspectFit;
 			public Camera Camera;
-			public bool IsFirstCamera;
+			public bool IsFirstRuntimeCamera;
 			public CullingResults CullingResults;
 		}
 
@@ -65,18 +68,6 @@ namespace Trp
 			return Mathf.Max(Screen.msaaSamples, 1);
 		}
 
-		private void AllocTargets(ref RTHandle targetColor, ref RTHandle targetDepth, RenderTexture cameraTargetTexture)
-		{
-			RenderTargetIdentifier idTargetColor = cameraTargetTexture ? new RenderTargetIdentifier(cameraTargetTexture) : BuiltinRenderTextureType.CameraTarget;
-			RenderTargetIdentifier idTargetDepth = cameraTargetTexture ? new RenderTargetIdentifier(cameraTargetTexture) : BuiltinRenderTextureType.Depth;
-
-			if (targetColor == null) targetColor = RTHandles.Alloc(idTargetColor, "TargetColor");
-			else if (targetColor.nameID != idTargetColor) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref targetColor, idTargetColor);
-
-			if (targetDepth == null) targetDepth = RTHandles.Alloc(idTargetDepth, "TargetDepth");
-			else if (targetDepth.nameID != idTargetDepth) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref targetDepth, idTargetDepth);
-		}
-
 
 		internal void RecordRenderGraph(ref PassParams passParams)
 		{
@@ -88,9 +79,6 @@ namespace Trp
 			TrpCommonSettings commonSettings = passParams.CommonSettings;
 
 			TextureHandle attachmentColor, attachmentDepth;
-
-			//最終描画先をRTHandleとして確保。
-			AllocTargets(ref _targetColorRt, ref _targetDepthRt, camera.targetTexture);
 
 			//MSAAの設定。
 			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, true);
@@ -143,25 +131,34 @@ namespace Trp
 			RenderTargetInfo importInfoDepth = importInfoColor;
 			importInfoDepth.format = camera.targetTexture ? camera.targetTexture.depthStencilFormat : RenderingUtils.DepthStencilFormat;
 
+			//最終描画先をRTHandleとして確保。
+			RenderTargetIdentifier idTargetColor = camera.targetTexture ? new RenderTargetIdentifier(camera.targetTexture) : BuiltinRenderTextureType.CameraTarget;
+			RenderTargetIdentifier idTargetDepth = camera.targetTexture ? new RenderTargetIdentifier(camera.targetTexture) : BuiltinRenderTextureType.Depth;
+
+			if (_targetColorRt == null) _targetColorRt = RTHandles.Alloc(idTargetColor, "Backbuffer color");
+			else if (_targetColorRt.nameID != idTargetColor) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref _targetColorRt, idTargetColor);
+
+			if (_targetDepthRt == null) _targetDepthRt = RTHandles.Alloc(idTargetDepth, "Backbuffer depth");
+			else if (_targetDepthRt.nameID != idTargetDepth) RTHandleStaticHelpers.SetRTHandleUserManagedWrapper(ref _targetDepthRt, idTargetDepth);
+
 			//backbufferのインポート。
 			//NRP有効時、ImportTextureでは必ずImportInfoを伴うオーバーロードを用いる必要がある。
 			//ImportBackbufferは恐らく不可で、URPでも使われていない。
 			TextureHandle targetColor = renderGraph.ImportTexture(_targetColorRt, importInfoColor, importParamsColor);
 			TextureHandle targetDepth = renderGraph.ImportTexture(_targetDepthRt, importInfoDepth, importParamsDepth);
 
-			const string attachmentColorName = "AttachmentColor", attachmentDepthName = "AttachmentDepth", attachmentColorScaledName = "AttachmentColorScaled", attachmentDepthScaledName = "AttachmentDepthScaled";
+			const string ATTACHMENT_COLOR_NAME = "AttachmentColor", ATTACHMENT_DEPTH_NAME = "AttachmentDepth";
 
 			//backbufferへ書き込む用のカメラである場合。一枚のバッファをカメラ間で使い回す。
 			if (camera.cameraType == CameraType.Game && !passParams.TargetIsGameRenderTexture)
 			{
-				bool needsScaling = passParams.CommonSettings.UseScaledRendering && passParams.CameraData.IsFinalUiCamera;
-				RTHandle attachmentColorRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentColorScaledName : attachmentColorName)
+				RTHandle attachmentColorRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(ATTACHMENT_COLOR_NAME)
 				{
 					format = importInfoColor.format,
 					msaaSamples = (MSAASamples)msaa,
 				});
 
-				RTHandle attachmentDepthRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(needsScaling ? attachmentDepthScaledName : attachmentDepthName)
+				RTHandle attachmentDepthRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(ATTACHMENT_DEPTH_NAME)
 				{
 					format = importInfoDepth.format,
 				});
@@ -169,31 +166,29 @@ namespace Trp
 				importParamsColor.clearOnFirstUse = clearColor;
 				importParamsDepth.clearOnFirstUse = clearDepth;
 
-				//解像度を落としている場合、最後のUI用のカメラ（フル解像度）に拡大Blitする。
+				//RenderTargetInfoを渡すとエラー。
+				attachmentColor = renderGraph.ImportTexture(attachmentColorRt, importParamsColor);
+				attachmentDepth = renderGraph.ImportTexture(attachmentDepthRt, importParamsDepth);
+
+				//前回のサイズと今回のサイズが異なる場合は拡縮Blitが必要。（最初のカメラの場合は行わない。）
+				bool needsScaling = _prevAttachmentSize != attachmentSize && !passParams.IsFirstToBackbuffer;
 				if (needsScaling)
 				{
-					//RenderTargetInfoを渡すとエラー。
-					attachmentColor = renderGraph.ImportTexture(attachmentColorRt, importParamsColor);
-					attachmentDepth = renderGraph.ImportTexture(attachmentDepthRt, importParamsDepth);
-
-					RenderingUtils.AddBlitPass(renderGraph, renderGraph.ImportTexture(_attachmentColorRt, importParamsColor), attachmentColor, true, "ScaleAttachmentColor");
-					RenderingUtils.AddBlitDepthPass(renderGraph, renderGraph.ImportTexture(_attachmentDepthRt, importParamsDepth), attachmentDepth, "ScaleAttachmentDepth");
+					TextureHandle prevColor = renderGraph.ImportTexture(_prevAttachmentColorRt, importParamsColor);
+					TextureHandle prevDepth = renderGraph.ImportTexture(_prevAttachmentDepthRt, importParamsDepth);
+					RenderingUtils.AddBlitPass(renderGraph, prevColor, attachmentColor, true, "ScaleAttachmentColor");
+					RenderingUtils.AddBlitDepthPass(renderGraph, prevDepth, attachmentDepth, "ScaleAttachmentDepth");
 				}
-				else
-				{
-					_attachmentColorRt = attachmentColorRt;
-					_attachmentDepthRt = attachmentDepthRt;
 
-					//RenderTargetInfoを渡すとエラー。
-					attachmentColor = renderGraph.ImportTexture(attachmentColorRt, importParamsColor);
-					attachmentDepth = renderGraph.ImportTexture(attachmentDepthRt, importParamsDepth);
-				}
+				_prevAttachmentColorRt = attachmentColorRt;
+				_prevAttachmentDepthRt = attachmentDepthRt;
+				_prevAttachmentSize = attachmentSize;
 			}
-			else
+			else//RendertextureやSceneView、Previewを描画対象とする場合。
 			{
 				TextureDesc desc = new(attachmentSize.x, attachmentSize.y)
 				{
-					name = attachmentColorName,
+					name = ATTACHMENT_COLOR_NAME,
 					format = importInfoColor.format,
 					clearBuffer = clearColor,
 					clearColor = clearColor ? camera.backgroundColor.linear : Color.clear,
@@ -202,7 +197,7 @@ namespace Trp
 
 				desc = new(attachmentSize.x, attachmentSize.y)
 				{
-					name = attachmentDepthName,
+					name = ATTACHMENT_DEPTH_NAME,
 					format = importInfoDepth.format,
 					clearBuffer = clearDepth,
 				};
@@ -219,7 +214,7 @@ namespace Trp
 
 			passData.AttachmentSize = attachmentSize;
 			passData.Camera = camera;
-			passData.IsFirstCamera = passParams.IsFirstCamera;
+			passData.IsFirstRuntimeCamera = passParams.IsFirstRuntimeCamera;
 			passData.CullingResults = cullingResults;
 
 			//アスペクト比の補正に用いるパラメータ。
@@ -246,7 +241,7 @@ namespace Trp
 				//TODO:ライティング関係の設定。
 
 
-				if (passData.IsFirstCamera)
+				if (passData.IsFirstRuntimeCamera)
 				{
 					//時間変数の設定。
 					cmd.SetGlobalFloat(IdTime, Time.time);
@@ -273,8 +268,8 @@ namespace Trp
 		{
 			_targetColorRt?.Release();
 			_targetDepthRt?.Release();
-			_attachmentColorRt?.Release();
-			_attachmentDepthRt?.Release();
+			_prevAttachmentColorRt?.Release();
+			_prevAttachmentDepthRt?.Release();
 		}
 	}
 }

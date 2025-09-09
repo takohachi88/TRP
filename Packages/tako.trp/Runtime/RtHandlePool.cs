@@ -42,8 +42,22 @@ namespace Trp
 
 		public void Dispose()
 		{
-			foreach (RTHandle handle in _pool.Values) handle.Release();
+#if UNITY_EDITOR
+			string log = string.Empty;
+#endif
+			foreach (RTHandle handle in _pool.Values)
+			{
+#if UNITY_EDITOR
+				log += $"{handle.name}, {handle.referenceSize}\n";
+#endif
+				handle.Release();
+			}
+
+#if UNITY_EDITOR
+			Debug.Log($"{_pool.Count} RTHandles were released. \n{log}");
+#endif
 			_pool.Clear();
+			_pool = null;
 			_instance = null;
 			GC.Collect();
 		}

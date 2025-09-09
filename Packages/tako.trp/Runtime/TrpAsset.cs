@@ -2,12 +2,6 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using TakoLib.Common.Extensions;
-
-
-#if UNITY_EDITOR
-using UnityEditor.Rendering;
-#endif
 
 namespace Trp
 {
@@ -17,7 +11,6 @@ namespace Trp
 	[Serializable]
 	public class TrpCommonSettings
 	{
-		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private MSAASamples _msaaSamples;
 		[SerializeField] private DepthBits _depthBits = DepthBits.Depth32;
@@ -28,8 +21,6 @@ namespace Trp
 		[SerializeField, Min(1)] private int _defaultMaxBackbufferCameraCount = 16;
 		[SerializeField, Min(1)] private int _defaultMaxRenderTextureCameraCount = 16;
 
-		public float RenderScale => _renderScale;
-		public bool UseScaledRendering => _renderScale < 0.9f;
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public DepthBits DepthBits => _depthBits;
@@ -46,7 +37,7 @@ namespace Trp
 
 		public int PostFxLutSize => _postFxLutSize;
 		public FilterMode PostFxLutFilterMode => _postFxLutFilterMode;
-		public int DefaultMaxbackbufferCameraCount => _defaultMaxBackbufferCameraCount;
+		public int DefaultMaxBackbufferCameraCount => _defaultMaxBackbufferCameraCount;
 		public int DefaultMaxRenderTextureCameraCount => _defaultMaxRenderTextureCameraCount;
 	}
 

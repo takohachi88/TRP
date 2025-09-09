@@ -12,7 +12,7 @@ namespace Trp
 	[RequireComponent(typeof(Camera)), DisallowMultipleComponent, ExecuteAlways]
 	public class TrpCameraData : MonoBehaviour
 	{
-		[SerializeField] private bool _isFinalUiCamera;
+		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 		[SerializeField] private LayerMask _volumeMask = 1;
 		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
@@ -36,7 +36,8 @@ namespace Trp
 			_camera = GetComponent<Camera>();
 		}
 
-		public bool IsFinalUiCamera => _isFinalUiCamera;
+		public float RenderScale => _renderScale;
+		public bool UseScaledRendering => !_renderScale.IsInRange(0.95f, 1.05f);
 		public bool UseOpaqueTexture => _useOpaqueTexture;
 		public bool UseTransparentTexture => _useTransparentTexture;
 		public bool UseDepthTexture => _useDepthTexture;

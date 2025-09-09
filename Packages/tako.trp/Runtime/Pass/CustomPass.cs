@@ -58,7 +58,7 @@ namespace Trp
 		/// <summary>
 		/// TRPにおいてもっとも最初に処理されるカメラかどうか。
 		/// </summary>
-		public readonly bool IsFirstCamera { get; init; }
+		public readonly bool IsFirstRuntimeCamera { get; init; }
 
 		public readonly IReadOnlyList<Camera> BackbufferCameras { get; init; }
 		public readonly IReadOnlyList<Camera> RenderTextureCameras { get; init; }

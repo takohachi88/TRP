@@ -19,18 +19,23 @@ namespace Trp
 	{
 		private static int IdSrcBlend = Shader.PropertyToID("_CameraSrcBlend");
 		private static int IdDstBlend = Shader.PropertyToID("_CameraDstBlend");
-
+		private static readonly GlobalKeyword KeywordOutputDepth = GlobalKeyword.Create("_OUTPUT_DEPTH");
 		private static Material _cameraBlitMaterial;
+		private static Material _copyDepthMaterial;
+
 		public static Rect FullViewRect => new(0, 0, 1, 1);
 
-		internal static void Initialize(Shader cameraBlitShader)
+		internal static void Initialize()
 		{
-			_cameraBlitMaterial = CoreUtils.CreateEngineMaterial(cameraBlitShader);
+			TrpResources resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+			_cameraBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CameraBlitShader);
+			_copyDepthMaterial = CoreUtils.CreateEngineMaterial(resources.CopyDepthShader);
 		}
 
 		internal static void Dispose()
 		{
 			CoreUtils.Destroy(_cameraBlitMaterial);
+			CoreUtils.Destroy(_copyDepthMaterial);
 		}
 
 
@@ -167,7 +172,7 @@ namespace Trp
 		}
 
 		/// <summary>
-		/// RenderGraphに単純なBlitを行うパスを追加する。
+		/// RenderGraphに単純なDepthのBlitを行うパスを追加する。
 		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
 		/// </summary>
 		/// <param name="renderGraph"></param>
@@ -184,9 +189,13 @@ namespace Trp
 			builder.UseTexture(src, AccessFlags.Read);
 			builder.SetRenderAttachmentDepth(dst, dstAccess);
 			builder.AllowPassCulling(false);
+			builder.AllowGlobalStateModification(true);
 			builder.SetRenderFunc<RasterPassData>(static (passData, context) =>
 			{
-				Blitter.BlitColorAndDepth(context.cmd, passData.Src, passData.Dst, Vector2.one, 0, true);
+				context.cmd.SetKeyword(KeywordOutputDepth, true);
+				_copyDepthMaterial.SetTexture(TrpConstants.ShaderIds.DepthAttachment, passData.Src);
+				_copyDepthMaterial.SetFloat(TrpConstants.ShaderIds.ZWrite, 1);
+				Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, _copyDepthMaterial, 0);
 			});
 			return builder;
 		}
