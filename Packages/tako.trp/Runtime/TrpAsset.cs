@@ -13,7 +13,6 @@ namespace Trp
 	{
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private MSAASamples _msaaSamples;
-		[SerializeField] private DepthBits _depthBits = DepthBits.Depth32;
 		[SerializeField] private ShadowSettings _shadowSettings;
 		[SerializeField] private bool _useOpaqueTextureOnReflection, _useDepthTextureOnReflection;
 		[SerializeField, Min(4)] private int _postFxLutSize = 32;
@@ -23,7 +22,6 @@ namespace Trp
 
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
-		public DepthBits DepthBits => _depthBits;
 		public ShadowSettings ShadowSettings => _shadowSettings;
 
 		/// <summary>

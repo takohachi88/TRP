@@ -49,7 +49,7 @@ namespace Trp.PostFx
 
 		public override LastTarget RecordRenderGraph(ref PassParams passParams, TextureHandle src, TextureHandle dst, VolumeStack volumeStack)
 		{
-			if (LensFlareCommonSRP.Instance.IsEmpty() || !LensFlareCommonSRP.IsOcclusionRTCompatible()) return LastTarget.None;
+			if (LensFlareCommonSRP.Instance.IsEmpty() || !LensFlareCommonSRP.IsOcclusionRTCompatible() || !passParams.CameraTextures.TextureDepth.IsValid()) return LastTarget.None;
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 

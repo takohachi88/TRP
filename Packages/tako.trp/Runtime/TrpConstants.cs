@@ -15,6 +15,7 @@ namespace Trp
 		public static class ShaderIds
 		{
 			public static readonly int CameraDepthTexture = Shader.PropertyToID("_CameraDepthTexture");
+			public static readonly int CameraNormalsTexture = Shader.PropertyToID("_CameraNormalsTexture");
 			public static readonly int CameraOpaqueTexture = Shader.PropertyToID("_CameraOpaqueTexture");
 			public static readonly int CameraTransparentTexture = Shader.PropertyToID("_CameraTransparentTexture");
 		

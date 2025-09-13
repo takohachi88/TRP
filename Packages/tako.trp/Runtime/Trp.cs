@@ -35,7 +35,7 @@ namespace Trp
 			if (qualitySettingsMsaaSampleCount != (int)commonSettings.Msaa)
 			{
 				QualitySettings.antiAliasing = (int)commonSettings.Msaa;
-				Debug.Log($"Antialiasing was set to {QualitySettings.antiAliasing}.");
+				Debug.Log($"QualitySettings.antialiasing was set to {QualitySettings.antiAliasing}.");
 			}
 
 			_renderer = new(commonSettings, _resources);

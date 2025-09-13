@@ -3,7 +3,7 @@ namespace Trp
 	public enum TrpProfileId
 	{
 		Setup,
-		DepthOnly,
+		DepthNormals,
 		OpaqueGeometry,
 		TransparentGeometry,
 		Skybox,

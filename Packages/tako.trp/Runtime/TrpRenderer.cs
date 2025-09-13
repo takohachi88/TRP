@@ -33,6 +33,7 @@ namespace Trp
 		public TextureHandle TextureOpaque { get; internal set; }
 		public TextureHandle TextureTransparent { get; internal set; }
 		public TextureHandle TextureDepth { get; internal set; }
+		public TextureHandle TextureNormals { get; internal set; }
 		internal TextureHandle TargetColor { get; set; }
 		internal TextureHandle TargetDepth { get; set; }
 		internal TextureHandle PostProcessLut { get; set; }
@@ -48,9 +49,9 @@ namespace Trp
 
 		private PostFxPassGroup _postFxPassGroup;
 
-		private readonly SetupPass _setupPass;
+		private readonly SetupPass _setupPass = new();
 		private readonly CreatePostFxLutPass _lutPass;
-		private readonly DepthOnlyPass _depthOnlyPass = new();
+		private readonly DepthNormalsPass _depthOnlyPass = new();
 		private readonly GeometryPass _geometryPass = new();
 		private readonly SkyboxPass _skyboxPass = new();
 		private readonly CopyColorPass _copyColorPass;
@@ -73,7 +74,6 @@ namespace Trp
 
 			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CoreBlitShader);
 
-			_setupPass = new(commonSettings.DefaultMaxBackbufferCameraCount);
 			_copyColorPass = new(_coreBlitMaterial);
 			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
@@ -100,6 +100,7 @@ namespace Trp
 			bool useOpaqueTexture = true;
 			bool useTransparentTexture = true;
 			bool useDepthTexture = true;
+			bool useNormalsTexture = true;
 			int renderingLayerMask = -1;
 
 			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
@@ -133,7 +134,8 @@ namespace Trp
 				useOpaqueTexture = cameraData.UseOpaqueTexture;
 				useTransparentTexture = cameraData.UseTransparentTexture;
 				useDepthTexture = cameraData.UseDepthTexture;
-				
+				useNormalsTexture = cameraData.UseNormalsTexture;
+
 				renderingLayerMask = cameraData.RenderingLayerMask;
 
 				sampler = cameraData.Sampler;
@@ -164,6 +166,7 @@ namespace Trp
 				useOpaqueTexture = true;
 				useTransparentTexture = true;
 				useDepthTexture = true;
+				useNormalsTexture = true;
 				usePostFx = CoreUtils.ArePostProcessesEnabled(camera);
 			}
 
@@ -173,6 +176,7 @@ namespace Trp
 				useOpaqueTexture = false;
 				useTransparentTexture = false;
 				useDepthTexture = true;
+				useNormalsTexture = true;
 				usePostFx = false;
 			}
 #endif
@@ -226,6 +230,7 @@ namespace Trp
 					UseScaledRendering = useScaledRendering,
 					UseOpaqueTexture = useOpaqueTexture,
 					UseDepthTexture = useDepthTexture,
+					UseNormalsTexture = useNormalsTexture,
 					UseTransparentTexture = useTransparentTexture,
 					RenderScale = renderScale,
 					UseHdr = useHdr,
@@ -263,7 +268,7 @@ namespace Trp
 				_copyColorPass.RecordRenderGraph(ref passParams, CopyColorPass.CopyColorMode.Opaque);
 
 				//CameraDepthTextureの作成。
-				_copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToDepthTexture);
+				_copyDepthPass.RecordRenderGraph(ref passParams);
 
 				//Transparentジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, false);
@@ -283,7 +288,7 @@ namespace Trp
 				if(isLastToBackbuffer || isSceneViewOrPreview) _finalBlitPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentColor, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
-				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams, CopyDepthPass.CopyDepthMode.ToTarget);
+				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams);
 
 				//WireOverlayモードの描画。
 				_wireOverlayPass.RecordRenderGraph(ref passParams);

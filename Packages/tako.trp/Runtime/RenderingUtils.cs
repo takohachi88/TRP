@@ -15,11 +15,15 @@ namespace Trp
 		Depth,
 	};
 
-	public class RenderingUtils
+	public static class RenderingUtils
 	{
 		private static int IdSrcBlend = Shader.PropertyToID("_CameraSrcBlend");
 		private static int IdDstBlend = Shader.PropertyToID("_CameraDstBlend");
+
 		private static readonly GlobalKeyword KeywordOutputDepth = GlobalKeyword.Create("_OUTPUT_DEPTH");
+		private static readonly GlobalKeyword KeywordDepthMsaa2 = GlobalKeyword.Create("_DEPTH_MSAA_2");
+		private static readonly GlobalKeyword KeywordDepthMsaa4 = GlobalKeyword.Create("_DEPTH_MSAA_4");
+		private static readonly GlobalKeyword KeywordDepthMsaa8 = GlobalKeyword.Create("_DEPTH_MSAA_8");
 		private static Material _cameraBlitMaterial;
 		private static Material _copyDepthMaterial;
 
@@ -36,6 +40,15 @@ namespace Trp
 		{
 			CoreUtils.Destroy(_cameraBlitMaterial);
 			CoreUtils.Destroy(_copyDepthMaterial);
+		}
+
+		public static void SetKeywords(this Material material, LocalKeyword[] keywords, int index)
+		{
+			for (int i = 0; i < keywords.Length; i++)
+			{
+				if (i == index) material.EnableKeyword(keywords[i]);
+				else material.DisableKeyword(keywords[i]);
+			}
 		}
 
 
@@ -65,7 +78,6 @@ namespace Trp
 		}
 
 		public static GraphicsFormat DepthStencilFormat => GraphicsFormat.D32_SFloat_S8_UInt;
-		public static GraphicsFormat DepthFormat => GraphicsFormat.R32_SFloat;
 
 		public static GraphicsFormat ColorFormat(bool useHdr, bool useAlpha)
 			=> (useHdr, useAlpha) switch
@@ -123,6 +135,7 @@ namespace Trp
 			public TextureHandle Dst;
 			public Material Material;
 			public int PassIndex;
+			public MSAASamples Msaa;
 		}
 
 		/// <summary>
@@ -186,6 +199,7 @@ namespace Trp
 			passData.Src = src;
 			passData.Dst = dst;
 			passData.Material = Blitter.GetBlitMaterial(TextureDimension.Tex2D);
+			passData.Msaa = src.GetDescriptor(renderGraph).msaaSamples;
 			builder.UseTexture(src, AccessFlags.Read);
 			builder.SetRenderAttachmentDepth(dst, dstAccess);
 			builder.AllowPassCulling(false);
@@ -193,11 +207,19 @@ namespace Trp
 			builder.SetRenderFunc<RasterPassData>(static (passData, context) =>
 			{
 				context.cmd.SetKeyword(KeywordOutputDepth, true);
+				SetDepthMsaa(context.cmd, passData.Msaa);
 				_copyDepthMaterial.SetTexture(TrpConstants.ShaderIds.DepthAttachment, passData.Src);
 				_copyDepthMaterial.SetFloat(TrpConstants.ShaderIds.ZWrite, 1);
 				Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, _copyDepthMaterial, 0);
 			});
 			return builder;
+		}
+
+		public static void SetDepthMsaa(IBaseCommandBuffer cmd, MSAASamples msaa)
+		{
+			cmd.SetKeyword(KeywordDepthMsaa2, msaa == MSAASamples.MSAA2x);
+			cmd.SetKeyword(KeywordDepthMsaa4, msaa == MSAASamples.MSAA4x);
+			cmd.SetKeyword(KeywordDepthMsaa8, msaa == MSAASamples.MSAA8x);
 		}
 	}
 }

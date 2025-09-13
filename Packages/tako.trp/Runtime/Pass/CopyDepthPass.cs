@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using TakoLib.Common.Extensions;
 
 namespace Trp
 {
@@ -13,26 +12,17 @@ namespace Trp
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.CopyDepth);
 
 		private readonly Material _copyDepthToTargetMaterial;
-		private readonly Material _copyDepthToTextureMaterial;
 
 		private static readonly GlobalKeyword KeywordOutputDepth = GlobalKeyword.Create("_OUTPUT_DEPTH");
-
-		public enum CopyDepthMode
-		{
-			ToDepthTexture,
-			ToTarget,
-		}
 
 		internal CopyDepthPass(Shader copyDepthShader)
 		{
 			_copyDepthToTargetMaterial = CoreUtils.CreateEngineMaterial(copyDepthShader);
-			_copyDepthToTextureMaterial = CoreUtils.CreateEngineMaterial(copyDepthShader);
 		}
 
 		internal void Dispose()
 		{
 			CoreUtils.Destroy(_copyDepthToTargetMaterial);
-			CoreUtils.Destroy(_copyDepthToTextureMaterial);
 		}
 
 		public class PassData
@@ -40,10 +30,10 @@ namespace Trp
 			public TextureHandle Src;
 			public Material Material;
 			public Camera Camera;
-			public CopyDepthMode Mode;
+			public MSAASamples Msaa;
 		}
 
-		internal void RecordRenderGraph(ref PassParams passParams, CopyDepthMode mode)
+		internal void RecordRenderGraph(ref PassParams passParams)
 		{
 			if (!passParams.UseDepthTexture) return;
 
@@ -53,38 +43,15 @@ namespace Trp
 
 			CameraTextures cameraTextures = passParams.CameraTextures;
 
-			passData.Mode = mode;
-
-			switch (mode)
-			{
-				//DepthTextureへのコピー。
-				case CopyDepthMode.ToDepthTexture:
-					passData.Src = cameraTextures.AttachmentDepth;
-					passData.Material = _copyDepthToTextureMaterial;
-
-					TextureDesc depthDesc = new(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
-					{
-						name = "CameraDepthTexture",
-						format = RenderingUtils.DepthFormat,
-						clearBuffer = true,
-					};
-					cameraTextures.TextureDepth = renderGraph.CreateTexture(depthDesc);
-
-					builder.SetRenderAttachment(cameraTextures.TextureDepth, 0, AccessFlags.WriteAll);
-					builder.SetGlobalTextureAfterPass(cameraTextures.TextureDepth, TrpConstants.ShaderIds.CameraDepthTexture);
-					break;
-				//TargetDepthへのコピー。現状はシーンのGizmoやgridの適切な描画のために必要な処理。
-				case CopyDepthMode.ToTarget:
-					passData.Src = cameraTextures.AttachmentDepth;
-					passData.Material = _copyDepthToTargetMaterial;
-
-					builder.SetRenderAttachmentDepth(cameraTextures.TargetDepth, AccessFlags.WriteAll);
-					//何かセットしないと警告が出る。
-					builder.SetRenderAttachment(cameraTextures.TargetColor, 0, AccessFlags.Write);
-					break;
-			}
+			//TargetDepthへのコピー。現状はシーンのGizmoやgridの適切な描画のために必要な処理。
+			passData.Src = cameraTextures.AttachmentDepth;
+			passData.Material = _copyDepthToTargetMaterial;
 			passData.Camera = passParams.Camera;
+			passData.Msaa = passParams.CommonSettings.Msaa;
 
+			builder.SetRenderAttachmentDepth(cameraTextures.TargetDepth, AccessFlags.WriteAll);
+			//何かセットしないと警告が出る。
+			builder.SetRenderAttachment(cameraTextures.TargetColor, 0, AccessFlags.Write);
 			builder.UseTexture(passData.Src, AccessFlags.Read);
 			builder.AllowGlobalStateModification(true);
 			builder.AllowPassCulling(false);
@@ -92,17 +59,12 @@ namespace Trp
 			{
 				RTHandle src = passData.Src;
 				Material material = passData.Material;
-				bool dstIsTarget = passData.Mode == CopyDepthMode.ToTarget;
 
-				Vector2 viewportScale = src.useScaling ? src.rtHandleProperties.rtHandleScale : Vector2.one;
-				Vector4 scaleBias = new(viewportScale.x, viewportScale.y, 0, 0);
-
-				//TODO: MSAA対応。CopyDepthシェーダー側は対応済み。
-
-				context.cmd.SetKeyword(KeywordOutputDepth, dstIsTarget);
+				RenderingUtils.SetDepthMsaa(context.cmd, passData.Msaa);
+				context.cmd.SetKeyword(KeywordOutputDepth, true);
 				material.SetTexture(TrpConstants.ShaderIds.DepthAttachment, src);
-				material.SetFloat(TrpConstants.ShaderIds.ZWrite, dstIsTarget.ToInt());
-				Blitter.BlitTexture(context.cmd, passData.Src, scaleBias, material, 0);
+				material.SetFloat(TrpConstants.ShaderIds.ZWrite, 1);
+				Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, material, 0);
 			});
 		}
 	}

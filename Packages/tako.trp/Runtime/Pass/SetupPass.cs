@@ -1,4 +1,3 @@
-using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -31,8 +30,20 @@ namespace Trp
 		private static readonly int IdTime = Shader.PropertyToID("_Time");
 		private static readonly int IdRTHandleScale = Shader.PropertyToID("_RTHandleScale");
 
-		public SetupPass(int maxBackbufferCameraCount)
+		private static bool BindDepthMs(RenderGraph renderGraph, MSAASamples msaa)
 		{
+			if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.OpenGLES3 || MSAASamples.None == msaa) return false;
+
+			//デバイスでのdepthのresolveができるかどうか。
+			bool deviceResolve =
+				Application.platform != RuntimePlatform.OSXEditor &&//OSXとAMDではできないらしい。
+				Application.platform != RuntimePlatform.OSXPlayer &&
+				SystemInfo.supportsMultisampleResolveDepth &&
+				SystemInfo.supportsMultisampleResolveStencil &&
+				renderGraph.nativeRenderPassesEnabled;
+
+			//デバイスでのdepth resolveができないならMSAA画像を手動でbindする。
+			return !deviceResolve;
 		}
 
 		private class PassData
@@ -45,30 +56,6 @@ namespace Trp
 			public CullingResults CullingResults;
 		}
 
-		/// <summary>
-		/// URPのScriptableRenderer.csから流用。
-		/// </summary>
-		/// <param name="renderGraph"></param>
-		/// <param name="useIntermediateColorTarget"></param>
-		/// <returns></returns>
-		private protected int AdjustAndGetScreenMSAASamples(RenderGraph renderGraph, bool useIntermediateColorTarget)
-		{
-			// In the editor (ConfigureTargetTexture in PlayModeView.cs) and many platforms, the system render target is always allocated without MSAA    
-			if (!SystemInfo.supportsMultisampledBackBuffer) return 1;
-
-			// In the players, when URP main rendering is done to an intermediate target and NRP enabled
-			// we disable multisampling for the system backbuffer as a bandwidth optimization
-			// doing so, we avoid storing costly msaa samples back to system memory for nothing
-			bool canOptimizeScreenMSAASamples = useIntermediateColorTarget
-											 && renderGraph.nativeRenderPassesEnabled
-											 && Screen.msaaSamples > 1;
-
-			if (canOptimizeScreenMSAASamples) Screen.SetMSAASamples(1);
-
-			return Mathf.Max(Screen.msaaSamples, 1);
-		}
-
-
 		internal void RecordRenderGraph(ref PassParams passParams)
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
@@ -79,9 +66,6 @@ namespace Trp
 			TrpCommonSettings commonSettings = passParams.CommonSettings;
 
 			TextureHandle attachmentColor, attachmentDepth;
-
-			//MSAAの設定。
-			int msaa = AdjustAndGetScreenMSAASamples(renderGraph, true);
 
 			//出力先がdepthフォーマットのcamera.targetTextureである。
 			bool isCameraTargetOffscreenDepth = camera.targetTexture && camera.targetTexture.format == RenderTextureFormat.Depth;
@@ -123,7 +107,7 @@ namespace Trp
 					width = Screen.width,
 					height = Screen.height,
 					volumeDepth = 1,
-					msaaSamples = msaa,
+					msaaSamples = 1,
 					format = RenderingUtils.ColorFormat(passParams.UseHdr, false),
 				};
 
@@ -155,12 +139,16 @@ namespace Trp
 				RTHandle attachmentColorRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(ATTACHMENT_COLOR_NAME)
 				{
 					format = importInfoColor.format,
-					msaaSamples = (MSAASamples)msaa,
+					msaaSamples = commonSettings.Msaa,
+					bindTextureMS = false,
 				});
 
 				RTHandle attachmentDepthRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(ATTACHMENT_DEPTH_NAME)
 				{
 					format = importInfoDepth.format,
+					filterMode = FilterMode.Point,
+					msaaSamples = commonSettings.Msaa,
+					bindTextureMS = BindDepthMs(renderGraph, commonSettings.Msaa),
 				});
 
 				importParamsColor.clearOnFirstUse = clearColor;

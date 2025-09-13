@@ -14,7 +14,7 @@ namespace Trp
 	{
 		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 		[SerializeField] private LayerMask _volumeMask = 1;
-		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture;
+		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture, _useNormalsTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
 		[SerializeField] private bool _bilinear = true;
 		[SerializeField] private bool _useHdr = true;
@@ -41,6 +41,7 @@ namespace Trp
 		public bool UseOpaqueTexture => _useOpaqueTexture;
 		public bool UseTransparentTexture => _useTransparentTexture;
 		public bool UseDepthTexture => _useDepthTexture;
+		public bool UseNormalsTexture => _useNormalsTexture;
 		public int RenderingLayerMask => _renderinLayerMask;
 		public bool Bilinear => _bilinear;
 		public bool UseHdr => _useHdr;
