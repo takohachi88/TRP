@@ -33,9 +33,14 @@
 #define SAMPLE_TEXTURE2D_X_LOD(textureName, samplerName, coord2, lod) SAMPLE_TEXTURE2D_LOD(textureName, samplerName, coord2, lod)
 
 float2 _AspectFit;
+float4 _AttachmentSize;
 
 float4 unity_FogParams;
 real4  unity_FogColor;
+
+float _TanFov; // tan(FoV角度)
+
+float4 _Time;
 
 half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool fitAspect)
 {
@@ -44,6 +49,10 @@ half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool
     return smoothstep(0.5 - smoothness * 0.5, 0.5 + smoothness * 0.5, dot(dist, dist));
 }
 
+half Pow2(half a)
+{
+    return a * a;
+}
 
 //schlickの近似式。powの代用だが、tの値域が0～1である点に注意。
 float Schlick(float t, float k)
@@ -59,6 +68,13 @@ float2 Rotate(float2 uv, float radian, float2 center)
                         trigs.x,  trigs.y), uv - center) + center;
 }
 
+void AlphaClip(half alpha, half cutoff)
+{
+    #if defined(ALPHA_CLIP)
+    clip(alpha - cutoff);
+    #endif
+}
+
 float3 GetCurrentViewPosition()
 {
     return _WorldSpaceCameraPos;
@@ -67,28 +83,6 @@ float3 GetCurrentViewPosition()
 bool IsPerspectiveProjection()
 {
     return (unity_OrthoParams.w == 0);
-}
-
-struct VertexPositionInputs
-{
-    float3 positionWS;
-    float3 positionVS;
-    float4 positionCS;
-    float4 positionNDC;
-};
-
-VertexPositionInputs GetVertexPositionInputs(float3 positionOS)
-{
-    VertexPositionInputs input;
-    input.positionWS = TransformObjectToWorld(positionOS);
-    input.positionVS = TransformWorldToView(input.positionWS);
-    input.positionCS = TransformWorldToHClip(input.positionWS);
-
-    float4 ndc = input.positionCS * 0.5f;
-    input.positionNDC.xy = float2(ndc.x, ndc.y * _ProjectionParams.x) + ndc.w;
-    input.positionNDC.zw = input.positionCS.zw;
-
-    return input;
 }
 
 //URPから移植。
@@ -163,6 +157,43 @@ half3 MixFog(half3 fragColor, half fogFactor)
         fragColor = fragColor * fogIntensity + unity_FogColor.rgb * (half(1.0) - fogIntensity);
     #endif
     return fragColor;
+}
+
+struct VertexInputs
+{
+    float3 positionWS;
+    float3 positionVS;
+    float4 positionCS;
+    float4 positionNDC;
+    half3 directionVS;
+    half3 tangentWS;
+    half3 bitangentWS;
+    half3 normalWS;
+    float fogFactor;
+};
+
+VertexInputs GetVertexInputs(float3 positionOS, half3 normalOS = half3(0, 0, 1), half4 tangentOS = half4(1, 0, 0, 1))
+{
+    VertexInputs output;
+    output.positionWS = TransformObjectToWorld(positionOS);
+    output.positionVS = TransformWorldToView(output.positionWS);
+    output.positionCS = TransformWorldToHClip(output.positionWS);
+
+    float4 ndc = output.positionCS * 0.5f;
+    output.positionNDC.xy = float2(ndc.x, ndc.y * _ProjectionParams.x) + ndc.w;
+    output.positionNDC.zw = output.positionCS.zw;
+
+    output.directionVS = output.positionWS - GetCurrentViewPosition();
+
+    // mikkts space compliant. only normalize when extracting normal at frag.
+    real sign = real(tangentOS.w) * GetOddNegativeScale();
+    output.normalWS = TransformObjectToWorldNormal(normalOS);
+    output.tangentWS = real3(TransformObjectToWorldDir(tangentOS.xyz));
+    output.bitangentWS = real3(cross(output.normalWS, float3(output.tangentWS))) * sign;
+
+    output.fogFactor = ComputeFogFactor(output.positionCS.z);
+
+    return output;
 }
 
 

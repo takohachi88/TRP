@@ -20,6 +20,8 @@ namespace Trp
 		[SerializeField] private bool _usePostx = true;
 		[SerializeField] private BlendMode _blendSrc = BlendMode.One;
 		[SerializeField] private BlendMode _blendDst = BlendMode.Zero;
+		[SerializeField] private bool _drawShadow = true;
+		[SerializeField] private bool _useOutline = true;
 
 		private string _cameraName;
 		private Camera _camera;
@@ -33,6 +35,7 @@ namespace Trp
 		{
 			_cameraName = gameObject.name;
 			_camera = GetComponent<Camera>();
+			_sampler = new(CameraName);
 		}
 
 		public bool UseOpaqueTexture => _useOpaqueTexture;
@@ -49,5 +52,8 @@ namespace Trp
 		public BlendMode BlendDst => _blendDst;
 
 		public LayerMask VolumeMask => _volumeMask;
+
+		public bool DrawShadow => _drawShadow;
+		public bool UseOutline => _useOutline;
 	}
 }

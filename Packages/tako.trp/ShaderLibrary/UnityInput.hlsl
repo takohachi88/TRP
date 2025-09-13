@@ -3,12 +3,25 @@
 
 //https://docs.unity3d.com/ja/2023.2/Manual/SL-UnityShaderVariables.html
 
-//UnityPerDrawはこの組み合わせでなければならない。（こうでないとSRPBatcherは機能しない。）
+//UnityPerDrawはこの順序と組み合わせでなければならない。（こうでないとSRPBatcherは機能しない。）
 CBUFFER_START(UnityPerDraw)
+
 float4x4 unity_ObjectToWorld;
 float4x4 unity_WorldToObject;
 float4 unity_LODFade;
 real4 unity_WorldTransformParams;
+
+float4 unity_LightmapST;
+float4 unity_DynamicLightmapST; //deprecatedな機能だが、ここで宣言しないとSRPBatcherが無効になってしまう。
+
+float4 unity_SHAr;
+float4 unity_SHAg;
+float4 unity_SHAb;
+float4 unity_SHBr;
+float4 unity_SHBg;
+float4 unity_SHBb;
+float4 unity_SHC;
+
 CBUFFER_END
 
 float4x4 unity_MatrixVP;

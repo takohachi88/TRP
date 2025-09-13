@@ -13,6 +13,7 @@ namespace Trp
 		{
 			public static readonly string SRP_DEFAULT_UNLIT = "SRPDefaultUnlit";
 			public static readonly string LIT = "Lit";
+			public static readonly string OUTLINE = "Outline";
 		}
 
 		public static class ShaderIds

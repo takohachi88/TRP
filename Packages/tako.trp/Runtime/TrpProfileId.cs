@@ -4,7 +4,9 @@ namespace Trp
 	{
 		Setup,
 		DepthOnly,
+		LightingForward,
 		OpaqueGeometry,
+		Outline,
 		TransparentGeometry,
 		Skybox,
 		CopyColorToOpaque,
@@ -18,6 +20,7 @@ namespace Trp
 		LensFlareScreenSpace,
 		FinalBlit,
 		Ui,
+		DebugForwardPlus,
 		WireOverlay,
 		Gizmo,
 		CameraCapture,

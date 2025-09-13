@@ -26,6 +26,30 @@ namespace Trp
 		public PostFxPassGroup PostFxPassGroup { get; init; }
 	}
 
+	public ref struct PassParams
+	{
+		public RenderGraph RenderGraph { get; init; }
+		public readonly Camera Camera { get; init; }
+		public readonly TrpCameraData CameraData { get; init; }
+		public readonly TextureDesc ColorDescriptor { get; init; }
+		public readonly CameraTextures CameraTextures { get; init; }
+		public readonly Vector2Int AttachmentSize { get; init; }
+		public Vector2 AspectFit { get; internal set; }
+		public Vector2 AspectFitRcp { get; internal set; }
+		public readonly CameraClearFlags ClearFlags { get; init; }
+		public readonly bool UseScaledRendering { get; init; }
+		public readonly bool UseOpaqueTexture { get; init; }
+		public readonly bool UseDepthTexture { get; init; }
+		public readonly bool UseTransparentTexture { get; init; }
+		public readonly float RenderScale { get; init; }
+		public readonly bool UseHdr { get; init; }
+		public readonly bool IsSceneViewOrPreview { get; init; }
+		public readonly CullingResults CullingResults { get; init; }
+		public readonly RenderingLayerMask RenderingLayerMask { get; init; }
+		internal readonly int LutSize { get; init; }
+		internal BufferHandle ForwardPlusTileBuffer { get; set; }
+	}
+
 
 	public class CameraTextures
 	{
@@ -54,7 +78,9 @@ namespace Trp
 		private readonly SetupPass _setupPass = new();
 		private readonly CreatePostFxLutPass _lutPass;
 		private readonly DepthOnlyPass _depthOnlyPass = new();
+		private readonly LightingForwardPass _lightingPass = new();
 		private readonly GeometryPass _geometryPass = new();
+		private readonly OutlinePass _outlinePass = new();
 		private readonly SkyboxPass _skyboxPass = new();
 		private readonly CopyColorPass _copyColorPass;
 		private readonly CopyDepthPass _copyDepthPass;
@@ -63,6 +89,7 @@ namespace Trp
 		private readonly WireOverlayPass _wireOverlayPass = new();
 		private readonly GizmoPass _gizmoPass = new();
 		private readonly UiPass _uiPass = new();
+		private readonly DebugForwardPlusPass _debugForwardPlusPass;
 		private readonly CameraCapturePass _cameraCapturePass = new();
 		private readonly SetEditorTargetPass _setEditorTargetPass = new();
 
@@ -82,6 +109,8 @@ namespace Trp
 			_copyDepthPass = new(_copyDepthMaterial);
 
 			_lutPass = new(internalResources.PostProcessLutShader);
+
+			_debugForwardPlusPass = new (internalResources.DebugForwardPlusTileShader);
 		}
 
 		/// <summary>
@@ -104,6 +133,8 @@ namespace Trp
 			bool useOpaqueTexture = true;
 			bool useTransparentTexture = true;
 			bool useDepthTexture = true;
+			bool drawShadow = false;
+			bool useOutline = true;
 			int renderingLayerMask = -1;
 
 			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、cmdには名前を付けてはならない。
@@ -129,6 +160,8 @@ namespace Trp
 				useOpaqueTexture = cameraData.UseOpaqueTexture;
 				useTransparentTexture = cameraData.UseTransparentTexture;
 				useDepthTexture = cameraData.UseDepthTexture;
+				drawShadow = cameraData.DrawShadow;
+				useOutline = cameraData.UseOutline;
 				
 				renderingLayerMask = cameraData.RenderingLayerMask;
 
@@ -258,8 +291,14 @@ namespace Trp
 				//PostProcessで使うLUTの生成。
 				_lutPass.RecordRenderGraph(ref passParams, _commonSettings.PostFxLutFilterMode);
 
+				//ライティングの情報。
+				_lightingPass.RecordRenderGraph(ref passParams, _commonSettings.LightingSettings);
+
 				//Opaqueジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, true);
+
+				//Outlineの描画。
+				if(useOutline) _outlinePass.RecordRenderGraph(ref passParams);
 
 				//Skyboxの描画。
 				if (camera.clearFlags == CameraClearFlags.Skybox) _skyboxPass.RecordRenderGraph(ref passParams);
@@ -299,7 +338,10 @@ namespace Trp
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.TargetDepth, GizmoSubset.PostImageEffects);
 
 				//UIの描画。
-				if(isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
+				if (isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
+
+				//Forward+デバッグ表示。
+				_debugForwardPlusPass.RecordRenderGraph(ref passParams);
 
 				//CameraCaptureBridge対応。
 				_cameraCapturePass.RecordRenderGraph(ref passParams);
@@ -337,6 +379,7 @@ namespace Trp
 			CoreUtils.Destroy(_copyDepthMaterial);
 
 			_lutPass.Dispose();
+			_debugForwardPlusPass.Dispose();
 		}
 	}
 }

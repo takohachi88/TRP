@@ -20,9 +20,9 @@ namespace Trp
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private MSAASamples _msaaSamples;
 		[SerializeField] private DepthBits _depthBits = DepthBits.Depth32;
+		[SerializeField] private LightingForwardPlusSettings _lightingSettings;
 		[SerializeField] private ShadowSettings _shadowSettings;
 		[SerializeField] private bool _useOpaqueTextureOnReflection, _useDepthTextureOnReflection;
-		[SerializeField] private bool _useLightPerObject;
 		[SerializeField, Min(4)] private int _postFxLutSize = 32;
 		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
 
@@ -30,6 +30,7 @@ namespace Trp
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public DepthBits DepthBits => _depthBits;
+		public LightingForwardPlusSettings LightingSettings => _lightingSettings;
 		public ShadowSettings ShadowSettings => _shadowSettings;
 
 		/// <summary>
@@ -40,8 +41,6 @@ namespace Trp
 		/// ReflectionProbeの描画でDepthTextureを生成するかどうか。
 		/// </summary>
 		public bool UseDepthTextureOnReflection => _useDepthTextureOnReflection;
-
-		public bool UseLightPerObject => _useLightPerObject;
 		public int PostFxLutSize => _postFxLutSize;
 		public FilterMode PostFxLutFilterMode => _postFxLutFilterMode;
 	}
