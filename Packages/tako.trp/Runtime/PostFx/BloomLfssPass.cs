@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 
@@ -10,7 +9,7 @@ namespace Trp.PostFx
 	/// BloomとScreenSpaceLensFlareのポストエフェクト。
 	/// URPから移植。
 	/// </summary>
-	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "Bloom", fileName = nameof(BloomLfssPass))]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU_POST_FX + "BloomLfss", fileName = nameof(BloomLfssPass))]
 	public class BloomLfssPass : PostFxPassBase
 	{
 		private static readonly int IdIntensity = Shader.PropertyToID("_Intensity");
@@ -39,8 +38,6 @@ namespace Trp.PostFx
 		[SerializeField] private Shader _lfssShader;
 		private Material _lfssMaterial;
 
-		private static readonly GraphicsFormat _colorFormat = GraphicsFormat.R16G16B16A16_SFloat;
-
 		private static readonly ProfilingSampler SamplerBlitBloomMipmaps = ProfilingSampler.Get(TrpProfileId.BlitBloomMipmaps);
 		private static readonly ProfilingSampler SamplerBloomComposite = ProfilingSampler.Get(TrpProfileId.BloomComposite);
 		private static readonly ProfilingSampler SamplerLfss = ProfilingSampler.Get(TrpProfileId.LensFlareScreenSpace);
@@ -51,8 +48,8 @@ namespace Trp.PostFx
 			for (int i = 0; i < MAX_PYRAMID_SIZE; i++)
 			{
 				_bloomUpsampleMaterials[i] = CoreUtils.CreateEngineMaterial(_bloomShader);
-				_bloomMipUpNames[i] = $"_BloomMipUp{i}";
-				_bloomMipDownNames[i] = $"_BloomMipDown{i}";
+				_bloomMipUpNames[i] = $"BloomMipUp{i}";
+				_bloomMipDownNames[i] = $"BloomMipDown{i}";
 			}
 
 			_lfssMaterial = CoreUtils.CreateEngineMaterial(_lfssShader);
@@ -78,7 +75,7 @@ namespace Trp.PostFx
 
 			if (bloomActive || lfssActive)
 			{
-				BloomTexture(renderGraph, src, out TextureHandle bloomTexture, bloom, passParams.AttachmentSize);
+				BloomTexture(renderGraph, src, out TextureHandle bloomTexture, bloom, passParams.AttachmentSize, passParams.UseAlpha);
 				if (lfssActive)
 				{
 					int maxBloomMip = Mathf.Clamp(lfss.bloomMip.value, 0, bloom.maxIterations.value / 2);
@@ -89,7 +86,8 @@ namespace Trp.PostFx
 						_bloomMipUps[0],
 						_bloomMipUps[maxBloomMip],
 						lfss,
-						passParams.AttachmentSize);
+						passParams.AttachmentSize,
+						passParams.UseAlpha);
 				}
 				BloomCompositePass(renderGraph, in bloomTexture, bloom, passParams.AttachmentSize, src, dst, passParams.Camera);
 
@@ -127,7 +125,7 @@ namespace Trp.PostFx
 			}
 		}
 
-		private void BloomTexture(RenderGraph renderGraph, in TextureHandle src, out TextureHandle dst, Bloom bloom, Vector2Int attachmentSize)
+		private void BloomTexture(RenderGraph renderGraph, in TextureHandle src, out TextureHandle dst, Bloom bloom, Vector2Int attachmentSize, bool useAlpha)
 		{
 			// Start at half-res
 			int downres = 1;
@@ -190,7 +188,7 @@ namespace Trp.PostFx
 			{
 				TextureDesc desc = new(tw, th)
 				{
-					format = _colorFormat,
+					format = RenderingUtils.ColorFormat(true, useAlpha),
 					name = _bloomMipDownNames[0],
 					filterMode = FilterMode.Bilinear,
 				};
@@ -399,7 +397,8 @@ namespace Trp.PostFx
 			TextureHandle bloomTexture,
 			TextureHandle sslfBloomMipTexture,
 			LensFlareScreenSpace lfss,
-			Vector2Int attachmentSize)
+			Vector2Int attachmentSize,
+			bool useAlpha)
 		{
 			var downsample = (int)lfss.resolution.value;
 
@@ -408,7 +407,7 @@ namespace Trp.PostFx
 
 			TextureDesc streakTextureDesc = new(width, height)
 			{
-				format = _colorFormat,
+				format = RenderingUtils.ColorFormat(true, useAlpha),
 				clearBuffer = true,
 				filterMode = FilterMode.Bilinear,
 			};
@@ -451,7 +450,7 @@ namespace Trp.PostFx
 					Camera camera = data.camera;
 					LensFlareScreenSpace lfss = data.ScreenSpaceLensFlare;
 
-					LensFlareTrp.DoLensFlareScreenSpaceCommon(
+					LensFlareScreenSpaceTrp.DoLensFlareScreenSpaceCommon(
 						data.material,
 						camera,
 						data.AttachmentSize.x,

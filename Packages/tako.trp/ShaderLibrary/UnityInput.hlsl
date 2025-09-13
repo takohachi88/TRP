@@ -22,6 +22,12 @@ float4 unity_SHBg;
 float4 unity_SHBb;
 float4 unity_SHC;
 
+float4 unity_SpriteColor;
+//x : FlipX
+//y : FlipY
+//zw: 未使用
+float4 unity_SpriteProps;
+
 CBUFFER_END
 
 float4x4 unity_MatrixVP;

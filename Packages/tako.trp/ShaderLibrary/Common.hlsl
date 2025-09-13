@@ -22,15 +22,21 @@
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/SpaceTransforms.hlsl"
 
-#define TEXTURE2D_X(textureName) TEXTURE2D(textureName)
-#define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)
-#define TEXTURE2D_X_FLOAT(textureName) TEXTURE2D_FLOAT(textureName)
+#include "Packages/takolib.common/ShaderLibrary/Common.hlsl"
 
 //rcp(2 * PI)
 #define PI_TWO_RCP 0.159155
 
+//XR対応ないので「_X」は基本使わないが、LensFlareCommon.hlslなどで必要になってしまうので定義する。
+#define TEXTURE2D_X(textureName) TEXTURE2D(textureName)
+#define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)
+#define TEXTURE2D_X_FLOAT(textureName) TEXTURE2D_FLOAT(textureName)
+static uint unity_StereoEyeIndex;
+#define SLICE_ARRAY_INDEX   unity_StereoEyeIndex
 #define SAMPLE_TEXTURE2D_X(textureName, samplerName, coord2) SAMPLE_TEXTURE2D(textureName, samplerName, coord2)
 #define SAMPLE_TEXTURE2D_X_LOD(textureName, samplerName, coord2, lod) SAMPLE_TEXTURE2D_LOD(textureName, samplerName, coord2, lod)
+#define LOAD_TEXTURE2D_X(textureName, unCoord2) LOAD_TEXTURE2D_ARRAY(textureName, unCoord2, SLICE_ARRAY_INDEX)
+#define LOAD_TEXTURE2D_X_LOD(textureName, unCoord2, lod) LOAD_TEXTURE2D_ARRAY_LOD(textureName, unCoord2, SLICE_ARRAY_INDEX, lod)
 
 float2 _AspectFit;
 float4 _AttachmentSize;
@@ -39,6 +45,7 @@ float4 unity_FogParams;
 real4  unity_FogColor;
 
 float _TanFov; // tan(FoV角度)
+float4 _ScaledScreenParams;
 
 float4 _Time;
 
@@ -196,5 +203,21 @@ VertexInputs GetVertexInputs(float3 positionOS, half3 normalOS = half3(0, 0, 1),
     return output;
 }
 
+//UI標準シェーダーのボイラープレート。
+half UiAlphaRoundUp(half alpha)
+{
+    //Round up the alpha color coming from the interpolator (to 1.0/256.0 steps)
+    //The incoming alpha could have numerical instability, which makes it very sensible to
+    //HDR color transparency blend, when it blends with the world's texture.
+    const half alphaPrecision = half(0xff);
+    const half invAlphaPrecision = half(1.0 / alphaPrecision);
+    return round(alpha * alphaPrecision) * invAlphaPrecision;
+}
+
+//LensFlareCommonで必要な関数。
+float4 GetScaledScreenParams()
+{
+    return _ScaledScreenParams;
+}
 
 #endif

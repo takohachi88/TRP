@@ -1,4 +1,5 @@
-using System;
+using System.Collections.Generic;
+using TakoLib.Common.Extensions;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -11,17 +12,16 @@ namespace Trp
 	[RequireComponent(typeof(Camera)), DisallowMultipleComponent, ExecuteAlways]
 	public class TrpCameraData : MonoBehaviour
 	{
+		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 		[SerializeField] private LayerMask _volumeMask = 1;
-		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture;
+		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthTexture, _useNormalsTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
-		[SerializeField, Range(TrpConstants.RENDER_SCALE_MIN, TrpConstants.RENDER_SCALE_MAX)] private float _renderScale = 1;
 		[SerializeField] private bool _bilinear = true;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private bool _usePostx = true;
-		[SerializeField] private BlendMode _blendSrc = BlendMode.One;
-		[SerializeField] private BlendMode _blendDst = BlendMode.Zero;
 		[SerializeField] private bool _drawShadow = true;
 		[SerializeField] private bool _useOutline = true;
+		[SerializeField] private CustomPass[] _customPasses;
 
 		private string _cameraName;
 		private Camera _camera;
@@ -31,6 +31,7 @@ namespace Trp
 
 		public string CameraName => string.IsNullOrEmpty(_cameraName) ? gameObject.name : _cameraName;
 
+
 		private void Awake()
 		{
 			_cameraName = gameObject.name;
@@ -38,22 +39,34 @@ namespace Trp
 			_sampler = new(CameraName);
 		}
 
+		public float RenderScale => _renderScale;
+		public bool UseScaledRendering => !_renderScale.IsInRange(0.95f, 1.05f);
 		public bool UseOpaqueTexture => _useOpaqueTexture;
 		public bool UseTransparentTexture => _useTransparentTexture;
 		public bool UseDepthTexture => _useDepthTexture;
+		public bool UseNormalsTexture => _useNormalsTexture;
 		public int RenderingLayerMask => _renderinLayerMask;
-
-		public float RenderScale => _renderScale;
 		public bool Bilinear => _bilinear;
 		public bool UseHdr => _useHdr;
 		public bool UsePostx => _usePostx;
-
-		public BlendMode BlendSrc => _blendSrc;
-		public BlendMode BlendDst => _blendDst;
-
 		public LayerMask VolumeMask => _volumeMask;
-
 		public bool DrawShadow => _drawShadow;
 		public bool UseOutline => _useOutline;
+		public IReadOnlyList<CustomPass> AllCustomPasses => _customPasses;
+
+		/// <summary>
+		/// このカメラに登録されたアクティブなパスを全て実行する。
+		/// </summary>
+		/// <param name="phase"></param>
+		/// <param name="output"></param>
+		/// <returns></returns>
+		public void ExecuteCustomPasses(ref PassParams passParams, ExecutionPhase phase)
+		{
+			if (_customPasses.IsNullOrEmpty()) return;
+			foreach (CustomPass pass in _customPasses)
+			{
+				if (pass.Phase == phase && pass.Enabled) pass.Execute(ref passParams);
+			}
+		}
 	}
 }

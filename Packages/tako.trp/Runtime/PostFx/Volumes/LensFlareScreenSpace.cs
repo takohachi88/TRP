@@ -29,7 +29,7 @@ namespace Trp.PostFx
 	/// URPのScreenSpaceLensFlareを移植・改造。
 	/// Streakのthresholdに上限がないのと、複数本表示できるという違いがある。
 	/// </summary>
-	[Serializable, VolumeComponentMenu("TRP/ScreenSpaceLensFlare")]
+	[Serializable, VolumeComponentMenu("TRP/ScreenSpaceLensFlare"), DisplayInfo(name = "Screen Space Lens Flare")]
 	public class LensFlareScreenSpace : VolumeComponent, IPostProcessComponent
 	{
 		/// <summary>
@@ -124,13 +124,6 @@ namespace Trp.PostFx
 		/// </summary>
 		[Header("Chromatic Abberation")]
 		public ClampedFloatParameter chromaticAbberationIntensity = new ClampedFloatParameter(0.5f, 0f, 1f);
-		/// <summary>
-		/// Default constructor for the lens flare volume component.
-		/// </summary>
-		public LensFlareScreenSpace()
-		{
-			displayName = "Screen Space Lens Flare";
-		}
 		/// <summary>
 		/// Mandatory function, cannot have an Override without it
 		/// </summary>

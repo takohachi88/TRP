@@ -2,11 +2,6 @@ using System;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
-using Trp.PostFx;
-
-#if UNITY_EDITOR
-using UnityEditor.Rendering;
-#endif
 
 namespace Trp
 {
@@ -16,20 +11,18 @@ namespace Trp
 	[Serializable]
 	public class TrpCommonSettings
 	{
-		[SerializeField, Range(TrpConstants.RENDER_SCALE_MIN, TrpConstants.RENDER_SCALE_MAX)] private float _renderScale = 1f;
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private MSAASamples _msaaSamples;
-		[SerializeField] private DepthBits _depthBits = DepthBits.Depth32;
 		[SerializeField] private LightingForwardPlusSettings _lightingSettings;
 		[SerializeField] private ShadowSettings _shadowSettings;
 		[SerializeField] private bool _useOpaqueTextureOnReflection, _useDepthTextureOnReflection;
 		[SerializeField, Min(4)] private int _postFxLutSize = 32;
 		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
+		[SerializeField, Min(1)] private int _defaultMaxBackbufferCameraCount = 16;
+		[SerializeField, Min(1)] private int _defaultMaxRenderTextureCameraCount = 16;
 
-		public float RenderScale => _renderScale;
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
-		public DepthBits DepthBits => _depthBits;
 		public LightingForwardPlusSettings LightingSettings => _lightingSettings;
 		public ShadowSettings ShadowSettings => _shadowSettings;
 
@@ -41,40 +34,43 @@ namespace Trp
 		/// ReflectionProbeの描画でDepthTextureを生成するかどうか。
 		/// </summary>
 		public bool UseDepthTextureOnReflection => _useDepthTextureOnReflection;
+
 		public int PostFxLutSize => _postFxLutSize;
 		public FilterMode PostFxLutFilterMode => _postFxLutFilterMode;
+		public int DefaultMaxBackbufferCameraCount => _defaultMaxBackbufferCameraCount;
+		public int DefaultMaxRenderTextureCameraCount => _defaultMaxRenderTextureCameraCount;
 	}
 
 	[CreateAssetMenu(menuName = "Rendering/Trp/TrpAsset", fileName = "TrpAsset")]
 	public class TrpAsset : RenderPipelineAsset<Trp>
 	{
 		[SerializeField] private TrpCommonSettings _commonSettings;
-		[SerializeField] private PostFxPassGroup _overridePostFxGroup;
-		[SerializeField, HideInInspector] private InternalResources _internalResources;
-
-		[SerializeField] private TrpGlobalSettings _globalSettings;
 
 		/// <summary>
 		/// シェーダーのRenderPipelineタグで指定するタグ名。
 		/// </summary>
 		public override string renderPipelineShaderTag => "Trp";
 
+		private TrpResources _resources;
+
+		public override Shader defaultShader => _resources?.UnlitShader;
+		public override Material defaultMaterial => _resources?.UnlitMaterial; //TODO:Litにする。
+		public override Material default2DMaterial => _resources?.SpriteUnlitMaterial;
+		public override Material defaultUIMaterial => _resources?.UIMaterial;
+
 		protected override RenderPipeline CreatePipeline()
 		{
 #if UNITY_EDITOR
-			_internalResources = AssetDatabase.LoadAssetAtPath<InternalResources>("Packages/tako.trp/Runtime/Data/InternalResources.asset");
-
 			//この処理がないとBlitter.Initializeでエラーになる。
-			if (!_globalSettings)
+			TrpGlobalSettings globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
+			if (RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref globalSettings, "Assets/TrpGlobalSettings.asset", true))
 			{
-				_globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
-				if(RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref _globalSettings, "Assets/TrpGlobalSettings.asset", true))
-				{
-					AssetDatabase.Refresh();
-				}
+				AssetDatabase.SaveAssetIfDirty(globalSettings);
 			}
 #endif
-			return new Trp(_commonSettings, _internalResources, _overridePostFxGroup);
+			_resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+
+			return new Trp(_commonSettings, _resources);
 		}
 	}
 }

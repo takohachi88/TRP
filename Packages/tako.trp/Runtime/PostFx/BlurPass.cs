@@ -46,8 +46,7 @@ namespace Trp.PostFx
 				Material material = passData.Material;
 				TextureHandle src = passData.Src;
 				TextureHandle dst = passData.Dst;
-				RenderBufferLoadAction load = RenderBufferLoadAction.DontCare;
-				RenderBufferStoreAction store = RenderBufferStoreAction.Store;
+				//TODO: 実装
 			});
 
 			return LastTarget.Dst;

@@ -3,8 +3,8 @@ namespace Trp
 	public enum TrpProfileId
 	{
 		Setup,
-		DepthOnly,
 		LightingForward,
+		DepthNormals,
 		OpaqueGeometry,
 		Outline,
 		TransparentGeometry,
@@ -18,6 +18,8 @@ namespace Trp
 		BlitBloomMipmaps,
 		BloomComposite,
 		LensFlareScreenSpace,
+		LensFlareDataDrivenOcclusion,
+		LensFlareDataDriven,
 		FinalBlit,
 		Ui,
 		DebugForwardPlus,

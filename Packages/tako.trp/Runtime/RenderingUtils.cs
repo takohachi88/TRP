@@ -1,3 +1,4 @@
+using TakoLib.Common.Extensions;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -14,24 +15,40 @@ namespace Trp
 		Depth,
 	};
 
-	public class RenderingUtils
+	public static class RenderingUtils
 	{
-		private static readonly int IdBlitTexture = Shader.PropertyToID("_BlitTexture");
 		private static int IdSrcBlend = Shader.PropertyToID("_CameraSrcBlend");
 		private static int IdDstBlend = Shader.PropertyToID("_CameraDstBlend");
 
-		private static MaterialPropertyBlock _block = new();
+		private static readonly GlobalKeyword KeywordOutputDepth = GlobalKeyword.Create("_OUTPUT_DEPTH");
+		private static readonly GlobalKeyword KeywordDepthMsaa2 = GlobalKeyword.Create("_DEPTH_MSAA_2");
+		private static readonly GlobalKeyword KeywordDepthMsaa4 = GlobalKeyword.Create("_DEPTH_MSAA_4");
+		private static readonly GlobalKeyword KeywordDepthMsaa8 = GlobalKeyword.Create("_DEPTH_MSAA_8");
 		private static Material _cameraBlitMaterial;
+		private static Material _copyDepthMaterial;
+
 		public static Rect FullViewRect => new(0, 0, 1, 1);
 
-		internal static void Initialize(Shader cameraBlitShader)
+		internal static void Initialize()
 		{
-			_cameraBlitMaterial = CoreUtils.CreateEngineMaterial(cameraBlitShader);
+			TrpResources resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+			_cameraBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CameraBlitShader);
+			_copyDepthMaterial = CoreUtils.CreateEngineMaterial(resources.CopyDepthShader);
 		}
 
 		internal static void Dispose()
 		{
 			CoreUtils.Destroy(_cameraBlitMaterial);
+			CoreUtils.Destroy(_copyDepthMaterial);
+		}
+
+		public static void SetKeywords(this Material material, LocalKeyword[] keywords, int index)
+		{
+			for (int i = 0; i < keywords.Length; i++)
+			{
+				if (i == index) material.EnableKeyword(keywords[i]);
+				else material.DisableKeyword(keywords[i]);
+			}
 		}
 
 
@@ -60,9 +77,7 @@ namespace Trp
 			return !isBackbuffer;
 		}
 
-		public static GraphicsFormat ColorFormat(bool useHdr) => useHdr ? GraphicsFormat.R16G16B16A16_UNorm : GraphicsFormat.R8G8B8A8_UNorm;
 		public static GraphicsFormat DepthStencilFormat => GraphicsFormat.D32_SFloat_S8_UInt;
-		public static GraphicsFormat DepthFormat => GraphicsFormat.R32_SFloat;
 
 		public static GraphicsFormat ColorFormat(bool useHdr, bool useAlpha)
 			=> (useHdr, useAlpha) switch
@@ -70,34 +85,8 @@ namespace Trp
 				(true, true) => GraphicsFormat.R16G16B16A16_UNorm,
 				(true, false) => GraphicsFormat.B10G11R11_UFloatPack32,
 				(false, true) => GraphicsFormat.R8G8B8A8_UNorm,
-				(false, false) => GraphicsFormat.R8G8B8_UNorm,
+				(false, false) => GraphicsFormat.R8G8B8A8_UNorm,
 			};
-
-
-		public static void AllocateColorHandle(
-			ref RTHandle handle,
-			int width,
-			int height,
-			MSAASamples msaaSamples = MSAASamples.None,
-			FilterMode filterMode = FilterMode.Bilinear,
-			TextureWrapMode wrapMode = TextureWrapMode.Clamp,
-			string name = "")
-		{
-			if (handle != null && handle.rt != null) return;
-
-			handle = RTHandles.Alloc(
-				width,
-				height,
-				depthBufferBits: DepthBits.None,
-				colorFormat: ColorFormat(true, true),
-				filterMode: filterMode,
-				wrapMode: wrapMode,
-				useMipMap: false,
-				autoGenerateMips: false,
-				msaaSamples: msaaSamples,
-				memoryless: RenderTextureMemoryless.None,
-				name: name);
-		}
 
 		public static void BlitToCamera(
 			RasterCommandBuffer cmd,
@@ -132,6 +121,105 @@ namespace Trp
 			if (viewPort.HasValue) cmd.SetViewport(viewPort.Value);
 
 			Blitter.BlitTexture(cmd, src, GetFinalBlitScaleBias(src, dst, camera), _cameraBlitMaterial, (int)CopyPassMode.Color);
+		}
+
+		public static void SetResolusion(int width, int height, FullScreenMode fullScreenMode)
+		{
+			Screen.SetResolution(width, height, fullScreenMode);
+			RtHandlePool.Instance.Dispose();
+		}
+
+		private class RasterPassData
+		{
+			public TextureHandle Src;
+			public TextureHandle Dst;
+			public Material Material;
+			public int PassIndex;
+			public MSAASamples Msaa;
+		}
+
+		/// <summary>
+		/// RenderGraphに単純なBlitを行うパスを追加する。
+		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
+		/// </summary>
+		/// <param name="renderGraph"></param>
+		/// <param name="src"></param>
+		/// <param name="dst"></param>
+		/// <param name="material"></param>
+		/// <param name="passIndex"></param>
+		/// <param name="passName"></param>
+		/// <returns></returns>
+		public static IRasterRenderGraphBuilder AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, Material material, int passIndex, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		{
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
+			passData.Src = src;
+			passData.Material = material;
+			passData.PassIndex = passIndex;
+			builder.UseTexture(src, AccessFlags.Read);
+			builder.SetRenderAttachment(dst, 0, dstAccess);
+			builder.AllowPassCulling(false);
+			builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
+			return builder;
+		}
+
+		/// <summary>
+		/// RenderGraphに単純なBlitを行うパスを追加する。
+		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
+		/// </summary>
+		/// <param name="renderGraph"></param>
+		/// <param name="src"></param>
+		/// <param name="dst"></param>
+		/// <param name="passName"></param>
+		/// <returns></returns>
+		public static IRasterRenderGraphBuilder AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, bool linear, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		{
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
+			passData.Src = src;
+			passData.Material = Blitter.GetBlitMaterial(TextureDimension.Tex2D);
+			passData.PassIndex = linear.ToInt();
+			builder.UseTexture(src, AccessFlags.Read);
+			builder.SetRenderAttachment(dst, 0, dstAccess);
+			builder.AllowPassCulling(false);
+			builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
+			return builder;
+		}
+
+		/// <summary>
+		/// RenderGraphに単純なDepthのBlitを行うパスを追加する。
+		/// RenderGraph.AddBlitPassメソッドはUnsafeパスとなりpass mergingできないという問題があるため、Rasterパス版を用意。
+		/// </summary>
+		/// <param name="renderGraph"></param>
+		/// <param name="src"></param>
+		/// <param name="dst"></param>
+		/// <param name="passName"></param>
+		/// <returns></returns>
+		public static IRasterRenderGraphBuilder AddBlitDepthPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		{
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
+			passData.Src = src;
+			passData.Dst = dst;
+			passData.Material = Blitter.GetBlitMaterial(TextureDimension.Tex2D);
+			passData.Msaa = src.GetDescriptor(renderGraph).msaaSamples;
+			builder.UseTexture(src, AccessFlags.Read);
+			builder.SetRenderAttachmentDepth(dst, dstAccess);
+			builder.AllowPassCulling(false);
+			builder.AllowGlobalStateModification(true);
+			builder.SetRenderFunc<RasterPassData>(static (passData, context) =>
+			{
+				context.cmd.SetKeyword(KeywordOutputDepth, true);
+				SetDepthMsaa(context.cmd, passData.Msaa);
+				_copyDepthMaterial.SetTexture(TrpConstants.ShaderIds.DepthAttachment, passData.Src);
+				_copyDepthMaterial.SetFloat(TrpConstants.ShaderIds.ZWrite, 1);
+				Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, _copyDepthMaterial, 0);
+			});
+			return builder;
+		}
+
+		public static void SetDepthMsaa(IBaseCommandBuffer cmd, MSAASamples msaa)
+		{
+			cmd.SetKeyword(KeywordDepthMsaa2, msaa == MSAASamples.MSAA2x);
+			cmd.SetKeyword(KeywordDepthMsaa4, msaa == MSAASamples.MSAA4x);
+			cmd.SetKeyword(KeywordDepthMsaa8, msaa == MSAASamples.MSAA8x);
 		}
 	}
 }

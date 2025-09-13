@@ -59,15 +59,12 @@ Shader "Hidden/Trp/PostFx/CreateLut"
         {
             half3 lut = GetLutStripValue(input.texcoord, _LutParams);
 
-            half3 colorLog = 0;
-            if (TONEMAPPING_ACES) colorLog = ACES_to_ACEScc(unity_to_ACES(lut));
-            else colorLog = LinearToLogC(lut);
+            lut = TONEMAPPING_ACES ? ACES_to_ACEScc(unity_to_ACES(LogCToLinear(lut))) : lut;
             
             //Contrast
-            colorLog = (colorLog - ACEScc_MIDGRAY) * _ColorAdjustmentParams.x + ACEScc_MIDGRAY;
+            lut = (lut - ACEScc_MIDGRAY) * _ColorAdjustmentParams.x + ACEScc_MIDGRAY;
 
-            if (TONEMAPPING_ACES) lut = ACES_to_ACEScg(ACEScc_to_ACES(colorLog));
-            else lut = LogCToLinear(colorLog);
+            lut = TONEMAPPING_ACES ? ACES_to_ACEScg(ACEScc_to_ACES(lut)) : LogCToLinear(lut);
 
             //ColorFilter
             lut *= _ColorFilter;
@@ -102,6 +99,8 @@ Shader "Hidden/Trp/PostFx/CreateLut"
 
             //Nega
             lut = max(0, lerp(lut, (1 - lut), _NegaIntensity));
+
+            lut = TONEMAPPING_ACES ? ACEScg_to_ACES(lut) : lut;
 
             //Tonemapping
             if(TONEMAPPING_NEUTRAL) //Neutral

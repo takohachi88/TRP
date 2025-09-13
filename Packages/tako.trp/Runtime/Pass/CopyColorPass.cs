@@ -29,18 +29,22 @@ namespace Trp
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
 
+			TextureDesc desc = new(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
+			{
+				format = RenderingUtils.ColorFormat(passParams.UseHdr, false),
+			};
+
 			switch (mode)
 			{
 				case CopyColorMode.Opaque:
 					if (!passParams.UseOpaqueTexture) return;
 
-					TextureDesc opaqueDesc = passParams.ColorDescriptor;
-					opaqueDesc.name = "CameraOpaqueTexture";
+					desc.name = "CameraOpaqueTexture";
 
 					CopyTexture(
 						passParams.RenderGraph,
 						passParams.CameraTextures.AttachmentColor,
-						passParams.CameraTextures.TextureOpaque = renderGraph.CreateTexture(opaqueDesc),
+						passParams.CameraTextures.TextureOpaque = renderGraph.CreateTexture(desc),
 						TrpConstants.ShaderIds.CameraOpaqueTexture,
 						SamplerOpaque,
 						passParams.Camera);
@@ -48,13 +52,12 @@ namespace Trp
 				case CopyColorMode.Transparent:
 					if (!passParams.UseTransparentTexture) return;
 
-					TextureDesc transparentDesc = passParams.ColorDescriptor;
-					transparentDesc.name = "CameraTransparentTexture";
+					desc.name = "CameraTransparentTexture";
 
 					CopyTexture(
 						passParams.RenderGraph,
 						passParams.CameraTextures.AttachmentColor,
-						passParams.CameraTextures.TextureTransparent = renderGraph.CreateTexture(transparentDesc),
+						passParams.CameraTextures.TextureTransparent = renderGraph.CreateTexture(desc),
 						TrpConstants.ShaderIds.CameraTransparentTexture,
 						SamplerTransparent,
 						passParams.Camera);

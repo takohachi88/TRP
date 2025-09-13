@@ -12,41 +12,65 @@ namespace Trp
 	public class Trp : RenderPipeline
 	{
 		private TrpRenderer _renderer;
-		private InternalResources _internalResources;
+		private TrpResources _resources;
 		private PostFxPassGroup _postFxPassGroup;
 
 		private readonly CameraComparer _comparer = new();
 
 		private readonly RenderGraph _renderGraph = new RenderGraph("TRP Render Graph");
 
-		private readonly List<Camera> _otherCameras = new(16);
-		private readonly List<Camera> _gameViewCameras = new(16);
+		private readonly List<Camera> _renderTextureCameras;//描画先がRenderTexture。
+		private readonly List<Camera> _backbufferCameras;//描画先がbackbuffer。
+		private readonly List<Camera> _editorCameras = new(3); //描画先がSceneやPreview。
 
 		private static readonly ProfilingSampler Sampler = new("TRP");
+		private static readonly ProfilingSampler SamplerRenderTexture = new("TRP RenderTexture");
 
-		internal Trp(TrpCommonSettings commonSettings, InternalResources internalResources, PostFxPassGroup overridePostFxGroup)
+		internal Trp(TrpCommonSettings commonSettings, TrpResources resources)
 		{
+			_resources = resources;
+
 			//MSAAの設定。
 			int qualitySettingsMsaaSampleCount = QualitySettings.antiAliasing > 0 ? QualitySettings.antiAliasing : 1;
 			if (qualitySettingsMsaaSampleCount != (int)commonSettings.Msaa)
 			{
 				QualitySettings.antiAliasing = (int)commonSettings.Msaa;
+				Debug.Log($"QualitySettings.antialiasing was set to {QualitySettings.antiAliasing}.");
 			}
 
-			_renderer = new(commonSettings, internalResources);
-			RenderingUtils.Initialize(internalResources.CameraBlitShader);
-			Blitter.Initialize(internalResources.CoreBlitShader, internalResources.CoreBlitColorAndDepthShader);
+			_renderer = new(commonSettings, _resources);
+			RenderingUtils.Initialize();
+			Blitter.Initialize(_resources.CoreBlitShader, _resources.CoreBlitColorAndDepthShader);
 			RTHandles.Initialize(Screen.width, Screen.height);
 			CameraCaptureBridge.enabled = true;
-			_internalResources = internalResources;
-			_postFxPassGroup = overridePostFxGroup ? overridePostFxGroup : internalResources.PostFxGroup;
+			_postFxPassGroup = _resources.PostFxGroup;
 			_postFxPassGroup.Initialize();
 
+			LensFlareCommonSRP.mergeNeeded = 0;
+			LensFlareCommonSRP.maxLensFlareWithOcclusionTemporalSample = 1;
+			LensFlareCommonSRP.Initialize();
 			VolumeManager.instance.Initialize();
+			RtHandlePool.Instance.Initialize();
 
 			_renderGraph.nativeRenderPassesEnabled = true;
 
 			GraphicsSettings.useScriptableRenderPipelineBatching = true;
+
+			_renderTextureCameras = new(commonSettings.DefaultMaxRenderTextureCameraCount);
+			_backbufferCameras = new(commonSettings.DefaultMaxBackbufferCameraCount);
+		}
+
+		protected override void Dispose(bool disposing)
+		{
+			base.Dispose(disposing);
+			LensFlareCommonSRP.Dispose();
+			VolumeManager.instance?.Deinitialize();
+			RtHandlePool.Instance?.Dispose();
+			_renderer.Dispose();
+			CameraCaptureBridge.enabled = false;
+			_renderGraph.Cleanup();
+			RenderingUtils.Dispose();
+			Blitter.Cleanup();
 		}
 
 		public class CameraComparer : IComparer<Camera>
@@ -60,65 +84,90 @@ namespace Trp
 			SupportedRenderingFeatures.active.rendersUIOverlay = 0 < cameras.Count;
 
 			cameras.Sort(_comparer);
-			_otherCameras.Clear();
-			_gameViewCameras.Clear();
+			_editorCameras.Clear();
+			_renderTextureCameras.Clear();
+			_backbufferCameras.Clear();
 
+			//TODO: Reflectionの場合の処理。
 			foreach (Camera camera in cameras)
 			{
-				if (camera.cameraType == CameraType.Game && !camera.targetTexture) _gameViewCameras.Add(camera);
-				else if(camera.cameraType != CameraType.VR) _otherCameras.Add(camera); //VR非対応のため、CameraType.VRは無視。
+				if (camera.cameraType == CameraType.Game && camera.targetTexture) _renderTextureCameras.Add(camera);
+				else if (camera.cameraType == CameraType.Game && !camera.targetTexture) _backbufferCameras.Add(camera);
+				else if (camera.cameraType is CameraType.SceneView or CameraType.Preview) _editorCameras.Add(camera); //VR非対応のため、CameraType.VRは含めない。
 			}
 
-			//Game画面（backbuffer）を描画先としないカメラ。
-			for (int i = 0; i < _otherCameras.Count; i++)
+			//RenderTextureを描画先とするカメラの描画。
+			for (int i = 0; i < _renderTextureCameras.Count; i++)
 			{
 				RendererParams renderParams = new()
 				{
 					RenderGraph = _renderGraph,
 					Context = context,
-					Camera = _otherCameras[i],
+					Camera = _renderTextureCameras[i],
 					IsFirstToBackbuffer = false,
 					IsLastToBackbuffer = false,
-					InternalResources = _internalResources,
+					IsFirstRuntimeCamera = i == 0,
+					TargetIsGameRenderTexture = true,
+					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
+					EditorCameras = _editorCameras,
+					RenderTextureCameras = _renderTextureCameras,
+					BackbufferCameras = _backbufferCameras,
 				};
-				_renderer.Render(renderParams);
+				using (new ProfilingScope(SamplerRenderTexture))
+				{
+					_renderer.Render(ref renderParams);
+
+				}
 			}
 
-			//Game画面（backbuffer）を描画先とするカメラ。
-			for (int i = 0; i < _gameViewCameras.Count; i++)
+			//Game画面（backbuffer）を描画先とするカメラの描画。
+			//実際にはURPのCameraStackのように、一枚の中間テクスチャに描画していき、最後のCameraの処理においてbackbufferに描画する。
+			for (int i = 0; i < _backbufferCameras.Count; i++)
 			{
 				RendererParams renderParams = new()
 				{
 					RenderGraph = _renderGraph,
 					Context = context,
-					Camera = _gameViewCameras[i],
+					Camera = _backbufferCameras[i],
 					IsFirstToBackbuffer = i == 0,
-					IsLastToBackbuffer = i == _gameViewCameras.Count - 1,
-					InternalResources = _internalResources,
+					IsLastToBackbuffer = i == _backbufferCameras.Count - 1,
+					IsFirstRuntimeCamera = i == 0 && _renderTextureCameras.Count == 0,
+					TargetIsGameRenderTexture = false,
+					Resources = _resources,
 					PostFxPassGroup = _postFxPassGroup,
+					EditorCameras = _editorCameras,
+					RenderTextureCameras = _renderTextureCameras,
+					BackbufferCameras = _backbufferCameras,
 				};
 				using (new ProfilingScope(Sampler))
 				{
-					_renderer.Render(renderParams);
+					_renderer.Render(ref renderParams);
 				}
 			}
+
+			//SceneViewやPreviewなどエディタ用の描画のカメラの描画。
+			for (int i = 0; i < _editorCameras.Count; i++)
+			{
+				RendererParams renderParams = new()
+				{
+					RenderGraph = _renderGraph,
+					Context = context,
+					Camera = _editorCameras[i],
+					IsFirstToBackbuffer = false,
+					IsLastToBackbuffer = false,
+					IsFirstRuntimeCamera = false,
+					TargetIsGameRenderTexture = false,
+					Resources = _resources,
+					PostFxPassGroup = _postFxPassGroup,
+					EditorCameras = _editorCameras,
+					RenderTextureCameras = _renderTextureCameras,
+					BackbufferCameras = _backbufferCameras,
+				};
+				_renderer.Render(ref renderParams);
+			}
+
 			_renderGraph.EndFrame();
-
-			string s=null;
-			foreach (var v in _otherCameras) s+= v.ToString();
-			foreach (var v in _gameViewCameras) s += v.ToString();
-		}
-
-		protected override void Dispose(bool disposing)
-		{
-			base.Dispose(disposing);
-			VolumeManager.instance.Deinitialize();
-			_renderer.Dispose();
-			CameraCaptureBridge.enabled = false;
-			_renderGraph.Cleanup();
-			RenderingUtils.Dispose();
-			Blitter.Cleanup();
 		}
 	}
 }

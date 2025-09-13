@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 
 namespace Trp.PostFx
 {
@@ -11,8 +12,6 @@ namespace Trp.PostFx
 	public class PostFxPassGroup : ScriptableObject
 	{
 		[SerializeField] private PostFxPassBase[] _passes;
-
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.PostProcess);
 
 		public void Initialize()
 		{
@@ -29,8 +28,11 @@ namespace Trp.PostFx
 
 			VolumeStack volumeStack = VolumeManager.instance.stack;
 
-			TextureDesc desc = passParams.ColorDescriptor;
-			desc.name = "PostProcessDst";
+			TextureDesc desc = new(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
+			{
+				format = RenderingUtils.ColorFormat(passParams.UseHdr, passParams.UseAlpha),
+			};
+			desc.name = "PostFxDst";
 			desc.clearBuffer = true;
 			TextureHandle dst = renderGraph.CreateTexture(desc);
 
@@ -40,6 +42,8 @@ namespace Trp.PostFx
 				LastTarget target = pass.RecordRenderGraph(ref passParams, src, dst, volumeStack);
 				if (target == LastTarget.Dst) (src, dst) = (dst, src);
 			}
+
+			if (!src.Equals(passParams.CameraTextures.AttachmentColor)) renderGraph.AddCopyPass(src, passParams.CameraTextures.AttachmentColor, "Copy");
 
 			return src;
 		}
