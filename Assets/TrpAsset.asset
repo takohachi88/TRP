@@ -13,9 +13,8 @@ MonoBehaviour:
   m_Name: TrpAsset
   m_EditorClassIdentifier: Trp::Trp.TrpAsset
   _commonSettings:
-    _renderScale: 1
     _useHdr: 1
-    _msaaSamples: 1
+    _msaaSamples: 2
     _depthBits: 32
     _shadowSettings:
       MaxShadowDistance: 50
