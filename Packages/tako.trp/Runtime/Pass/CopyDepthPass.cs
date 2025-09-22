@@ -47,7 +47,7 @@ namespace Trp
 			passData.Src = cameraTextures.AttachmentDepth;
 			passData.Material = _copyDepthToTargetMaterial;
 			passData.Camera = passParams.Camera;
-			passData.Msaa = passParams.CommonSettings.Msaa;
+			passData.Msaa = passParams.Msaa;
 
 			builder.SetRenderAttachmentDepth(cameraTextures.TargetDepth, AccessFlags.WriteAll);
 			//何かセットしないと警告が出る。

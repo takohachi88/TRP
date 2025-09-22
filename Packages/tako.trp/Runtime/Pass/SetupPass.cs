@@ -139,7 +139,7 @@ namespace Trp
 				RTHandle attachmentColorRt = RtHandlePool.Instance.GetOrAlloc(attachmentSize, new RTHandleAllocInfo(ATTACHMENT_COLOR_NAME)
 				{
 					format = importInfoColor.format,
-					msaaSamples = commonSettings.Msaa,
+					msaaSamples = passParams.Msaa,
 					bindTextureMS = false,
 				});
 
@@ -147,8 +147,8 @@ namespace Trp
 				{
 					format = importInfoDepth.format,
 					filterMode = FilterMode.Point,
-					msaaSamples = commonSettings.Msaa,
-					bindTextureMS = BindDepthMs(renderGraph, commonSettings.Msaa),
+					msaaSamples = passParams.Msaa,
+					bindTextureMS = BindDepthMs(renderGraph, passParams.Msaa),
 				});
 
 				importParamsColor.clearOnFirstUse = clearColor;
