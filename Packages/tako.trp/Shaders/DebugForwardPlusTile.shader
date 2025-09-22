@@ -1,4 +1,4 @@
-Shader "Hidden/Trp/DebugForwardPlsTile"
+Shader "Hidden/Trp/DebugForwardPlusTile"
 {	
 	SubShader
 	{
@@ -16,7 +16,7 @@ Shader "Hidden/Trp/DebugForwardPlsTile"
 
 		Pass
 		{
-			Name "DebugForwardPlsTile"
+			Name "DebugForwardPlusTile"
 
 			Blend SrcAlpha OneMinusSrcAlpha
 

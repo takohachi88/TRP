@@ -15,7 +15,9 @@ MonoBehaviour:
   _commonSettings:
     _useHdr: 1
     _msaaSamples: 2
-    _depthBits: 32
+    _lightingSettings:
+      MaxLightCountPerTile: 16
+      TileSize: 64
     _shadowSettings:
       MaxShadowDistance: 50
     _useOpaqueTextureOnReflection: 0

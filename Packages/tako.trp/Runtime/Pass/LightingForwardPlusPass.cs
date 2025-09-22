@@ -24,7 +24,7 @@ namespace Trp
 		Size128 = 128,
 	}
 
-	internal class LightingForwardPass
+	internal class LightingForwardPlusPass
 	{
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.LightingForward);
 
@@ -42,6 +42,8 @@ namespace Trp
 
 		private NativeArray<float4> _lightBounds;
 		private NativeArray<int> _tileData;
+
+		public JobHandle _tileJobHandle;
 
 
 		[StructLayout(LayoutKind.Sequential)]
@@ -101,13 +103,13 @@ namespace Trp
 
 		public class PassData
 		{
+			public LightingForwardPlusPass Pass;
 			public TextureHandle Src;
 			public Camera Camera;
-			public JobHandle TileJobHandle;
 			public int TileCount;
-			public NativeArray<int> TileData;
+			public Vector2Int TileCountXY;
+			public int DataCountPerTile;
 			public BufferHandle TileBuffer;
-			public NativeArray<float4> LightBounds;
 			public Vector4 FowardPlusTileSettings;
 
 			public int DirectionalLightCount;
@@ -124,6 +126,8 @@ namespace Trp
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass(Sampler.name, out PassData passData, Sampler);
+
+			passData.Pass = this;
 
 			NativeArray<VisibleLight> visibleLights = passParams.CullingResults.visibleLights;
 			_lightBounds = new(MAX_PUNCTUAL_LIGHT_COUNT, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
@@ -186,7 +190,7 @@ namespace Trp
 				_tileData = new(tileCount * dataCountPerTile, Allocator.TempJob);
 
 				//JobSystemでForwardPlusのタイルの計算。
-				JobHandle tileJobHandle = new ForwardPlusTileJob
+				_tileJobHandle = new ForwardPlusTileJob
 				{
 					TileData = _tileData,
 					LightBounds = _lightBounds,
@@ -196,11 +200,10 @@ namespace Trp
 					TileCountX = tileCountXY.x,
 					TileScreenUvSize = 1f / screenUvToTileCoordinates,
 				}
-				.ScheduleParallel(tileCountXY.x * tileCountXY.y, tileCountXY.x, default);
-				passData.TileJobHandle = tileJobHandle;
+				.ScheduleParallel(tileCount, tileCountXY.x, default);
 				passData.TileCount = tileCount;
-				passData.TileData = _tileData;
-				passData.LightBounds = _lightBounds;
+				passData.TileCountXY = tileCountXY;
+				passData.DataCountPerTile = dataCountPerTile;
 
 				//プーリングのため最大数で取得。
 				BufferDesc tileBufferDesc = new (tileCount * (lightingSettings.MaxLightCountPerTile + 1), sizeof(int))
@@ -237,26 +240,47 @@ namespace Trp
 				if (0 < passData.PunctualLightCount)
 				{
 					//Jobの時間稼ぎのためここでようやくComplete。
-					passData.TileJobHandle.Complete();
+					passData.Pass._tileJobHandle.Complete();
+					
+					/*
+					string log = string.Empty;
+					log += $"dataCountPerTile:{passData.DataCountPerTile}, tileCountXY:{passData.TileCountXY}, tileData.Length:{passData.Pass._tileData.Length}, PunctualLightCount:{passData.PunctualLightCount}\n";
+
+					for (int i = 0; i < passData.PunctualLightCount; i++)
+					{
+						log += $"{passData.Pass._lightBounds[i]}";
+					}
+
+					log += "\n";
+
+					for (int i = 0; i < passData.Pass._tileData.Length; i++)
+					{
+						log += $"{passData.Pass._tileData[i]}";
+						if (i % passData.DataCountPerTile == passData.DataCountPerTile - 1) log += "|";
+						if ((i + 1) % (passData.TileCountXY.x * passData.DataCountPerTile) == 0) log += "\n";
+					}
+
+					Debug.Log(log);
+					*/
 
 					cmd.SetBufferData(passData.PunctualLightBuffer, passData.PunctualLightData, 0, 0, passData.PunctualLightCount);
 					cmd.SetGlobalBuffer(IdPunctualLightBuffer, passData.PunctualLightBuffer);
 
-					cmd.SetBufferData(passData.TileBuffer, passData.TileData);
+					cmd.SetBufferData(passData.TileBuffer, passData.Pass._tileData);
 					cmd.SetGlobalBuffer(IdTileBuffer, passData.TileBuffer);
 
 					cmd.SetGlobalVector(IdFowardPlusTileSettings, passData.FowardPlusTileSettings);
 					cmd.SetGlobalFloat(IdPunctualLightCount, passData.PunctualLightCount);
 				}
-				passData.TileData.Dispose();
-				passData.LightBounds.Dispose();
+				if(passData.Pass._tileData.IsCreated) passData.Pass._tileData.Dispose();
+				passData.Pass._lightBounds.Dispose();
 			});
 		}
 
 		public void Dispose()
 		{
-			_tileData.Dispose();
-			_lightBounds.Dispose();
+			if (_tileData.IsCreated) _tileData.Dispose();
+			if (_lightBounds.IsCreated) _lightBounds.Dispose();
 		}
 	}
 }

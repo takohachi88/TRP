@@ -23,30 +23,7 @@ namespace Trp
 		public readonly IReadOnlyList<Camera> BackbufferCameras { get; init; }
 		public readonly IReadOnlyList<Camera> RenderTextureCameras { get; init; }
 		public readonly IReadOnlyList<Camera> EditorCameras { get; init; }
-	}
-
-	public ref struct PassParams
-	{
-		public RenderGraph RenderGraph { get; init; }
-		public readonly Camera Camera { get; init; }
-		public readonly TrpCameraData CameraData { get; init; }
-		public readonly TextureDesc ColorDescriptor { get; init; }
-		public readonly CameraTextures CameraTextures { get; init; }
-		public readonly Vector2Int AttachmentSize { get; init; }
-		public Vector2 AspectFit { get; internal set; }
-		public Vector2 AspectFitRcp { get; internal set; }
-		public readonly CameraClearFlags ClearFlags { get; init; }
-		public readonly bool UseScaledRendering { get; init; }
-		public readonly bool UseOpaqueTexture { get; init; }
-		public readonly bool UseDepthTexture { get; init; }
-		public readonly bool UseTransparentTexture { get; init; }
-		public readonly float RenderScale { get; init; }
-		public readonly bool UseHdr { get; init; }
-		public readonly bool IsSceneViewOrPreview { get; init; }
-		public readonly CullingResults CullingResults { get; init; }
-		public readonly RenderingLayerMask RenderingLayerMask { get; init; }
-		internal readonly int LutSize { get; init; }
-		internal BufferHandle ForwardPlusTileBuffer { get; set; }
+		public readonly DebugForwardPlus.CameraDebugValue ForwardPlusCameraDebugValue { get; init; }
 	}
 
 
@@ -75,7 +52,7 @@ namespace Trp
 
 		private readonly SetupPass _setupPass = new();
 		private readonly CreatePostFxLutPass _lutPass;
-		private readonly LightingForwardPass _lightingPass = new();
+		private readonly LightingForwardPlusPass _lightingPass = new();
 		private readonly DepthNormalsPass _depthOnlyPass = new();
 		private readonly GeometryPass _geometryPass = new();
 		private readonly OutlinePass _outlinePass = new();
@@ -102,7 +79,7 @@ namespace Trp
 			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CoreBlitShader);
 
 			_copyColorPass = new(_coreBlitMaterial);
-			_debugForwardPlusPass = new (internalResources.DebugForwardPlusTileShader);
+			_debugForwardPlusPass = new (resources.DebugForwardPlusTileShader);
 			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
 		}
@@ -132,6 +109,7 @@ namespace Trp
 			bool useOutline = true;
 			bool useNormalsTexture = true;
 			int renderingLayerMask = -1;
+			MSAASamples msaa = MSAASamples.None;
 
 			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
 			CommandBuffer cmd = CommandBufferPool.Get();
@@ -168,7 +146,7 @@ namespace Trp
 				drawShadow = cameraData.DrawShadow;
 				useOutline = cameraData.UseOutline;
 				renderingLayerMask = cameraData.RenderingLayerMask;
-
+				msaa = _commonSettings.Msaa;
 				sampler = cameraData.Sampler;
 			}
 			else
@@ -186,6 +164,7 @@ namespace Trp
 				useOpaqueTexture = _commonSettings.UseOaqueTextureOnReflection;
 				useTransparentTexture = false;
 				useDepthTexture = _commonSettings.UseDepthTextureOnReflection;
+				useNormalsTexture = false;
 			}
 
 #if UNITY_EDITOR
@@ -278,6 +257,8 @@ namespace Trp
 					EditorCameras = rendererParams.BackbufferCameras,
 					RenderTextureCameras = rendererParams.RenderTextureCameras,
 					BackbufferCameras = rendererParams.BackbufferCameras,
+					Msaa = msaa,
+					ForwardPlusCameraDebugValue = rendererParams.ForwardPlusCameraDebugValue,
 				};
 
 				//レンダリングの前段階的な処理。各種テクスチャの確保など。
@@ -321,8 +302,11 @@ namespace Trp
 				if (usePostFx) _postFxPassGroup.RecordRenderGraph(ref passParams);
 				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingPostProcessing);
 
+				//Forward+デバッグ表示。
+				if (camera.cameraType is not (CameraType.Preview)) _debugForwardPlusPass.RecordRenderGraph(ref passParams);
+
 				//中間バッファから画面への描画。
-				if(isLastToBackbuffer || isSceneViewOrPreview) _finalBlitPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentColor, blendSrc, blendDst);
+				if (isLastToBackbuffer || camera.targetTexture) _finalBlitPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentColor, blendSrc, blendDst);
 
 				//TargetDepthへのコピー。
 				if(isSceneViewOrPreview) _copyDepthPass.RecordRenderGraph(ref passParams);
@@ -333,11 +317,8 @@ namespace Trp
 				//Gizmoの描画。
 				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.TargetDepth, GizmoSubset.PostImageEffects);
 
-				//Forward+デバッグ表示。
-				_debugForwardPlusPass.RecordRenderGraph(ref passParams);
-
 				//OverlayなUIの描画。
-				if(isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
+				if (isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);
 
 				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRendering);
 
@@ -368,7 +349,7 @@ namespace Trp
 			if(_postFxPassGroup) _postFxPassGroup.Dispose();
 			CoreUtils.Destroy(_coreBlitMaterial);
 			_lutPass.Dispose();
-			_debugForwardPlusPass.Dispose();
+			_lightingPass.Dispose();
 		}
 	}
 }

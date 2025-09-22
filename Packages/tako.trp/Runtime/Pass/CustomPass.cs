@@ -57,12 +57,16 @@ namespace Trp
 		/// </summary>
 		public readonly bool IsLastToBackbuffer { get; init; }
 		/// <summary>
-		/// TRPにおいてもっとも最初に処理されるカメラかどうか。
+		/// TRPにおいてもっとも最初に処理されるランタイムのカメラかどうか。
 		/// </summary>
 		public readonly bool IsFirstRuntimeCamera { get; init; }
 
 		public readonly IReadOnlyList<Camera> BackbufferCameras { get; init; }
 		public readonly IReadOnlyList<Camera> RenderTextureCameras { get; init; }
 		public readonly IReadOnlyList<Camera> EditorCameras { get; init; }
+
+		internal BufferHandle ForwardPlusTileBuffer { get; set; }
+		internal readonly MSAASamples Msaa { get; init; }
+		internal readonly DebugForwardPlus.CameraDebugValue ForwardPlusCameraDebugValue { get; init; }
 	}
 }

@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Mathematics;
 using Unity.Collections;
 using static Unity.Mathematics.math;
+using UnityEngine;
 
 namespace Trp
 {
@@ -48,10 +49,9 @@ namespace Trp
 					//タイルごとのライトの最大数を超過したら切り上げ。
 					if (LightCountPerTile <= lightCountInTile) break;
 				}
-
-				//タイルにライトがいくつ含まれるのかheaderに登録する。
-				TileData[headerIndex] = lightCountInTile;
 			}
+			//タイルにライトがいくつ含まれるのかheaderに登録する。
+			TileData[headerIndex] = lightCountInTile;
 		}
 	}
 }

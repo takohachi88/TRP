@@ -26,6 +26,8 @@ namespace Trp
 		private static readonly ProfilingSampler Sampler = new("TRP");
 		private static readonly ProfilingSampler SamplerRenderTexture = new("TRP RenderTexture");
 
+		private static readonly DebugForwardPlus DebugForwardPlus = new();
+
 		internal Trp(TrpCommonSettings commonSettings, TrpResources resources)
 		{
 			_resources = resources;
@@ -71,6 +73,7 @@ namespace Trp
 			_renderGraph.Cleanup();
 			RenderingUtils.Dispose();
 			Blitter.Cleanup();
+			DebugForwardPlus.Dispose();
 		}
 
 		public class CameraComparer : IComparer<Camera>
@@ -88,10 +91,12 @@ namespace Trp
 			_renderTextureCameras.Clear();
 			_backbufferCameras.Clear();
 
+			DebugForwardPlus.Register(cameras);
+
 			//TODO: Reflectionの場合の処理。
 			foreach (Camera camera in cameras)
 			{
-				if (camera.cameraType == CameraType.Game && camera.targetTexture) _renderTextureCameras.Add(camera);
+				if ((camera.cameraType == CameraType.Game && camera.targetTexture) || camera.cameraType == CameraType.Reflection) _renderTextureCameras.Add(camera);
 				else if (camera.cameraType == CameraType.Game && !camera.targetTexture) _backbufferCameras.Add(camera);
 				else if (camera.cameraType is CameraType.SceneView or CameraType.Preview) _editorCameras.Add(camera); //VR非対応のため、CameraType.VRは含めない。
 			}
@@ -113,11 +118,11 @@ namespace Trp
 					EditorCameras = _editorCameras,
 					RenderTextureCameras = _renderTextureCameras,
 					BackbufferCameras = _backbufferCameras,
+					ForwardPlusCameraDebugValue = null,
 				};
 				using (new ProfilingScope(SamplerRenderTexture))
 				{
 					_renderer.Render(ref renderParams);
-
 				}
 			}
 
@@ -139,6 +144,7 @@ namespace Trp
 					EditorCameras = _editorCameras,
 					RenderTextureCameras = _renderTextureCameras,
 					BackbufferCameras = _backbufferCameras,
+					ForwardPlusCameraDebugValue = DebugForwardPlus.GetCameraDebugValue(_backbufferCameras[i]),
 				};
 				using (new ProfilingScope(Sampler))
 				{
@@ -163,6 +169,7 @@ namespace Trp
 					EditorCameras = _editorCameras,
 					RenderTextureCameras = _renderTextureCameras,
 					BackbufferCameras = _backbufferCameras,
+					ForwardPlusCameraDebugValue = DebugForwardPlus.GetCameraDebugValue(_editorCameras[i]),
 				};
 				_renderer.Render(ref renderParams);
 			}
