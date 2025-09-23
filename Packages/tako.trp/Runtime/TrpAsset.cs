@@ -41,7 +41,7 @@ namespace Trp
 		public int DefaultMaxRenderTextureCameraCount => _defaultMaxRenderTextureCameraCount;
 	}
 
-	[CreateAssetMenu(menuName = "Rendering/Trp/TrpAsset", fileName = "TrpAsset")]
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "TrpAsset", fileName = "TrpAsset")]
 	public class TrpAsset : RenderPipelineAsset<Trp>
 	{
 		[SerializeField] private TrpCommonSettings _commonSettings;

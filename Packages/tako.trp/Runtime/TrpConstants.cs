@@ -4,7 +4,8 @@ namespace Trp
 {
 	public static class TrpConstants
 	{
-		public const string PATH_CREATE_MENU_POST_FX = "Rendering/Trp/PostFx/";
+		public const string PATH_CREATE_MENU = "Rendering/TRP/";
+		public const string PATH_CREATE_MENU_POST_FX = PATH_CREATE_MENU + "PostFx/";
 
 		public static class PassNames
 		{
