@@ -9,6 +9,13 @@ namespace TrpEditor
 	public class TrpCreateMenuExtensions : CreateMenuExtensions<TrpCreateMenuExtensions>
 	{
 		private const string TrpMenuItemShaderRoot = MenuItemShaderRoot + "TRP/";
+		private const string TrpMenuItemCsRoot = MenuItemCsRoot + "TRP/";
+
+		/// <summary>
+		/// TRPのCustomPassObjectのC#ファイルを作成する。
+		/// </summary>
+		[MenuItem(TrpMenuItemCsRoot + "Custom Pass Object", priority = 0)]
+		private static void CreateTrpCustomPassObject() => CreateFile(FileType.Cs, "TrpCustomPassObject", "CustomPassObject");
 
 		/// <summary>
 		/// TRPのUI標準シェーダーを作成する。

@@ -21,7 +21,7 @@ namespace Trp
 		[SerializeField] private bool _usePostx = true;
 		[SerializeField] private bool _drawShadow = true;
 		[SerializeField] private bool _useOutline = true;
-		[SerializeField] private CustomPass[] _customPasses;
+		public List<CustomPass> CustomPasses;
 
 		private string _cameraName;
 		private Camera _camera;
@@ -51,7 +51,6 @@ namespace Trp
 		public LayerMask VolumeMask => _volumeMask;
 		public bool DrawShadow => _drawShadow;
 		public bool UseOutline => _useOutline;
-		public IReadOnlyList<CustomPass> AllCustomPasses => _customPasses;
 
 		/// <summary>
 		/// このカメラに登録されたアクティブなパスを全て実行する。
@@ -61,10 +60,10 @@ namespace Trp
 		/// <returns></returns>
 		public void ExecuteCustomPasses(ref PassParams passParams, ExecutionPhase phase)
 		{
-			if (_customPasses.IsNullOrEmpty()) return;
-			foreach (CustomPass pass in _customPasses)
+			if (CustomPasses.IsNullOrEmpty()) return;
+			foreach (CustomPass pass in CustomPasses)
 			{
-				if (pass.Phase == phase && pass.Enabled) pass.Execute(ref passParams);
+				if (pass.PassObject && pass.Enabled && pass.PassObject.Phase == phase) pass.PassObject.Execute(ref passParams);
 			}
 		}
 	}

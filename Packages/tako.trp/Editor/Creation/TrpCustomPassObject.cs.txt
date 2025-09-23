@@ -1,0 +1,13 @@
+using UnityEngine;
+
+namespace Trp
+{
+    [CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/#NAME#", fileName = "#NAME#")]
+    public class #NAME# : CustomPassObject
+    {
+        public override void Execute(ref PassParams passParams)
+        {
+            
+        }
+    }
+}

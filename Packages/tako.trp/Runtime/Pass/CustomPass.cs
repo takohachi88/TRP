@@ -6,21 +6,24 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Trp
 {
+	[Serializable]
+	public sealed class CustomPass
+	{
+		[SerializeField] private CustomPassObject _passObject;
+		public bool Enabled = true;
+		public CustomPassObject PassObject => _passObject;
+	}
+
 	/// <summary>
 	/// TRP外から処理を追加したいときに用いる。
 	/// Cameraに登録する。
 	/// </summary>
-	[Serializable]
-	public class CustomPass
+	//[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPassObject", fileName = "CustomPassObject")]
+	public abstract class CustomPassObject : ScriptableObject
 	{
-		[SerializeField] private bool _enabled = true;
 		[SerializeField] private ExecutionPhase _phase;
-		public virtual bool Enabled => _enabled;
 		public ExecutionPhase Phase => _phase;
-		public virtual void Execute(ref PassParams passParams)
-		{
-
-		}
+		public abstract void Execute(ref PassParams passParams);
 	}
 
 	public struct PassParams
