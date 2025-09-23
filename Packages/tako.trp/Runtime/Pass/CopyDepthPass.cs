@@ -35,8 +35,6 @@ namespace Trp
 
 		internal void RecordRenderGraph(ref PassParams passParams)
 		{
-			if (!passParams.UseDepthTexture) return;
-
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);

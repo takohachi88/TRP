@@ -220,4 +220,24 @@ float4 GetScaledScreenParams()
     return _ScaledScreenParams;
 }
 
+
+half3 NormalizeNormalPerPixel(half3 normalWS)
+{
+// With XYZ normal map encoding we sporadically sample normals with near-zero-length causing Inf/NaN
+#if defined(UNITY_NO_DXT5nm) && defined(_NORMALMAP)
+    return SafeNormalize(normalWS);
+#else
+    return normalize(normalWS);
+#endif
+}
+
+float LinearDepthToEyeDepth(float rawDepth)
+{
+#if UNITY_REVERSED_Z
+        return _ProjectionParams.z - (_ProjectionParams.z - _ProjectionParams.y) * rawDepth;
+#else
+    return _ProjectionParams.y + (_ProjectionParams.z - _ProjectionParams.y) * rawDepth;
+#endif
+}
+
 #endif

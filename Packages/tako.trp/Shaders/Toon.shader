@@ -193,26 +193,22 @@ Shader "TRP/Toon"
         
         Pass
         {
-            Name "DepthOnly"
+            Name "DepthNormalsOnly"
             Tags
             {
-                "LightMode" = "DepthOnly"
+                "LightMode" = "DepthNormalsOnly"
             }
 
             ZWrite On
-            ColorMask R
-            Cull[_Cull]
 
             HLSLPROGRAM
-            
-            #pragma vertex DepthOnlyVertex
-            #pragma fragment DepthOnlyFragment
-            #pragma shader_feature_local ALPHA_CLIP
-
-            #include "Packages/tako.trp/Shaders/DepthOnlyPass.hlsl"
-            
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma shader_feature_local_fragment ALPHA_CLIP
+            #pragma multi_compile_instancing
+            #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
+            #include "Packages/tako.trp/Shaders/DepthNormalsPass.hlsl"
             ENDHLSL
         }
-
     }
 }

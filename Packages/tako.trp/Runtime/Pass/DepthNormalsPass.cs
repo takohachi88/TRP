@@ -19,9 +19,7 @@ namespace Trp
 
 		internal void RecordRenderGraph(ref PassParams passParams)
 		{
-			bool useDepth = passParams.UseDepthTexture;
-			bool useNormals = passParams.UseNormalsTexture;
-			if (!useDepth && !useNormals) return;
+			if (!passParams.UseDepthNormalsTexture) return;
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 
@@ -36,29 +34,23 @@ namespace Trp
 				renderingLayerMask = (uint)passParams.RenderingLayerMask,
 			});
 
-			if (useNormals)
+			TextureHandle normals = renderGraph.CreateTexture(new TextureDesc(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
 			{
-				TextureHandle normals = renderGraph.CreateTexture(new TextureDesc(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
-				{
-					colorFormat = GraphicsFormat.R8G8B8A8_SNorm,
-					name = "CameraNormalsTexture",
-				});
-				passParams.CameraTextures.TextureNormals = normals;
-				builder.SetRenderAttachment(normals, 0, AccessFlags.Write);
-				builder.SetGlobalTextureAfterPass(normals, TrpConstants.ShaderIds.CameraNormalsTexture);
-			}
+				colorFormat = GraphicsFormat.R8G8B8A8_SNorm,
+				name = "CameraNormalsTexture",
+			});
+			passParams.CameraTextures.TextureNormals = normals;
+			builder.SetRenderAttachment(normals, 0, AccessFlags.Write);
+			builder.SetGlobalTextureAfterPass(normals, TrpConstants.ShaderIds.CameraNormalsTexture);
 
-			if (useDepth)
+			TextureHandle depth = renderGraph.CreateTexture(new TextureDesc(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
 			{
-				TextureHandle depth = renderGraph.CreateTexture(new TextureDesc(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
-				{
-					colorFormat = GraphicsFormat.D32_SFloat,
-					name = "CamerqDepthTexture",
-				});
-				passParams.CameraTextures.TextureDepth = depth;
-				builder.SetRenderAttachmentDepth(depth, AccessFlags.Write);
-				builder.SetGlobalTextureAfterPass(depth, TrpConstants.ShaderIds.CameraDepthTexture);
-			}
+				colorFormat = GraphicsFormat.D32_SFloat,
+				name = "CameraDepthTexture",
+			});
+			passParams.CameraTextures.TextureDepth = depth;
+			builder.SetRenderAttachmentDepth(depth, AccessFlags.Write);
+			builder.SetGlobalTextureAfterPass(depth, TrpConstants.ShaderIds.CameraDepthTexture);
 
 			builder.UseRendererList(passData.RendererListHandle);
 			builder.AllowPassCulling(false);

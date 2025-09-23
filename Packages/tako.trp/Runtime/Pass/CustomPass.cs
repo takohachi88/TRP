@@ -36,7 +36,7 @@ namespace Trp
 		public readonly CameraClearFlags ClearFlags { get; init; }
 		public readonly bool UseScaledRendering { get; init; }
 		public readonly bool UseOpaqueTexture { get; init; }
-		public readonly bool UseDepthTexture { get; init; }
+		public readonly bool UseDepthNormalsTexture { get; init; }
 		public readonly bool UseNormalsTexture { get; init; }
 		public readonly bool UseTransparentTexture { get; init; }
 		public readonly float RenderScale { get; init; }

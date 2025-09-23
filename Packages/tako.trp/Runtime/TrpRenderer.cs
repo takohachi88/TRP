@@ -53,7 +53,7 @@ namespace Trp
 		private readonly SetupPass _setupPass = new();
 		private readonly CreatePostFxLutPass _lutPass;
 		private readonly LightingForwardPlusPass _lightingPass = new();
-		private readonly DepthNormalsPass _depthOnlyPass = new();
+		private readonly DepthNormalsPass _depthNormalsPass = new();
 		private readonly GeometryPass _geometryPass = new();
 		private readonly OutlinePass _outlinePass = new();
 		private readonly SkyboxPass _skyboxPass = new();
@@ -104,10 +104,9 @@ namespace Trp
 			BlendMode blendDst = BlendMode.Zero;
 			bool useOpaqueTexture = true;
 			bool useTransparentTexture = true;
-			bool useDepthTexture = true;
+			bool useDepthNormalsTexture = true;
 			bool drawShadow = false;
 			bool useOutline = true;
-			bool useNormalsTexture = true;
 			int renderingLayerMask = -1;
 			MSAASamples msaa = MSAASamples.None;
 
@@ -141,8 +140,7 @@ namespace Trp
 
 				useOpaqueTexture = cameraData.UseOpaqueTexture;
 				useTransparentTexture = cameraData.UseTransparentTexture;
-				useDepthTexture = cameraData.UseDepthTexture;
-				useNormalsTexture = cameraData.UseNormalsTexture;
+				useDepthNormalsTexture = cameraData.UseDepthNormalsTexture;
 				drawShadow = cameraData.DrawShadow;
 				useOutline = cameraData.UseOutline;
 				renderingLayerMask = cameraData.RenderingLayerMask;
@@ -163,8 +161,7 @@ namespace Trp
 			{
 				useOpaqueTexture = _commonSettings.UseOaqueTextureOnReflection;
 				useTransparentTexture = false;
-				useDepthTexture = _commonSettings.UseDepthTextureOnReflection;
-				useNormalsTexture = false;
+				useDepthNormalsTexture = _commonSettings.UseDepthTextureOnReflection;
 			}
 
 #if UNITY_EDITOR
@@ -175,8 +172,7 @@ namespace Trp
 				
 				useOpaqueTexture = true;
 				useTransparentTexture = true;
-				useDepthTexture = true;
-				useNormalsTexture = true;
+				useDepthNormalsTexture = true;
 				usePostFx = CoreUtils.ArePostProcessesEnabled(camera);
 			}
 
@@ -185,8 +181,7 @@ namespace Trp
 			{
 				useOpaqueTexture = false;
 				useTransparentTexture = false;
-				useDepthTexture = true;
-				useNormalsTexture = true;
+				useDepthNormalsTexture = true;
 				usePostFx = false;
 			}
 #endif
@@ -239,8 +234,7 @@ namespace Trp
 					AttachmentSize = attachmentSize,
 					UseScaledRendering = useScaledRendering,
 					UseOpaqueTexture = useOpaqueTexture,
-					UseDepthTexture = useDepthTexture,
-					UseNormalsTexture = useNormalsTexture,
+					UseDepthNormalsTexture = useDepthNormalsTexture,
 					UseTransparentTexture = useTransparentTexture,
 					RenderScale = renderScale,
 					UseHdr = useHdr,
@@ -286,7 +280,7 @@ namespace Trp
 				_copyColorPass.RecordRenderGraph(ref passParams, CopyColorPass.CopyColorMode.Opaque);
 
 				//CameraDepthTextureの作成。
-				_copyDepthPass.RecordRenderGraph(ref passParams);
+				_depthNormalsPass.RecordRenderGraph(ref passParams);
 
 				//Transparentジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, false);

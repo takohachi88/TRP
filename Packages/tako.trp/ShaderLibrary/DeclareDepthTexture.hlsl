@@ -12,7 +12,7 @@ half SampleSceneDepth(float2 uv, SAMPLER(samplerParam))
 
 half SampleSceneDepth(float2 uv)
 {
-	return SampleSceneDepth(uv, sampler_LinearClamp);
+    return SampleSceneDepth(uv, sampler_PointClamp);
 }
 
 half LoadSceneDepth(uint2 coords)
