@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c5d5b04987d2a724c942d75a1befe584, type: 3}
+  m_Name: LiquidGlassUiPass
+  m_EditorClassIdentifier: Assembly-CSharp::Trp.LiquidGlassUiPass
+  _phase: 2
+  _shader: {fileID: 4800000, guid: 266401c46328bfa46a1500d7cbd6c38a, type: 3}
+  _shapeBlurSampleCount: 13
+  _shapeBlurStrength: 0.02
+  _blurSampleCount: 5
+  _blurStrength: 0.003
+  _edgeDistortStrength: 0.74
+  _uiColor: 1
+  _chromaticAberrationStrength: 0.051

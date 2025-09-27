@@ -29,8 +29,8 @@ namespace Trp
 
 	public class CameraTextures
 	{
-		internal TextureHandle AttachmentColor { get; set; }
-		internal TextureHandle AttachmentDepth { get; set; }
+		public TextureHandle AttachmentColor { get; set; }
+		public TextureHandle AttachmentDepth { get; set; }
 		public TextureHandle TextureOpaque { get; internal set; }
 		public TextureHandle TextureTransparent { get; internal set; }
 		public TextureHandle TextureDepth { get; internal set; }
