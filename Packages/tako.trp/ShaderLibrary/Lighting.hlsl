@@ -45,7 +45,7 @@ PunctualLight GetPunctualLight(int index)
 
 //Lightmap-------------------------
 #if defined(LIGHTMAP_ON)
-	#define GI_ATTRIBUTES float2 lightmapUv : TEXCOORD1;
+	#define GI_ATTRIBUTES float2 lightmapUv : TEXCOORD1;//LightMapはUnity仕様により絶対に1番で固定。
 	#define GI_VARYINGS float2 lightmapUv : LIGHT_MAP_UV;
 	#define GI_TRANSFER(input, output) output.lightmapUv = input.lightmapUv * unity_LightmapST.xy + unity_LightmapST.zw;
 	#define GI_FRAGMENT_UV(input) input.lightmapUv

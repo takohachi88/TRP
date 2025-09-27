@@ -2,7 +2,7 @@ Shader "TRP/Unlit"
 {
     Properties
     {
-        [MainTexture][NoScaleOfset] _BaseMap ("Base Map", 2D) = "white" {}
+        [MainTexture] _BaseMap ("Base Map", 2D) = "white" {}
         [MainColor][HDR] _BaseColor ("Base Color", color) = (1, 1, 1, 1)
 
 
@@ -25,6 +25,7 @@ Shader "TRP/Unlit"
     {
         Tags
         {
+            "RenderPipeline" = "Trp"
             "Queue" = "Geometry"
             "PreviewType" = "Sphere"
         }
@@ -70,6 +71,7 @@ Shader "TRP/Unlit"
 
             CBUFFER_START(UnityPerMaterial)
 
+            float4 _BaseMap_ST;
             half4 _BaseColor;
 
             CBUFFER_END
@@ -80,7 +82,7 @@ Shader "TRP/Unlit"
                 Varyings output;
                 VertexInputs vertexInput = GetVertexInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
-                output.uv = input.uv;
+                output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 output.color = input.color;
                 output.fogCoord = vertexInput.positionVS.z;
                 return output;
@@ -88,7 +90,7 @@ Shader "TRP/Unlit"
 
             half4 Fragment (Varyings input) : SV_Target
             {
-                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_LinearClamp, input.uv) * _BaseColor * input.color;
+                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
 
                 #if (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
                     float viewZ = -input.fogCoord;
@@ -104,30 +106,35 @@ Shader "TRP/Unlit"
 
             ENDHLSL
         }
-
         Pass
         {
-            Name "DepthOnly"
+            Name "DepthNormalsOnly"
             Tags
             {
-                "LightMode" = "DepthOnly"
+                "LightMode" = "DepthNormalsOnly"
             }
 
             ZWrite On
-            ColorMask R
-            Cull[_Cull]
 
             HLSLPROGRAM
-            
-            #pragma vertex DepthOnlyVertex
-            #pragma fragment DepthOnlyFragment
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma shader_feature_local_fragment ALPHA_CLIP
+            #pragma multi_compile_instancing
+            #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
 
-            #pragma shader_feature_local _ALPHATEST_ON
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
 
-            #include "Packages/tako.trp/Shaders/DepthOnlyPass.hlsl"
-            
+            CBUFFER_START(UnityPerMaterial)
+
+            float4 _BaseMap_ST;
+            half4 _BaseColor;
+
+            CBUFFER_END
+
+            #include "Packages/tako.trp/Shaders/DepthNormalsPass.hlsl"
             ENDHLSL
         }
-
     }
 }
