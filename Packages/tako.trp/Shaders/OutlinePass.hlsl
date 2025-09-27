@@ -29,7 +29,6 @@ Varyings OutlineVertex(Attributes input)
 
     VertexInputs vertexInputs = GetVertexInputs(input.positionOS.xyz, input.normalOS);
     output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-    output.positionCS = vertexInputs.positionCS;
     output.positionWS = vertexInputs.positionWS;
     output.normalWS = vertexInputs.normalWS;
     output.fogFactor = vertexInputs.fogFactor;
@@ -51,6 +50,7 @@ Varyings OutlineVertex(Attributes input)
     output.positionCS = TransformObjectToHClip(smoothNormalOS);
 
 #else
+    output.positionCS = vertexInputs.positionCS;
     half3 normalCS = TransformWorldToHClipDir(output.normalWS);
     output.positionCS.xy += normalCS.xy * _OutlineWidth * width * output.positionCS.w * _TanFov;
 #endif
