@@ -38,13 +38,6 @@ Varyings OutlineVertex(Attributes input)
 
 #if defined(OUTLINE_SOFT_EDGE)
 
-    /*
-            output.ObjectSpaceNormal =                          input.normalOS;
-            output.ObjectSpaceTangent =                         input.tangentOS.xyz;
-            output.ObjectSpacePosition =                        input.positionOS;
-            output.VertexColor =                                input.color;
-    */
-    
     float3 normalWS = TransformObjectToWorldNormal(input.normalOS);
     float3 biTangentOS = normalize(cross(input.normalOS, input.tangentOS.xyz) * (input.tangentOS.w > 0.0f ? 1.0f : -1.0f) * GetOddNegativeScale());
     float3 biTangentWS = TransformObjectToWorldDir(biTangentOS);
