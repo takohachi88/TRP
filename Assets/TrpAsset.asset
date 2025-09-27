@@ -26,3 +26,6 @@ MonoBehaviour:
     _postFxLutFilterMode: 1
     _defaultMaxBackbufferCameraCount: 16
     _defaultMaxRenderTextureCameraCount: 16
+  _useSmoothNormalImporter: 1
+  _smoothNormalImportRegex: _outline
+  _smoothNormalTexcoordIndex: 2
