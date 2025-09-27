@@ -51,7 +51,7 @@ namespace Trp
 #if UNITY_EDITOR
 		[SerializeField] private bool _useSmoothNormalImporter = true;
 		[SerializeField] private string _smoothNormalImportRegex = "_outline";
-		[SerializeField, Min(1)] private int _smoothNormalTexcoordIndex = 2;
+		[SerializeField, Min(2)] private int _smoothNormalTexcoordIndex = 2;
 		public bool UseSmoothNormalImporter => _useSmoothNormalImporter;
 		public string SmoothNormalImportRegex => _smoothNormalImportRegex;
 		public int SmoothNormalTexcoordIndex => _smoothNormalTexcoordIndex;
