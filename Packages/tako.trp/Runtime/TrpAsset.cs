@@ -1,7 +1,10 @@
 using System;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 namespace Trp
 {
@@ -20,7 +23,6 @@ namespace Trp
 		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
 		[SerializeField, Min(1)] private int _defaultMaxBackbufferCameraCount = 16;
 		[SerializeField, Min(1)] private int _defaultMaxRenderTextureCameraCount = 16;
-
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public LightingForwardPlusSettings LightingSettings => _lightingSettings;
@@ -45,6 +47,15 @@ namespace Trp
 	public class TrpAsset : RenderPipelineAsset<Trp>
 	{
 		[SerializeField] private TrpCommonSettings _commonSettings;
+
+#if UNITY_EDITOR
+		[SerializeField] private bool _useSmoothNormalImporter = true;
+		[SerializeField] private string _smoothNormalImportRegex = "_outline";
+		[SerializeField, Min(1)] private int _smoothNormalTexcoordIndex = 2;
+		public bool UseSmoothNormalImporter => _useSmoothNormalImporter;
+		public string SmoothNormalImportRegex => _smoothNormalImportRegex;
+		public int SmoothNormalTexcoordIndex => _smoothNormalTexcoordIndex;
+#endif
 
 		/// <summary>
 		/// シェーダーのRenderPipelineタグで指定するタグ名。

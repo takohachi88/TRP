@@ -36,6 +36,7 @@ Shader "TRP/Toon"
         _OutlineWidth ("Outline Width", Range(0, 0.1)) = 0.01
         _OutlineLightStrength ("Outline Light Strength", Range(0, 10)) = 1
         _OutlineLightStrengthThreshold ("Outline Light Strength Threshold", Range(0, 4)) = 0.1
+        [Toggle(OUTLINE_SOFT_EDGE)] _OUTLINE_SOFT_EDGE ("Outlien Soft Edge", int) = 0
 
         [Toggle(TOON_PUNCTUAL_LIGHT)] TOON_PUNCTUAL_LIGHT ("Toon Punctual Light", int) = 0
 
@@ -66,6 +67,7 @@ Shader "TRP/Toon"
 
         Tags
         {
+            "RenderPipeline" = "Trp"
             "Queue" = "Geometry"
             "PreviewType" = "Sphere"
         }
@@ -124,7 +126,7 @@ Shader "TRP/Toon"
 
             Varyings Vertex (Attributes input)
             {
-                Varyings output;
+                Varyings output = (Varyings)0;
                 VertexInputs vertexInputs = GetVertexInputs(input.positionOS.xyz, input.normalOS);
                 output.positionCS = vertexInputs.positionCS;
                 output.positionWS = vertexInputs.positionWS;
@@ -185,6 +187,7 @@ Shader "TRP/Toon"
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2SA
             #pragma shader_feature_local_fragment ALPHA_CLIP
             #pragma shader_feature_local_fragment OUTLINE_SINGLE_COLOR
+            #pragma shader_feature_local_vertex OUTLINE_SOFT_EDGE
 
             #include "Packages/tako.trp/Shaders/OutlinePass.hlsl"
             

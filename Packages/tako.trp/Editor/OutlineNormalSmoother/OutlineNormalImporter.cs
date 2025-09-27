@@ -1,23 +1,28 @@
+//以下を移植。
+//https://github.com/JasonMa0012/OutlineNormalSmoother
 // Copyright (c) Jason Ma
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
+using System.Text.RegularExpressions;
+using Trp;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
 
-namespace OutlineNormalSmoother
+namespace TrpEditor.OutlineNormalSmoother
 {
 	public class OutlineNormalImporter : AssetPostprocessor
     {
 	    public delegate bool OutlineNormalImporterCustomRuleEvent(string assetPath, [MaybeNull] AssetPostprocessor assetPostprocessor);
-        
-	    public static OutlineNormalImporterCustomRuleEvent shouldBakeOutlineNormal = 
-            (assetPath, assetPostprocessor) => assetPath.ToLower().Contains("_outline.");
 
-        private void OnPostprocessModel(GameObject go)
+		private static TrpAsset TrpAsset => GraphicsSettings.defaultRenderPipeline as TrpAsset;
+
+		public static OutlineNormalImporterCustomRuleEvent shouldBakeOutlineNormal =
+			(assetPath, assetPostprocessor) => TrpAsset.UseSmoothNormalImporter && Regex.Match(assetPath.ToLower(), TrpAsset.SmoothNormalImportRegex).Success;
+
+		private void OnPostprocessModel(GameObject go)
         {
             if (shouldBakeOutlineNormal(assetPath, this))
             {
@@ -25,7 +30,7 @@ namespace OutlineNormalSmoother
                 
 	            Debug.Log($"OutlineNormalSmoother: Find { meshes.Count } meshes in file: { assetPath }");
 
-                OutlineNormalBacker.BakeSmoothedNormalTangentSpaceToMesh(meshes);
+                OutlineNormalBaker.BakeSmoothedNormalTangentSpaceToMesh(meshes, TrpAsset.SmoothNormalTexcoordIndex);
             }
         }
 
@@ -41,7 +46,7 @@ namespace OutlineNormalSmoother
                     
                     Debug.Log($"OutlineNormalSmoother: Find { meshes.Count } meshes in file: { movedGO }");
                     
-                    OutlineNormalBacker.BakeSmoothedNormalTangentSpaceToMesh(meshes);
+                    OutlineNormalBaker.BakeSmoothedNormalTangentSpaceToMesh(meshes, TrpAsset.SmoothNormalTexcoordIndex);
                 }
             }
         }

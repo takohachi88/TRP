@@ -1,3 +1,5 @@
+//以下を移植。
+//https://github.com/JasonMa0012/OutlineNormalSmoother
 // Copyright (c) Jason Ma
 
 using System.Collections.Generic;
@@ -6,23 +8,14 @@ using Unity.Collections;
 using Unity.Collections.LowLevel.Unsafe;
 using Unity.Mathematics;
 using Unity.Jobs;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.Rendering;
+using Trp;
 
-namespace OutlineNormalSmoother
+namespace TrpEditor.OutlineNormalSmoother
 {
-	public static class OutlineNormalBacker
+	public static class OutlineNormalBaker
 	{
-		public delegate void OutlineNormalBackerCustomSaveEvent(Mesh mesh, ref NativeArray<Color> bakedColors,
-			ref NativeArray<Vector3> smoothedNormalTangentSpace);
-
-		public static OutlineNormalBackerCustomSaveEvent onSaveToMesh =
-			(Mesh mesh, ref NativeArray<Color> bakedColors, ref NativeArray<Vector3> smoothedNormalTangentSpace) =>
-			{
-				mesh.colors = bakedColors.ToArray();
-			};
-
 		private const int BATCH_COUNT = 256; // How many vertices a job processes
 		private const int MAX_COINCIDENT_VERTICES = 32;
 
@@ -70,7 +63,6 @@ namespace OutlineNormalSmoother
 			[ReadOnly] internal NativeArray<UnsafeParallelHashMap<Vector3, float3>> positionNormalHashMapArray;
 
 			[NativeDisableParallelForRestriction] internal NativeArray<Vector3> outSmoothedNormalTangentSpace;
-			[NativeDisableParallelForRestriction] internal NativeArray<Color> inoutColors;
 
 			void IJobParallelFor.Execute(int vertexIndexInSubMesh)
 			{
@@ -106,17 +98,10 @@ namespace OutlineNormalSmoother
 				}
 
 				outSmoothedNormalTangentSpace[vertexIndex] = smoothedNormalTS;
-				inoutColors[vertexIndex] = new Color
-				{
-					r = smoothedNormalTS.x * 0.5f + 0.5f,
-					g = smoothedNormalTS.y * 0.5f + 0.5f,
-					b = smoothedNormalTS.z * 0.5f + 0.5f,
-					a = inoutColors[vertexIndex].a
-				};
 			}
 		}
 
-		internal static void BakeSmoothedNormalTangentSpaceToMesh(List<Mesh> meshes)
+		internal static void BakeSmoothedNormalTangentSpaceToMesh(List<Mesh> meshes, int texcoordIndex)
 		{
 			for (int i = 0; i < meshes.Count; i++)
 			{
@@ -125,7 +110,6 @@ namespace OutlineNormalSmoother
 				var vertices = mesh.vertices;
 				var normals = mesh.normals;
 				var tangents = mesh.tangents;
-				var colors = mesh.colors;
 				{
 					if (normals.Length == 0)
 					{
@@ -140,18 +124,11 @@ namespace OutlineNormalSmoother
 						tangents = mesh.tangents;
 						Debug.Log($"OutlineNormalSmoother: ({ i + 1 } / { meshes.Count }) Recalculate Tangents: { mesh.name }");
 					}
-
-					if (colors.Length == 0)
-					{
-						colors = Enumerable.Repeat(Color.white, vertexCount).ToArray();
-						Debug.Log($"OutlineNormalSmoother: ({ i + 1 } / { meshes.Count }) Init Vertex Colors: { mesh.name }");
-					}
 				}
 
 				NativeArray<Vector3> nativeVertices = new(vertices, Allocator.TempJob);
 				NativeArray<Vector3> nativeNormals = new(normals, Allocator.TempJob);
 				NativeArray<Vector4> nativeTangents = new(tangents, Allocator.TempJob);
-				NativeArray<Color> nativeColors = new(colors, Allocator.TempJob);
 				NativeArray<Vector3> outSmoothedNormalTangentSpace = new(vertexCount, Allocator.TempJob);
 
 				for (int j = 0; j < mesh.subMeshCount; j++)
@@ -191,7 +168,6 @@ namespace OutlineNormalSmoother
 						normals = nativeNormals,
 						tangents = nativeTangents,
 						positionNormalHashMapArray = nativePositionNormalHashMapArray,
-						inoutColors = nativeColors,
 						outSmoothedNormalTangentSpace = outSmoothedNormalTangentSpace
 					};
 					bakeNormalJobData.Schedule(subMeshVertexCount, BATCH_COUNT, collectNormalJobHandle).Complete();
@@ -207,7 +183,7 @@ namespace OutlineNormalSmoother
 				}
 
 				// Save
-				onSaveToMesh.Invoke(mesh, ref nativeColors, ref outSmoothedNormalTangentSpace);
+				mesh.SetUVs(texcoordIndex, outSmoothedNormalTangentSpace.ToArray());
 				mesh.MarkModified();
 				
 				Debug.Log($"OutlineNormalSmoother: ({ i + 1 } / { meshes.Count }) Saved to mesh: { mesh.name }");
@@ -216,7 +192,6 @@ namespace OutlineNormalSmoother
 				nativeVertices.Dispose();
 				nativeNormals.Dispose();
 				nativeTangents.Dispose();
-				nativeColors.Dispose();
 				outSmoothedNormalTangentSpace.Dispose();
 			}
 		}
