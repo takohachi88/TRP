@@ -45,7 +45,7 @@ Varyings OutlineVertex(Attributes input)
     float3x3 tangentTransform = float3x3(tangentWS, biTangentWS, normalWS);
     float3 world = TransformTangentToWorldDir(input.smoothNormalTS.xyz, tangentTransform, false).xyz;
     float3 smoothNormalOS = TransformWorldToObjectDir(world, true);
-    smoothNormalOS *= _OutlineWidth;
+    smoothNormalOS *= _OutlineWidth * width * vertexInputs.positionCS.w * _TanFov;
     smoothNormalOS += input.positionOS;
     output.positionCS = TransformObjectToHClip(smoothNormalOS);
 
