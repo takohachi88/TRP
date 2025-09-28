@@ -43,7 +43,7 @@ namespace Trp.PostFx
 				if (target == LastTarget.Dst) (src, dst) = (dst, src);
 			}
 
-			if (!src.Equals(passParams.CameraTextures.AttachmentColor)) renderGraph.AddCopyPass(src, passParams.CameraTextures.AttachmentColor, "Copy");
+			if (!src.Equals(passParams.CameraTextures.AttachmentColor)) RenderingUtils.AddBlitPass(renderGraph, src, passParams.CameraTextures.AttachmentColor, false, "Copy");
 
 			return src;
 		}
