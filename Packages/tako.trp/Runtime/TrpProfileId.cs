@@ -8,6 +8,8 @@ namespace Trp
 		OpaqueGeometry,
 		Outline,
 		TransparentGeometry,
+		OitDraw,
+		OitComposite,
 		Skybox,
 		CopyColorToOpaque,
 		CopyColorToTransparent,

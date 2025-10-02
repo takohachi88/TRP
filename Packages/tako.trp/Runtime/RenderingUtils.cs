@@ -149,7 +149,7 @@ namespace Trp
 		/// <param name="passIndex"></param>
 		/// <param name="passName"></param>
 		/// <returns></returns>
-		public static IRasterRenderGraphBuilder AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, Material material, int passIndex, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		public static void AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, Material material, int passIndex, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
 		{
 			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
 			passData.Src = src;
@@ -159,7 +159,6 @@ namespace Trp
 			builder.SetRenderAttachment(dst, 0, dstAccess);
 			builder.AllowPassCulling(false);
 			builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
-			return builder;
 		}
 
 		/// <summary>
@@ -171,7 +170,7 @@ namespace Trp
 		/// <param name="dst"></param>
 		/// <param name="passName"></param>
 		/// <returns></returns>
-		public static IRasterRenderGraphBuilder AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, bool linear, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		public static void AddBlitPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, bool linear, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
 		{
 			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
 			passData.Src = src;
@@ -181,7 +180,6 @@ namespace Trp
 			builder.SetRenderAttachment(dst, 0, dstAccess);
 			builder.AllowPassCulling(false);
 			builder.SetRenderFunc<RasterPassData>(static (passData, context) => Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, passData.Material, passData.PassIndex));
-			return builder;
 		}
 
 		/// <summary>
@@ -193,7 +191,7 @@ namespace Trp
 		/// <param name="dst"></param>
 		/// <param name="passName"></param>
 		/// <returns></returns>
-		public static IRasterRenderGraphBuilder AddBlitDepthPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
+		public static void AddBlitDepthPass(RenderGraph renderGraph, TextureHandle src, TextureHandle dst, string passName = "BlitPass", AccessFlags dstAccess = AccessFlags.WriteAll)
 		{
 			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out RasterPassData passData);
 			passData.Src = src;
@@ -212,7 +210,6 @@ namespace Trp
 				_copyDepthMaterial.SetFloat(TrpConstants.ShaderIds.ZWrite, 1);
 				Blitter.BlitTexture(context.cmd, passData.Src, Vector2.one, _copyDepthMaterial, 0);
 			});
-			return builder;
 		}
 
 		public static void SetDepthMsaa(IBaseCommandBuffer cmd, MSAASamples msaa)

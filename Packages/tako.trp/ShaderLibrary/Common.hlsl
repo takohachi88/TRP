@@ -56,9 +56,23 @@ half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool
     return smoothstep(0.5 - smoothness * 0.5, 0.5 + smoothness * 0.5, dot(dist, dist));
 }
 
-half Pow2(half a)
+//powの整数乗はコンパイル時に乗算に変換されるようだが、されないケースもなくはないかもしれないので一応定義。
+float Pow2(float a)
 {
     return a * a;
+}
+float Pow3(float a)
+{
+    return a * a * a;
+}
+//なぜかPow4だけSRPのCommon.hlslにある。
+float Pow5(float a)
+{
+    return a * a * a * a * a;
+}
+float Pow6(float a)
+{
+    return a * a * a * a * a * a;
 }
 
 //schlickの近似式。powの代用だが、tの値域が0～1である点に注意。

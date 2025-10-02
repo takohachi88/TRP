@@ -13,6 +13,8 @@ namespace Trp
 	public class TrpCameraData : MonoBehaviour
 	{
 		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
+		[SerializeField, Range(0.1f, 1f)] private float _oitScale = 1f;
+		[SerializeField] private bool _useOit = true;
 		[SerializeField] private LayerMask _volumeMask = 1;
 		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthNormalsTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
@@ -40,6 +42,8 @@ namespace Trp
 		}
 
 		public float RenderScale => _renderScale;
+		public float OitScale => _oitScale;
+		public bool UseOit => _useOit;
 		public bool UseScaledRendering => !_renderScale.IsInRange(0.95f, 1.05f);
 		public bool UseOpaqueTexture => _useOpaqueTexture;
 		public bool UseTransparentTexture => _useTransparentTexture;
