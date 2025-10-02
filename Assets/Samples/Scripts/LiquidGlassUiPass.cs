@@ -4,7 +4,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.RendererUtils;
 using UnityEngine.Rendering.RenderGraphModule;
 
-namespace Trp
+namespace Trp.Sample
 {
     [CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/LiquidGlassUiPass", fileName = "LiquidGlassUiPass")]
     public class LiquidGlassUiPass : CustomPassObject
@@ -18,7 +18,8 @@ namespace Trp
 
 		[SerializeField, Range(0f, 2f)] private float _edgeDistortStrength = 0.2f;
 		[SerializeField, Range(0f, 1f)] private float _uiColor = 1f;
-		[SerializeField, Range(0f, 1f)] private float _chromaticAberrationStrength = 1f;
+		[SerializeField, Range(0f, 0.5f)] private float _chromaticAberrationEdgeStrength = 0.1f;
+		[SerializeField, Range(0f, 0.04f)] private float _chromaticAberrationBaseStrength = 0.001f;
 
 		private Material _material;
 
@@ -72,7 +73,7 @@ namespace Trp
 
 			_material.SetVector(IdParams1, new(_shapeBlurSampleCount, 1f / _shapeBlurSampleCount, 1f / (_shapeBlurSampleCount - 1), _shapeBlurStrength));
 			_material.SetVector(IdParams2, new(_blurSampleCount, 1f / _blurSampleCount, 1f / (_blurSampleCount - 1), _blurStrength));
-			_material.SetVector(IdParams3, new(_edgeDistortStrength, _uiColor, _chromaticAberrationStrength, 0));
+			_material.SetVector(IdParams3, new(_edgeDistortStrength, _uiColor, _chromaticAberrationEdgeStrength, _chromaticAberrationBaseStrength));
 
 			passData.RendererList = renderGraph.CreateRendererList(new RendererListDesc(IdUiLiquidGlass, passParams.CullingResults, passParams.Camera)
 			{

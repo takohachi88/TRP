@@ -74,12 +74,13 @@ Shader "Hidden/TRP/Ui/UiLiquidGlass"
             half4 liquidData = SAMPLE_TEXTURE2D(_LiquidData, sampler_LinearClamp, uv);
             half4 base = SAMPLE_TEXTURE2D(_AttachmentColor, sampler_LinearClamp, uv);
 
-            float chromaticAberrationStrength = _Params3.z;
+            float chromaticAberrationEdgeStrength = _Params3.z;
+            float chromaticAberrationBaseStrength = _Params3.w;
             half distort = liquidData.a;
 
-            half blurR = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv * smoothstep(0, edgeDistortStrength + chromaticAberrationStrength * edgeDistortStrength, distort)).r;
+            half blurR = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv * smoothstep(0, edgeDistortStrength + chromaticAberrationEdgeStrength * edgeDistortStrength, distort) + float2(chromaticAberrationBaseStrength, 0)).r;
             half blurG = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv * smoothstep(0, edgeDistortStrength, distort)).g;
-            half blurB = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv * smoothstep(0, edgeDistortStrength - chromaticAberrationStrength * edgeDistortStrength, distort)).b;
+            half blurB = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv * smoothstep(0, edgeDistortStrength - chromaticAberrationEdgeStrength * edgeDistortStrength, distort) + float2(-chromaticAberrationBaseStrength, 0)).b;
 
             half3 blur = half3(blurR, blurG, blurB);
 

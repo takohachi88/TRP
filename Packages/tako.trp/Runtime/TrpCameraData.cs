@@ -14,7 +14,7 @@ namespace Trp
 	{
 		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 		[SerializeField, Range(0.1f, 1f)] private float _oitScale = 1f;
-		[SerializeField] private bool _useOit = true;
+		[SerializeField] private bool _useOit;
 		[SerializeField] private LayerMask _volumeMask = 1;
 		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthNormalsTexture;
 		[SerializeField] private int _renderinLayerMask = -1;

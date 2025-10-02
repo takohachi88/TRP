@@ -16,8 +16,9 @@ MonoBehaviour:
   _shader: {fileID: 4800000, guid: 266401c46328bfa46a1500d7cbd6c38a, type: 3}
   _shapeBlurSampleCount: 13
   _shapeBlurStrength: 0.02
-  _blurSampleCount: 5
-  _blurStrength: 0.003
-  _edgeDistortStrength: 0.74
+  _blurSampleCount: 9
+  _blurStrength: 0.006
+  _edgeDistortStrength: 0.834
   _uiColor: 1
-  _chromaticAberrationStrength: 0.051
+  _chromaticAberrationEdgeStrength: 0.05
+  _chromaticAberrationBaseStrength: 0.0045
