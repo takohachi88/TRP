@@ -6,8 +6,8 @@ using UnityEngine.Rendering.RenderGraphModule;
 
 namespace Trp.Sample
 {
-    [CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/LiquidGlassUiPass", fileName = "LiquidGlassUiPass")]
-    public class LiquidGlassUiPass : CustomPassObject
+    [CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/" + nameof(LiquidGlassPass), fileName = nameof(LiquidGlassPass))]
+    public class LiquidGlassPass : CustomPassObject
     {
 		[SerializeField] private Shader _shader;
 		[SerializeField, Min(3)] private int _shapeBlurSampleCount = 5;
@@ -30,12 +30,12 @@ namespace Trp.Sample
 		private static readonly int IdParams3 = Shader.PropertyToID("_Params3");
 
 		private static ProfilingSampler Sampler;
-		private static ShaderTagId IdUiLiquidGlass;
+		private static ShaderTagId IdLiquidGlass;
 
 		private void OnEnable()
 		{
-			Sampler = new("UiLiquidGlass");
-			IdUiLiquidGlass = new("UiLiquidGlass");
+			Sampler = new(nameof(LiquidGlassPass));
+			IdLiquidGlass = new("LiquidGlass");
 			_material = CoreUtils.CreateEngineMaterial(_shader);
 		}
 		private void OnDisable()
@@ -75,7 +75,7 @@ namespace Trp.Sample
 			_material.SetVector(IdParams2, new(_blurSampleCount, 1f / _blurSampleCount, 1f / (_blurSampleCount - 1), _blurStrength));
 			_material.SetVector(IdParams3, new(_edgeDistortStrength, _uiColor, _chromaticAberrationEdgeStrength, _chromaticAberrationBaseStrength));
 
-			passData.RendererList = renderGraph.CreateRendererList(new RendererListDesc(IdUiLiquidGlass, passParams.CullingResults, passParams.Camera)
+			passData.RendererList = renderGraph.CreateRendererList(new RendererListDesc(IdLiquidGlass, passParams.CullingResults, passParams.Camera)
 			{
 				renderQueueRange = RenderQueueRange.transparent,
 			});

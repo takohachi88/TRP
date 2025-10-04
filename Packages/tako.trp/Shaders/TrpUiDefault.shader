@@ -81,7 +81,6 @@ Shader "TRP/UI/Default"
                 float2 uv  : TEXCOORD0;
                 float4 positionWS : TEXCOORD1;
                 float4  mask : TEXCOORD2;
-                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             TEXTURE2D(_MainTex);
@@ -98,7 +97,6 @@ Shader "TRP/UI/Default"
             {
                 Varyings output;
                 UNITY_SETUP_INSTANCE_ID(input);
-                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 float4 vPosition = TransformObjectToHClip(input.positionOS.xyz);
                 output.positionWS = input.positionOS;
                 output.positionCS = vPosition;

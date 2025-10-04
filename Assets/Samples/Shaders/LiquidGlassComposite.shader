@@ -1,4 +1,4 @@
-Shader "Hidden/TRP/Ui/UiLiquidGlass"
+Shader "Hidden/TRP/LiquidGlassComposite"
 {
     SubShader
     {

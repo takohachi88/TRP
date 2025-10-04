@@ -1,4 +1,4 @@
-Shader "TRP/Custom/UI/UiLiquidGlassDefault"
+Shader "TRP/Custom/UI/LiquidGlassDefault"
 {
     Properties
     {
@@ -45,7 +45,7 @@ Shader "TRP/Custom/UI/UiLiquidGlassDefault"
         Pass
         {
             Name "LiquidGlass"
-            Tags { "LightMode" = "UiLiquidGlass" }
+            Tags { "LightMode" = "LiquidGlass" }
         
             HLSLPROGRAM
 
