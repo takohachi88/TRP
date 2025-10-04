@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
+using System.Collections.Generic;
+
 
 #if UNITY_EDITOR
 using UnityEditor;
@@ -23,6 +25,7 @@ namespace Trp
 		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
 		[SerializeField, Min(1)] private int _defaultMaxBackbufferCameraCount = 16;
 		[SerializeField, Min(1)] private int _defaultMaxRenderTextureCameraCount = 16;
+		public List<CustomPass> CustomPasses;
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public LightingForwardPlusSettings LightingSettings => _lightingSettings;

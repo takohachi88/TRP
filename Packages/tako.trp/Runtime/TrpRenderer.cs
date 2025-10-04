@@ -342,6 +342,10 @@ namespace Trp
 
 		private void ExecuteCustomPasses(TrpCameraData cameraData, ref PassParams passParams, ExecutionPhase phase)
 		{
+			foreach (CustomPass pass in _commonSettings.CustomPasses)
+			{
+				if (pass.PassObject && pass.Enabled && pass.PassObject.Phase == phase) pass.PassObject.Execute(ref passParams);
+			}
 			if (cameraData) cameraData.ExecuteCustomPasses(ref passParams, phase);
 		}
 
