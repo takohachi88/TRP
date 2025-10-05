@@ -1,28 +1,26 @@
-Shader "TRP/Unlit"
+Shader "TRP/ParticleUnlit"
 {
     Properties
     {
         [MainTexture] _BaseMap ("Base Map", 2D) = "white" {}
-        [MainColor][HDR] _BaseColor ("Base Color", color) = (1, 1, 1, 1)
+        _Rgb ("Rgb", float) = 1
+        _A ("A", float) = 1
 
+        [Toggle(_SOFT_PARTICLE)] _SOFT_PARTICLE ("Soft Particle", float) = 0
+        _Near ("Near", float) = 0
+        _Far ("Far", float) = 1
 
         [Header(Common Settings)]
-        [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
-        [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 0
+        [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 5
+        [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 10
         [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
         [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
         [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
         [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
         
-        [Toggle] _ZWrite ("Z Write", int) = 1
+        [Toggle] _ZWrite ("Z Write", int) = 0
         
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", int) = 2
-
-        _Stencil ("Stencil ID", int) = 0
-        [Enum(UnityEngine.Rendering.StencilOp)] _StencilOp("Stencil Operation", int) = 0
-        [Enum(UnityEngine.Rendering.CompareFunction)] _StencilComp("Stencil Comparison", int) = 8
-        [Enum(UnityEngine.Rendering.StencilOp)] _StencilFail("Stencil Fail", int) = 0
-        [Enum(UnityEngine.Rendering.StencilOp)] _StencilZFail("Stencil Z Fail", int) = 0
     }
 
     SubShader
@@ -30,16 +28,8 @@ Shader "TRP/Unlit"
         Tags
         {
             "RenderPipeline" = "Trp"
-            "Queue" = "Geometry"
-            "PreviewType" = "Sphere"
-        }
-        Stencil
-        {
-            Ref [_Stencil]
-            Comp [_StencilComp]
-            Pass [_StencilOp]
-            Fail [_StencilFail]
-            ZFail [_StencilZFail]
+            "Queue" = "Transparent"
+            "PreviewType" = "Plane"
         }
 
         Pass
@@ -52,8 +42,10 @@ Shader "TRP/Unlit"
             #pragma vertex Vertex
             #pragma fragment Fragment
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
+            #pragma shader_feature_local _SOFT_PARTICLE
 
             #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
+            #include "Packages/tako.trp/ShaderLibrary/DepthFade.hlsl"
 
             struct Attributes
             {
@@ -68,6 +60,8 @@ Shader "TRP/Unlit"
                 float2 uv : TEXCOORD0;
                 half4 color : COLOR;
                 float fogCoord : TEXCOORD1;
+                float4 positionNDC : TEXCOORD2;
+                float3 positionWS : TEXCOORD3;
             };
 
             TEXTURE2D(_BaseMap);
@@ -76,7 +70,10 @@ Shader "TRP/Unlit"
             CBUFFER_START(UnityPerMaterial)
 
             float4 _BaseMap_ST;
-            half4 _BaseColor;
+            half _Rgb;
+            half _A;
+            float _Near;
+            float _Far;
             half _MultiplyRgbA;
             int _VertexColorBlend;
 
@@ -90,13 +87,21 @@ Shader "TRP/Unlit"
                 output.positionCS = vertexInput.positionCS;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 output.color = input.color;
+                output.color.rgb *= _Rgb;
+                output.color.a *= _A;
                 output.fogCoord = vertexInput.positionVS.z;
+                output.positionNDC = vertexInput.positionNDC;
+                output.positionWS = vertexInput.positionWS;
                 return output;
             }
 
             half4 Fragment (Varyings input) : SV_Target
             {
-                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
+                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * input.color;
+
+                #if defined(_SOFT_PARTICLE)
+                output.a *= DepthFade(_Near, _Far, input.positionNDC, input.positionWS);
+                #endif
 
                 #if (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
                     float viewZ = -input.fogCoord;
@@ -107,11 +112,15 @@ Shader "TRP/Unlit"
                 #endif
                 output.rgb = MixFog(output.rgb, fogFactor);
 
+                VERTEX_COLOR_BLEND(output, input.color);
+                MULTIPLY_RGB_A(output);
+
                 return output;
             }
 
             ENDHLSL
         }
+
         Pass
         {
             Name "DepthNormalsOnly"
@@ -135,7 +144,10 @@ Shader "TRP/Unlit"
             CBUFFER_START(UnityPerMaterial)
 
             float4 _BaseMap_ST;
-            half4 _BaseColor;
+            half _Intensity;
+            half _AlphaMultiplier;
+            float _Near;
+            float _Far;
             half _MultiplyRgbA;
             int _VertexColorBlend;
 
@@ -145,5 +157,5 @@ Shader "TRP/Unlit"
             ENDHLSL
         }
     }
-    CustomEditor "TrpEditor.ShaderGui.UnlitGui"
+    CustomEditor "TrpEditor.ShaderGui.ParticleUnlitGui"
 }

@@ -70,7 +70,8 @@ namespace Trp
 		public override Shader defaultShader => _resources?.UnlitShader;
 		public override Material defaultMaterial => _resources?.UnlitMaterial; //TODO:Litにする。
 		public override Material default2DMaterial => _resources?.SpriteUnlitMaterial;
-		public override Material defaultUIMaterial => _resources?.UIMaterial;
+		public override Material defaultUIMaterial => _resources?.UiMaterial;
+		public override Material defaultParticleMaterial => _resources?.ParticleUnlitMaterial;
 
 		protected override RenderPipeline CreatePipeline()
 		{

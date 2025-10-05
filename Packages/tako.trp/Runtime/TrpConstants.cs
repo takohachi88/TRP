@@ -10,6 +10,7 @@ namespace Trp
 		public static class PassNames
 		{
 			public static readonly string SRP_DEFAULT_UNLIT = "SRPDefaultUnlit";
+			public static readonly string DEPTH_NORMALS_ONLY = "DepthNormalsOnly";
 			public static readonly string LIT = "Lit";
 			public static readonly string OUTLINE = "Outline";
 		}
