@@ -1,11 +1,8 @@
 using TakoLib.Common;
-using TakoLib.Common.Extensions;
 using TakoLibEditor.Common;
 using Trp;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.UI;
-using static PlasticPipe.PlasticProtocol.Messages.Serialization.ItemHandlerMessagesSerialization;
 
 namespace TrpEditor.ShaderGui
 {
