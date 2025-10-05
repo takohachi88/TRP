@@ -3,7 +3,7 @@ Shader "Custom/ConeLight"
     Properties
     {
         [HDR] _Color ("Color", color) = (1, 1, 1, 1)
-        [Toggle(_DEPTH_FADE)] _DepthFade ("Depth Fade", int) = 0
+        [Toggle(_DEPTH_FADE)] _DEPTH_FADE ("Depth Fade", int) = 0
         _Near ("Near", float) = 0
         _Far ("Far", float) = 1
         _EdgeSmoothness ("Edge", Range(0, 1)) = 1
@@ -58,10 +58,14 @@ Shader "Custom/ConeLight"
                 half3 directionVS : TEXCOORD4;
             };
 
+            CBUFFER_START(UnityPerMaterial)
+
             float _Near;
             float _Far;
             half _EdgeSmoothness;
             half4 _Color;
+
+            CBUFFER_END
 
             Varyings Vert(Attributes input)
             {
@@ -79,8 +83,6 @@ Shader "Custom/ConeLight"
 
             half4 Frag (Varyings input) : SV_Target
             {
-                float depth = SampleSceneDepth(input.positionNDC.xy * rcp(input.positionNDC.w));
-
                 half4 output = 1;
 
                 #if defined(_DEPTH_FADE)
