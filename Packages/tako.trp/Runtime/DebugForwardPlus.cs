@@ -19,7 +19,7 @@ namespace Trp
 			public float Opacity = 0.5f;
 		}
 
-		public CameraDebugValue GetCameraDebugValue(Camera camera) => _cameraDebugValue?[camera];
+		public CameraDebugValue GetCameraDebugValue(Camera camera) => _cameraDebugValue.ContainsKey(camera) ? _cameraDebugValue[camera] : null;
 
 		[Conditional(Defines.UNITY_EDITOR)]
 		public void Register(IReadOnlyList<Camera> cameras)
