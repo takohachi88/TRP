@@ -4,16 +4,28 @@
 #include "Packages/tako.trp/Shaders/LitInput.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
 #include "Packages/tako.trp/ShaderLibrary/ForwardPlus.hlsl"
+#include "Packages/tako.trp/ShaderLibrary/Shadow.hlsl"
 
 //Directional Light----------------
-half3 GetDirectionalLightDirection(int index)
+struct DirectionalLight
 {
-	return _DirectionalLightData1[index].xyz;
-}
+    half3 direction;
+    half3 color;
+    half attenuation;
+    int mapTileStartIndex;
+    half normalBias;
+};
 
-half3 GetDirectionalLightColor(int index)
+DirectionalLight GetDirectionalLight(int index)
 {
-	return _DirectionalLightData2[index].rgb;
+    DirectionalLightBuffer buffer = _DirectionalLightBuffer[index];
+    DirectionalLight light = (DirectionalLight)0;
+    light.direction = buffer.data1.xyz;
+    light.color = buffer.data2.xyz;
+    light.attenuation = buffer.data3.x;
+    light.mapTileStartIndex = buffer.data3.y;
+    light.normalBias = buffer.data3.z;
+    return light;
 }
 //---------------------------------
 
@@ -152,20 +164,25 @@ half3 PunctualLighting(int index, float3 positionWS, half3 normalWS, half3 color
 	return output * attenuation;
 }
 
-half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screenUv)
+half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screenUv, half dither)
 {
 	half3 output = Gi(normalWS) * color;
-
+	
+	//cascadeはライトに関わらす一定。
+    int cascadeIndex = ComputeCascadeIndex(positionWS, dither);
+	
 	for(int i = 0; i < _DirectionalLightCount; i++)
 	{
-		output += ToonLighting(normalWS, color, GetDirectionalLightDirection(i), GetDirectionalLightColor(i));
-	}
+        DirectionalLight light = GetDirectionalLight(i);
+        half attenuation = 1;
+        if (0 < light.attenuation) attenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, i);//shadoewの適用。
+        output += ToonLighting(normalWS, color, light.direction, light.color, attenuation);
+    }
 
 	ForwardPlusTile tile = GetForwardPlusTile(screenUv);
 	int lastIndex = tile.GetLastLightIndexInTile();
 	for(int j = tile.GetFirstLightIndexInTile(); j <= lastIndex; j++)
 	{
-		//output += j * 0.1;
 		output += PunctualLighting(tile.GetLightIndex(j), positionWS, normalWS, color);
 	}
 

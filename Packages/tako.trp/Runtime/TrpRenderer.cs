@@ -37,7 +37,67 @@ namespace Trp
 		public TextureHandle TextureNormals { get; internal set; }
 		internal TextureHandle TargetColor { get; set; }
 		internal TextureHandle TargetDepth { get; set; }
-		internal TextureHandle PostProcessLut { get; set; }
+		public TextureHandle PostProcessLut { get; set; }
+	}
+
+	public class LightingResources
+	{
+		internal BufferHandle DirectionalLightDataBuffer { get; set; }
+		internal BufferHandle PunctualLightDataBuffer { get; set; }
+		internal BufferHandle ForwardPlusTileBuffer { get; set; }
+		public TextureHandle DirectionalShadowMap { get; set; }
+		public TextureHandle PunctualShadowMap { get; set; }
+		public BufferHandle DirectionalShadowCascadesBuffer { get; set; }
+		public BufferHandle DirectionalShadowMatricesBuffer { get; set; }
+		public BufferHandle PunctualShadowDataBuffer { get; set; }
+	}
+
+	public struct PassParams
+	{
+		public TrpCommonSettings CommonSettings { get; init; }
+		public readonly ScriptableRenderContext RenderContext { get; init; }
+		public RenderGraph RenderGraph { get; init; }
+		public readonly Camera Camera { get; init; }
+		public readonly TrpCameraData CameraData { get; init; }
+		public readonly CameraTextures CameraTextures { get; init; }
+		public readonly LightingResources LightingResources { get; init; }
+		public readonly Vector2Int AttachmentSize { get; init; }
+		public Vector2 AspectFit { get; internal set; }
+		public Vector2 AspectFitRcp { get; internal set; }
+		public readonly CameraClearFlags ClearFlags { get; init; }
+		public readonly bool UseScaledRendering { get; init; }
+		public readonly bool UseOpaqueTexture { get; init; }
+		public readonly bool UseDepthNormalsTexture { get; init; }
+		public readonly bool UseNormalsTexture { get; init; }
+		public readonly bool UseTransparentTexture { get; init; }
+		public readonly float RenderScale { get; init; }
+		public readonly bool DrawShadow { get; init; }
+		public readonly bool UseHdr { get; init; }
+		public bool UseAlpha { get; internal set; }
+		public readonly bool UsePostFx { get; init; }
+		public readonly bool IsSceneViewOrPreview { get; init; }
+		public readonly CullingResults CullingResults { get; init; }
+		public readonly RenderingLayerMask RenderingLayerMask { get; init; }
+		internal readonly int LutSize { get; init; }
+		public readonly bool TargetIsGameRenderTexture { get; init; }
+		/// <summary>
+		/// backbufferに描画する最初のGameカメラであるかどうか。
+		/// </summary>
+		public readonly bool IsFirstToBackbuffer { get; init; }
+		/// <summary>
+		/// backbufferに描画する最後のGameカメラであるかどうか。
+		/// </summary>
+		public readonly bool IsLastToBackbuffer { get; init; }
+		/// <summary>
+		/// TRPにおいてもっとも最初に処理されるランタイムのカメラかどうか。
+		/// </summary>
+		public readonly bool IsFirstRuntimeCamera { get; init; }
+
+		public readonly IReadOnlyList<Camera> BackbufferCameras { get; init; }
+		public readonly IReadOnlyList<Camera> RenderTextureCameras { get; init; }
+		public readonly IReadOnlyList<Camera> EditorCameras { get; init; }
+		internal readonly MSAASamples Msaa { get; init; }
+		internal readonly DebugForwardPlus.CameraDebugValue ForwardPlusCameraDebugValue { get; init; }
 	}
 
 
@@ -72,6 +132,7 @@ namespace Trp
 		private readonly Material _coreBlitMaterial;
 
 		private readonly CameraTextures _cameraTextures = new();
+		private readonly LightingResources _lightingResources = new();
 
 		internal TrpRenderer(TrpCommonSettings commonSettings, TrpResources resources)
 		{
@@ -107,7 +168,7 @@ namespace Trp
 			bool useOpaqueTexture = true;
 			bool useTransparentTexture = true;
 			bool useDepthNormalsTexture = true;
-			bool drawShadow = false;
+			bool drawShadow = true;
 			bool useOutline = true;
 			bool useOit = true;
 			float oitScale = 1f;
@@ -233,16 +294,19 @@ namespace Trp
 				PassParams passParams = new()
 				{
 					CommonSettings = _commonSettings,
+					RenderContext = context,
 					RenderGraph = renderGraph,
 					Camera = camera,
 					CameraData = cameraData,
 					CameraTextures = _cameraTextures,
+					LightingResources = _lightingResources,
 					AttachmentSize = attachmentSize,
 					UseScaledRendering = useScaledRendering,
 					UseOpaqueTexture = useOpaqueTexture,
 					UseDepthNormalsTexture = useDepthNormalsTexture,
 					UseTransparentTexture = useTransparentTexture,
 					RenderScale = renderScale,
+					DrawShadow = drawShadow,
 					UseHdr = useHdr,
 					UseAlpha = useAlpha,
 					UsePostFx = usePostFx,
@@ -261,15 +325,15 @@ namespace Trp
 					ForwardPlusCameraDebugValue = rendererParams.ForwardPlusCameraDebugValue,
 				};
 
+				//ライティングの情報。
+				_lightingPass.RecordRenderGraph(ref passParams, _commonSettings.LightingSettings);
+
 				//レンダリングの前段階的な処理。各種テクスチャの確保など。
 				_setupPass.RecordRenderGraph(ref passParams);
 				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterSetup);
 
 				//PostProcessで使うLUTの生成。
 				_lutPass.RecordRenderGraph(ref passParams, _commonSettings.PostFxLutFilterMode);
-
-				//ライティングの情報。
-				_lightingPass.RecordRenderGraph(ref passParams, _commonSettings.LightingSettings);
 
 				//Opaqueジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, true);

@@ -72,7 +72,7 @@ half4 OutlineFragment(Varyings input) : SV_TARGET
     
     AlphaClip(output.a, _Cutoff);
 
-    half3 lighting = ToonLighting(input.positionWS, input.normalWS, output.rgb, input.positionCS.xy * _AttachmentSize.xy);
+    half3 lighting = ToonLighting(input.positionWS, input.normalWS, output.rgb, input.positionCS.xy * _AttachmentSize.xy, 0);
     half luminance = Luminance(lighting);
     output.rgb = lighting;
     output.rgb *= _OutlineColor.rgb;

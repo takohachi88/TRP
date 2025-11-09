@@ -20,6 +20,10 @@ MonoBehaviour:
       TileSize: 64
     _shadowSettings:
       MaxShadowDistance: 50
+      CascadeCount: 4
+      CascadeRatios: {x: 0.05, y: 0.1, z: 0.3}
+      DistanceFade: 0.994
+      CascadeFade: 0.918
     _useOpaqueTextureOnReflection: 0
     _useDepthTextureOnReflection: 0
     _postFxLutSize: 20

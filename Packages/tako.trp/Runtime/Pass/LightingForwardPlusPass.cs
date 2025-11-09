@@ -1,12 +1,12 @@
+using System;
+using System.Runtime.InteropServices;
+using TakoLib.Common.Extensions;
+using Unity.Collections;
+using Unity.Jobs;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
-using Unity.Collections;
-using Unity.Mathematics;
-using TakoLib.Common.Extensions;
-using Unity.Jobs;
-using System;
-using System.Runtime.InteropServices;
 
 namespace Trp
 {
@@ -24,13 +24,31 @@ namespace Trp
 		Size128 = 128,
 	}
 
+	[Serializable]
+	public class ShadowSettings
+	{
+		[Min(0)] public float MaxShadowDistance = 50;
+		[Range(1, 4)] public int CascadeCount = 1;
+		public Vector3 CascadeRatios;
+		[Range(0.001f, 1f)] public float DistanceFade = 0.1f;
+		[Range(0.001f, 1f)] public float CascadeFade = 0.3f;
+		public enum MapSize
+		{
+			_1024 = 1024,
+			_2048 = 2048,
+			_4096 = 4096,
+			_8192 = 8192,
+		}
+		public int DirectionalShadowMapSize => (int)MapSize._2048;
+		public int PunctualShadowMapSize => (int)MapSize._2048;
+	}
+
 	internal class LightingForwardPlusPass
 	{
 		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.LightingForward);
 
 		private static readonly int IdDirectionalLightCount = Shader.PropertyToID("_DirectionalLightCount");
-		private static readonly int IdDirectionalLightData1 = Shader.PropertyToID("_DirectionalLightData1");
-		private static readonly int IdDirectionalLightData2 = Shader.PropertyToID("_DirectionalLightData2");
+		private static readonly int IdDirectionalLightBuffer = Shader.PropertyToID("_DirectionalLightBuffer");
 
 		private static readonly int IdPunctualLightCount = Shader.PropertyToID("_PunctualLightCount");
 		private static readonly int IdPunctualLightBuffer = Shader.PropertyToID("_PunctualLightBuffer");
@@ -45,15 +63,60 @@ namespace Trp
 
 		public JobHandle _tileJobHandle;
 
+		private readonly ShadowPasses _shadowPasses = new();
+
+		/// <summary>
+		/// float4のサイズ（= float（4バイト） x 4つ）
+		/// </summary>
+		private const int FLOAT4_SIZE = 4 * 4;
+
+		[StructLayout(LayoutKind.Sequential)]
+		public struct DirectionalLightData
+		{
+			private const int DATA_COUNT = 3;
+
+			//このstructが何バイトか？
+			public const int Stride = FLOAT4_SIZE * DATA_COUNT;
+
+			/// <summary>
+			/// xyz: 角度
+			/// w: 未使用
+			/// </summary>
+			public float4 Data1;
+
+			/// <summary>
+			/// xyz: 色
+			/// w: renderingLayerMask
+			/// </summary>
+			public float4 Data2;
+
+			/// <summary>
+			/// x: 影の強さ
+			/// y: シャドウマップのタイル番号
+			/// z: normal bias
+			/// w: 未使用
+			/// </summary>
+			public float4 Data3;
+
+			public DirectionalLightData(ref VisibleLight visibleLight, Light light, PerLightShadowData shadowData)
+			{
+				Data1 = -visibleLight.localToWorldMatrix.GetColumn(2);
+				Data2 = visibleLight.finalColor.ToFloat4();
+				Data2.w = math.asfloat(light.renderingLayerMask);
+				Data3 = new(shadowData.Strength, shadowData.MapTileStartIndex, shadowData.NormalBias, 0);
+			}
+		}
 
 		[StructLayout(LayoutKind.Sequential)]
 		public struct PunctualLightData
 		{
-			//Vector4のサイズ（= float（4バイト） x 4つ） x 4つ（変数の個数）。
-			public static readonly int Stride = 4 * 4 * 4;
+			private const int DATA_COUNT = 4;
+
+			//このstructが何バイトか？
+			public static readonly int Stride = FLOAT4_SIZE * DATA_COUNT;
 
 			public float4 Data1, Data2, Data3, Data4;
-			public PunctualLightData(ref VisibleLight visibleLight)
+			public PunctualLightData(ref VisibleLight visibleLight, Light light)
 			{
 				if (visibleLight.lightType is not (LightType.Spot or LightType.Point)) throw new ArgumentException();
 
@@ -87,7 +150,7 @@ namespace Trp
 					// saturate(d * a + b)^2というスポットライトの絞りの式の...、
 					//x: a
 					//y: b
-					float innerCos = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.light.innerSpotAngle);
+					float innerCos = Mathf.Cos(Mathf.Deg2Rad * 0.5f * light.innerSpotAngle);
 					float outerCos = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.spotAngle);
 					float angleRangeInv = 1f / Mathf.Max(innerCos - outerCos, 0.001f);
 					Data4 = new(angleRangeInv, -outerCos * angleRangeInv, 0, 0);
@@ -113,8 +176,8 @@ namespace Trp
 			public Vector4 FowardPlusTileSettings;
 
 			public int DirectionalLightCount;
-			public readonly Vector4[] DirectionalLightData1 = new Vector4[MAX_DIRECTIONAL_LIGHT_COUNT];
-			public readonly Vector4[] DirectionalLightData2 = new Vector4[MAX_DIRECTIONAL_LIGHT_COUNT];
+			public readonly DirectionalLightData[] DirectionalLightData = new DirectionalLightData[MAX_DIRECTIONAL_LIGHT_COUNT];
+			public BufferHandle DirectionalLightBuffer;
 
 			public int PunctualLightCount;
 			public readonly PunctualLightData[] PunctualLightData = new PunctualLightData[MAX_PUNCTUAL_LIGHT_COUNT];
@@ -124,6 +187,8 @@ namespace Trp
 		internal void RecordRenderGraph(ref PassParams passParams, LightingForwardPlusSettings lightingSettings)
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
+
+			if(passParams.DrawShadow) _shadowPasses.Setup(passParams.CullingResults);
 
 			using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass(Sampler.name, out PassData passData, Sampler);
 
@@ -139,15 +204,14 @@ namespace Trp
 			for (int i = 0; i < visibleLights.Length; i++)
 			{
 				VisibleLight visibleLight = visibleLights[i];
+				Light light = visibleLight.light;
 
 				if (visibleLight.lightType == LightType.Directional)
 				{
-					//xyz: 角度
-					passData.DirectionalLightData1[directionalLightCount] = -visibleLight.localToWorldMatrix.GetColumn(2);
-
-					//xyz: 色
-					//w: 未使用
-					passData.DirectionalLightData2[directionalLightCount] = new float4(visibleLight.finalColor.ToFloat3(), 1);
+					PerLightShadowData shadowData = passParams.DrawShadow ?
+						_shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings) :
+						PerLightShadowData.GetEmpty();
+					passData.DirectionalLightData[directionalLightCount] = new DirectionalLightData(ref visibleLight, light, shadowData);
 
 					directionalLightCount++;
 				}
@@ -161,7 +225,7 @@ namespace Trp
 					Rect lightBoundsRect = visibleLight.screenRect;
 					_lightBounds[punctualLightCount] = math.float4(lightBoundsRect.xMin, lightBoundsRect.yMin, lightBoundsRect.xMax, lightBoundsRect.yMax);
 
-					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight);
+					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight, light);
 
 					punctualLightCount++;
 				}
@@ -171,10 +235,22 @@ namespace Trp
 
 			if (passParams.Camera.cameraType == CameraType.Preview)
 			{
+				//previewの場合ライトはないため適当な値をセット。
 				passData.DirectionalLightCount = 1;
-				passData.DirectionalLightData1[0] = new(1, 0, 0);
-				passData.DirectionalLightData2[0] = new(1, 1, 1);
+				passData.DirectionalLightData[0] = new()
+				{
+					Data1 = new(1, 1, 1, 0),
+					Data2 = new(0, 1, 0, 0),
+				};
 			}
+
+			//プーリングのため最大数で取得。（countが同じだとRenderGraph内でプーリングしてくれる。）
+			BufferDesc directionalLightBufferDesc = new(MAX_DIRECTIONAL_LIGHT_COUNT, DirectionalLightData.Stride)
+			{
+				name = "Directional Light Buffer",
+			};
+			passData.DirectionalLightBuffer = renderGraph.CreateBuffer(directionalLightBufferDesc);
+			builder.UseBuffer(passData.DirectionalLightBuffer, AccessFlags.Write);
 
 			if (0 < punctualLightCount)
 			{
@@ -211,7 +287,7 @@ namespace Trp
 					name = "Forward+ Tile Buffer",
 				};
 				passData.TileBuffer = renderGraph.CreateBuffer(tileBufferDesc);
-				passParams.ForwardPlusTileBuffer = passData.TileBuffer;
+				passParams.LightingResources.ForwardPlusTileBuffer = passData.TileBuffer;
 
 				//プーリングのため最大数で取得。
 				BufferDesc punctualLightBufferDesc = new (MAX_PUNCTUAL_LIGHT_COUNT, PunctualLightData.Stride)
@@ -231,9 +307,8 @@ namespace Trp
 				IComputeCommandBuffer cmd = context.cmd;
 
 				cmd.SetGlobalFloat(IdDirectionalLightCount, passData.DirectionalLightCount);
-
-				cmd.SetGlobalVectorArray(IdDirectionalLightData1, passData.DirectionalLightData1);
-				cmd.SetGlobalVectorArray(IdDirectionalLightData2, passData.DirectionalLightData2);
+				cmd.SetBufferData(passData.DirectionalLightBuffer, passData.DirectionalLightData, 0, 0, passData.DirectionalLightCount);
+				cmd.SetGlobalBuffer(IdDirectionalLightBuffer, passData.DirectionalLightBuffer);
 
 				cmd.SetGlobalFloat(IdPunctualLightCount, passData.PunctualLightCount);
 
@@ -241,27 +316,6 @@ namespace Trp
 				{
 					//Jobの時間稼ぎのためここでようやくComplete。
 					passData.Pass._tileJobHandle.Complete();
-					
-					/*
-					string log = string.Empty;
-					log += $"dataCountPerTile:{passData.DataCountPerTile}, tileCountXY:{passData.TileCountXY}, tileData.Length:{passData.Pass._tileData.Length}, PunctualLightCount:{passData.PunctualLightCount}\n";
-
-					for (int i = 0; i < passData.PunctualLightCount; i++)
-					{
-						log += $"{passData.Pass._lightBounds[i]}";
-					}
-
-					log += "\n";
-
-					for (int i = 0; i < passData.Pass._tileData.Length; i++)
-					{
-						log += $"{passData.Pass._tileData[i]}";
-						if (i % passData.DataCountPerTile == passData.DataCountPerTile - 1) log += "|";
-						if ((i + 1) % (passData.TileCountXY.x * passData.DataCountPerTile) == 0) log += "\n";
-					}
-
-					Debug.Log(log);
-					*/
 
 					cmd.SetBufferData(passData.PunctualLightBuffer, passData.PunctualLightData, 0, 0, passData.PunctualLightCount);
 					cmd.SetGlobalBuffer(IdPunctualLightBuffer, passData.PunctualLightBuffer);
@@ -275,6 +329,11 @@ namespace Trp
 				if(passData.Pass._tileData.IsCreated) passData.Pass._tileData.Dispose();
 				passData.Pass._lightBounds.Dispose();
 			});
+
+			builder.Dispose();
+
+			//影の描画準備。
+			if (passParams.DrawShadow) _shadowPasses.RecordRenderGraph(ref passParams);
 		}
 
 		public void Dispose()

@@ -35,7 +35,7 @@ namespace Trp
 		public void RecordRenderGraph(ref PassParams passParams)
 		{
 #if UNITY_EDITOR
-			if (!passParams.ForwardPlusTileBuffer.IsValid()) return;
+			if (!passParams.LightingResources.ForwardPlusTileBuffer.IsValid()) return;
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 
@@ -45,7 +45,7 @@ namespace Trp
 			passData.Material = _tileMaterial;
 			passData.CameraDebugValue = passParams.ForwardPlusCameraDebugValue;
 			builder.SetRenderAttachment(passParams.CameraTextures.AttachmentColor, 0, AccessFlags.Write);
-			builder.UseBuffer(passParams.ForwardPlusTileBuffer);
+			builder.UseBuffer(passParams.LightingResources.ForwardPlusTileBuffer);
 			builder.AllowPassCulling(false);
 			builder.AllowGlobalStateModification(true);
 			builder.SetRenderFunc<PassData>(static (passData, context) =>

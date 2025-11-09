@@ -152,8 +152,9 @@ Shader "TRP/Toon"
                 half3 directionVS = SafeNormalize(input.directionVS);
                 half rimStrength = control1.x * _RimLightStrength;
                 float2 screenUv = input.positionCS.xy * _AttachmentSize.xy;
+                half dither = InterleavedGradientNoise(input.positionCS.xy, 0);
 
-                output.rgb = ToonLighting(positionWS, normalWS, output.rgb, screenUv);
+                output.rgb = ToonLighting(positionWS, normalWS, output.rgb, screenUv, dither);
 
                 #if defined(RIM_LIGHT)
                 output.rgb += RimLight(normalWS, directionVS, rimStrength, _RimLightWidth, _RimLightSmoothness, _RimLightColor);
@@ -191,6 +192,35 @@ Shader "TRP/Toon"
 
             #include "Packages/tako.trp/Shaders/OutlinePass.hlsl"
             
+            ENDHLSL
+        }
+
+        Pass
+        {
+            Name "ShadowCaster"
+            Tags
+            {
+                "LightMode" = "ShadowCaster"
+            }
+
+            ZWrite On
+            ZTest LEqual
+            ColorMask 0
+            Cull[_Cull]
+
+            HLSLPROGRAM
+
+            #pragma vertex ShadowPassVertex
+            #pragma fragment ShadowPassFragment
+
+            #pragma shader_feature_local _ALPHATEST_ON
+
+            #pragma multi_compile_instancing
+
+            #pragma multi_compile _ LOD_FADE_CROSSFADE
+
+            #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
+            #include "Packages/tako.trp/Shaders/ShadowCasterPass.hlsl"
             ENDHLSL
         }
         

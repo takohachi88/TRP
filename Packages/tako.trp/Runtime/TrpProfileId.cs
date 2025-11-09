@@ -4,6 +4,8 @@ namespace Trp
 	{
 		Setup,
 		LightingForward,
+		DirectionalShadow,
+		PunctualShadow,
 		DepthNormals,
 		OpaqueGeometry,
 		Outline,
