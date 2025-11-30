@@ -96,6 +96,7 @@ Shader "TRP/Toon"
             #pragma fragment Fragment
 
             #pragma multi_compile _ LIGHTMAP_ON
+            #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma shader_feature_local PUNCTUAL_LIGHT_IS_TOON
 
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2SA

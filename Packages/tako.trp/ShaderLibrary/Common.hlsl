@@ -57,23 +57,11 @@ half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool
 }
 
 //powの整数乗はコンパイル時に乗算に変換されるようだが、されないケースもなくはないかもしれないので一応定義。
-float Pow2(float a)
-{
-    return a * a;
-}
-float Pow3(float a)
-{
-    return a * a * a;
-}
-//なぜかPow4だけSRPのCommon.hlslにある。
-float Pow5(float a)
-{
-    return a * a * a * a * a;
-}
-float Pow6(float a)
-{
-    return a * a * a * a * a * a;
-}
+#define Pow2(a) ((a) * (a))
+#define Pow3(a) ((a) * (a) * (a))
+#define Pow4(a) ((a) * (a) * (a) * (a))
+#define Pow5(a) ((a) * (a) * (a) * (a) * (a))
+#define Pow6(a) ((a) * (a) * (a) * (a) * (a) * (a))
 
 //schlickの近似式。powの代用だが、tの値域が0～1である点に注意。
 float Schlick(float t, float k)

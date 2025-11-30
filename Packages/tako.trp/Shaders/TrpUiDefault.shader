@@ -1,4 +1,4 @@
-Shader "TRP/UI/Default"
+﻿Shader "TRP/UI/Default"
 {
     Properties
     {
@@ -85,6 +85,8 @@ Shader "TRP/UI/Default"
 
             TEXTURE2D(_MainTex);
             SAMPLER(sampler_MainTex);
+
+            //uGUIはダイナミックバッチングのためSRPBactherが使えない。
             half _MultiplyRgbA;
             int _VertexColorBlend;
             half4 _TextureSampleAdd;
