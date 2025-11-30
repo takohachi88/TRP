@@ -39,8 +39,8 @@ namespace Trp
 			_4096 = 4096,
 			_8192 = 8192,
 		}
-		public int DirectionalShadowMapSize => (int)MapSize._2048;
-		public int PunctualShadowMapSize => (int)MapSize._2048;
+		public int DirectionalShadowMapSize = (int)MapSize._2048;
+		public int PunctualShadowMapSize = (int)MapSize._2048;
 	}
 
 	internal class LightingForwardPlusPass
@@ -65,18 +65,11 @@ namespace Trp
 
 		private readonly ShadowPasses _shadowPasses = new();
 
-		/// <summary>
-		/// float4のサイズ（= float（4バイト） x 4つ）
-		/// </summary>
-		private const int FLOAT4_SIZE = 4 * 4;
-
 		[StructLayout(LayoutKind.Sequential)]
 		public struct DirectionalLightData
 		{
-			private const int DATA_COUNT = 3;
-
 			//このstructが何バイトか？
-			public const int Stride = FLOAT4_SIZE * DATA_COUNT;
+			public const int STRIDE = sizeof(float) * 4 * 3; //float4のサイズ（= float（4バイト） x 4つ） x 変数の個数
 
 			/// <summary>
 			/// xyz: 角度
@@ -110,10 +103,8 @@ namespace Trp
 		[StructLayout(LayoutKind.Sequential)]
 		public struct PunctualLightData
 		{
-			private const int DATA_COUNT = 4;
-
 			//このstructが何バイトか？
-			public static readonly int Stride = FLOAT4_SIZE * DATA_COUNT;
+			public const int STRIDE = sizeof(float) * 4 * 4;
 
 			public float4 Data1, Data2, Data3, Data4;
 			public PunctualLightData(ref VisibleLight visibleLight, Light light)
@@ -210,9 +201,8 @@ namespace Trp
 				{
 					PerLightShadowData shadowData = passParams.DrawShadow ?
 						_shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings) :
-						PerLightShadowData.GetEmpty();
+						PerLightShadowData.Empty;
 					passData.DirectionalLightData[directionalLightCount] = new DirectionalLightData(ref visibleLight, light, shadowData);
-
 					directionalLightCount++;
 				}
 				else if (visibleLight.lightType is (LightType.Spot or LightType.Point))
@@ -245,7 +235,7 @@ namespace Trp
 			}
 
 			//プーリングのため最大数で取得。（countが同じだとRenderGraph内でプーリングしてくれる。）
-			BufferDesc directionalLightBufferDesc = new(MAX_DIRECTIONAL_LIGHT_COUNT, DirectionalLightData.Stride)
+			BufferDesc directionalLightBufferDesc = new(MAX_DIRECTIONAL_LIGHT_COUNT, DirectionalLightData.STRIDE)
 			{
 				name = "Directional Light Buffer",
 			};
@@ -290,7 +280,7 @@ namespace Trp
 				passParams.LightingResources.ForwardPlusTileBuffer = passData.TileBuffer;
 
 				//プーリングのため最大数で取得。
-				BufferDesc punctualLightBufferDesc = new (MAX_PUNCTUAL_LIGHT_COUNT, PunctualLightData.Stride)
+				BufferDesc punctualLightBufferDesc = new (MAX_PUNCTUAL_LIGHT_COUNT, PunctualLightData.STRIDE)
 				{
 					name = "Punctual Light Buffer",
 				};

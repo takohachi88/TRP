@@ -1,4 +1,6 @@
+using System.Runtime.InteropServices;
 using Unity.Collections;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -13,12 +15,30 @@ namespace Trp
 		public float Strength;
 		public float MapTileStartIndex;
 		public float NormalBias;
-		public static PerLightShadowData GetEmpty() => new(0, 0, 0);
+		public static PerLightShadowData Empty => new(0, 0, 0);
 		public PerLightShadowData(float strength, float mapTileStartIndex, float normalBias)
 		{
 			Strength = strength;
 			MapTileStartIndex = mapTileStartIndex;
 			NormalBias = normalBias;
+		}
+	}
+
+	[StructLayout(LayoutKind.Sequential)]
+	internal struct PunctualShadowData
+	{
+		//このstructが何バイトか？
+		public const int STRIDE = sizeof(float) * 4 + sizeof(float) * 16;
+
+		public float4 TileData;
+		public Matrix4x4 ShadowMatrix;
+		public PunctualShadowData(Vector2 offset, float scale, float bias, float border, Matrix4x4 matrix)
+		{
+			TileData.x = offset.x * scale + border;
+			TileData.y = offset.y * scale + border;
+			TileData.z = scale - border - border;
+			TileData.w = bias;
+			ShadowMatrix = matrix;
 		}
 	}
 
@@ -56,10 +76,10 @@ namespace Trp
 		//GPU送信------------------
 		private readonly Matrix4x4[] _worldToDirectionalShadows = new Matrix4x4[MAX_DIRECTIONAL_SHADOW_COUNT * MAX_CASCADE_COUNT];
 		private readonly Vector4[] _cullingSpheres = new Vector4[MAX_CASCADE_COUNT];
+		private readonly PunctualShadowData[] _punctualShadowData = new PunctualShadowData[MAX_PUNCTUAL_SHADOW_COUNT];
 		//--------------------------
 
 		private readonly DirectionalShadowData[] _directionalShadowData = new DirectionalShadowData[MAX_DIRECTIONAL_SHADOW_COUNT];
-		private readonly PunctualShadowData[] _punctualShadowData = new PunctualShadowData[MAX_PUNCTUAL_SHADOW_COUNT];
 
 		// shadow cullingで使う。
 		private NativeArray<ShadowSplitData> _splitBuffer;
@@ -81,12 +101,12 @@ namespace Trp
 		public struct PunctualShadowData
 		{
 			public Light Light;
-			public int Index;
+			public int LightIndex;
 			public PerRenderData[] PerRenderData;
 			public PunctualShadowData(Light light, int index)
 			{
 				Light = light;
-				Index = index;
+				LightIndex = index;
 				PerRenderData = new PerRenderData[MAX_TILE_COUNT_PER_LIGHT];
 			}
 		}
@@ -116,18 +136,23 @@ namespace Trp
 			if (MAX_DIRECTIONAL_SHADOW_COUNT < _directionalShadowCount ||
 				light.shadows == LightShadows.None ||
 				light.shadowStrength <= 0.00001f ||
-				!cullingResults.GetShadowCasterBounds(index, out Bounds _)) return new(0, 0, 0);
+				!cullingResults.GetShadowCasterBounds(index, out Bounds _)) return PerLightShadowData.Empty;
 
 			_directionalShadowData[_directionalShadowCount] = new(light, index);
-
+			int mapTileStartIndex = _directionalShadowCount * settings.CascadeCount;
 			_directionalShadowCount++;
-
-			return new(light.shadowStrength, _directionalShadowCount * settings.CascadeCount, light.shadowNormalBias);
+			return new(light.shadowStrength, mapTileStartIndex, light.shadowNormalBias);
 		}
 
-		public void RegisterPunctualShadow(Light light, int index, CullingResults cullingResults, ShadowSettings settings)
+		public PerLightShadowData RegisterPunctualShadow(Light light, int index, CullingResults cullingResults, ShadowSettings settings)
 		{
+			if (MAX_PUNCTUAL_SHADOW_COUNT < _punctualShadowCount ||
+				light.shadows == LightShadows.None ||
+				light.shadowStrength <= 0.00001f ||
+				!cullingResults.GetShadowCasterBounds(index, out Bounds _)) return PerLightShadowData.Empty;
 
+			_punctualShadowData[_punctualShadowCount] = new(light, index);
+			return new(light.shadowStrength, _punctualShadowCount++ * MAX_TILE_COUNT_PER_LIGHT, light.shadowNormalBias);
 		}
 
 		/// <summary>
@@ -300,14 +325,14 @@ namespace Trp
 				ShadowPasses shadow = passData.Shadow;
 				ShadowSettings settings = passData.Settings;
 
+				cmd.SetGlobalMatrixArray(IdWorldToDirectionalShadows, shadow._worldToDirectionalShadows);
+
 				for (int i = 0; i < passData.ShadowCount; i++)
 				{
 					DirectionalShadowData shadowData = shadow._directionalShadowData[i];
 
 					for (int j = 0; j < settings.CascadeCount; j++)
 					{
-						cmd.SetGlobalMatrixArray(IdWorldToDirectionalShadows, shadow._worldToDirectionalShadows);
-
 						//Cascadeの番号を取得する処理の最適化。
 						cmd.SetGlobalVector(IdCullingSphere0, shadow._cullingSpheres[0]);
 						cmd.SetGlobalVector(IdCullingSphere1, shadow._cullingSpheres[1]);
@@ -356,14 +381,21 @@ namespace Trp
 		{
 			if (_punctualShadowCount == 0) return;
 
-			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(SamplerPunctualShadow.name, out DirectionalPassData passData, SamplerPunctualShadow);
+			RenderGraph renderGraph = passParams.RenderGraph;
+			CullingResults cullingResults = passParams.CullingResults;
+			ShadowSettings settings = passParams.CommonSettings.ShadowSettings;
+
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(SamplerPunctualShadow.name, out DirectionalPassData passData, SamplerPunctualShadow);
 			for (int i = 0; i < _punctualShadowCount; i++)
 			{
 				PunctualShadowData shadowData = _punctualShadowData[i];
-				ShadowDrawingSettings shadowDrawingSettings = new(passParams.CullingResults, shadowData.Index)
+				ShadowDrawingSettings shadowDrawingSettings = new(cullingResults, shadowData.LightIndex)
 				{
 					useRenderingLayerMaskTest = true,
 				};
+
+
+
 			}
 			//TODO:実装
 		}

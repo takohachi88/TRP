@@ -41,10 +41,10 @@ half GetDirectionalShadowFade(float3 positionWS, half shadow)
     return shadow;
 }
 
-half GetDirectionalShadow(half cascadeIndex, float3 positionWS, half3 normalWS, half normalBias, int lightIndex)
+half GetDirectionalShadow(half cascadeIndex, float3 positionWS, half3 normalWS, half normalBias, int mapTileStartIndex)
 {
-    half cascadeCount = _ShadowParams1.w;
-    float3 positionSTS = mul(_WorldToDirectionalShadows[lightIndex * cascadeCount + cascadeIndex], float4(positionWS + normalWS * normalBias, 1.0)).xyz;
+    const half cascadeCount = _ShadowParams1.w;
+    float3 positionSTS = mul(_WorldToDirectionalShadows[mapTileStartIndex + cascadeIndex], float4(positionWS + normalWS * normalBias, 1.0)).xyz;
     
     #define SAMPLE_SHADOW(offset) SAMPLE_TEXTURE2D_SHADOW(_DirectionalShadowMap, sampler_LinearClampCompare, float3(positionSTS.xy + offset, positionSTS.z))
     half shadow = 0;

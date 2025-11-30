@@ -175,7 +175,7 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
 	{
         DirectionalLight light = GetDirectionalLight(i);
         half attenuation = 1;
-        if (0 < light.attenuation) attenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, i);//shadoewの適用。
+        if (0 < light.attenuation) attenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.mapTileStartIndex);//shadowの適用。
         output += ToonLighting(normalWS, color, light.direction, light.color, attenuation);
     }
 
