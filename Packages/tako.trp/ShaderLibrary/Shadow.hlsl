@@ -59,4 +59,53 @@ half GetDirectionalShadow(half cascadeIndex, float3 positionWS, half3 normalWS, 
     return shadow;
 }
 
+
+static const half3 pointShadowPlanes[6] =
+{
+    float3(-1.0, 0.0, 0.0),
+	float3(1.0, 0.0, 0.0),
+	float3(0.0, -1.0, 0.0),
+	float3(0.0, 1.0, 0.0),
+	float3(0.0, 0.0, -1.0),
+	float3(0.0, 0.0, 1.0)
+};
+
+half SamplePunctualShadow(float4 positionSTS, float2 offset, float3 bounds)
+{
+    float2 texelSize = _PunctualShadowMap_TexelSize.xy;
+    offset *= texelSize;
+    positionSTS.xy += offset;
+    positionSTS.xy = clamp(positionSTS.xy, bounds.xy, bounds.xy + bounds.z);//端のほうで隣のタイルが見えてしまう問題の防止。
+    return SAMPLE_TEXTURE2D_SHADOW(_PunctualShadowMap, sampler_LinearClampCompare, positionSTS);
+}
+
+half GetPunctualShadow(float3 positionWS, half3 normalWS, float3 lightPositionWS, float3 spotDirectionWS, half3 directionWS, int lightType, int index)
+{
+    float3 lightPlane = spotDirectionWS;
+    if (LIGHT_TYPE_IS_POINT(lightType))
+    {
+        float faceOffset = CubeMapFaceID(-directionWS);
+        index += faceOffset;
+        lightPlane = pointShadowPlanes[faceOffset];
+    }
+    
+    PunctualShadowTileBuffer shadowTile = _PunctualShadowTileBuffer[index];
+    
+    float3 surfaceToLight = lightPositionWS - positionWS;
+    float distanceToLightPlane = dot(surfaceToLight, lightPlane);
+    float3 normalBias = normalWS * distanceToLightPlane * shadowTile.tileData.w;
+    float4 positionSTS = mul(shadowTile.worldToShadow,	float4(positionWS + normalBias, 1.0));
+    positionSTS.xyz /= positionSTS.w;//透視投影なのでwで割る。
+    float3 bounds = shadowTile.tileData.xyz;
+
+    half shadow = 0;
+    shadow += SamplePunctualShadow(positionSTS, 0, bounds);
+    shadow += SamplePunctualShadow(positionSTS, float2(1, 1), bounds);
+    shadow += SamplePunctualShadow(positionSTS, float2(1, -1), bounds);
+    shadow += SamplePunctualShadow(positionSTS, float2(-1, 1), bounds);
+    shadow += SamplePunctualShadow(positionSTS, float2(-1, -1), bounds);
+    shadow *= 0.2;
+    return shadow;
+}
+
 #endif

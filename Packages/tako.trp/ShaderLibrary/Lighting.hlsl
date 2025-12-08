@@ -12,7 +12,7 @@ struct DirectionalLight
     half3 direction;
     half3 color;
     half attenuation;
-    int mapTileStartIndex;
+    int shadowMapTileStartIndex;
     half normalBias;
 };
 
@@ -23,7 +23,7 @@ DirectionalLight GetDirectionalLight(int index)
     light.direction = buffer.data1.xyz;
     light.color = buffer.data2.xyz;
     light.attenuation = buffer.data3.x;
-    light.mapTileStartIndex = buffer.data3.y;
+    light.shadowMapTileStartIndex = buffer.data3.y;
     light.normalBias = buffer.data3.z;
     return light;
 }
@@ -38,6 +38,9 @@ struct PunctualLight
 	half3 position;
 	half rangeInverseSquare;
 	half2 spotAngles;
+    half attenuation;
+    int shadowMapTileStartIndex;
+    int type;//spot:0, point:2（UnityEngine.LightTypeに準拠。）
 };
 
 PunctualLight GetPunctualLight(int index)
@@ -49,6 +52,9 @@ PunctualLight GetPunctualLight(int index)
 	light.position = buffer.data3.xyz;
 	light.rangeInverseSquare = buffer.data3.w;
 	light.spotAngles = buffer.data4.xy;
+    light.attenuation = buffer.data5.x;
+    light.shadowMapTileStartIndex = buffer.data5.y;
+    light.type = buffer.data5.z;
 	return light;
 }
 //---------------------------------
@@ -150,7 +156,7 @@ half3 ToonLighting(half3 normalWS, half3 color, half3 direction, half3 lightColo
 }
 
 half3 PunctualLighting(int index, float3 positionWS, half3 normalWS, half3 color)
-{
+{	
 	PunctualLight light = GetPunctualLight(index);
 	half3 direction = light.position - positionWS;
 	half3 normalizedDirection = normalize(direction);
@@ -160,7 +166,10 @@ half3 PunctualLighting(int index, float3 positionWS, half3 normalWS, half3 color
 	half2 spotAngles = light.spotAngles;
 	half spotAttenuation = saturate(dot(light.direction, normalizedDirection) * spotAngles.x + spotAngles.y);
 	half attenuation = rangeAttenuation * spotAttenuation;
-	half3 output = ToonLighting(normalWS, color, normalizedDirection, light.color, attenuation);
+    half shadowAttenuation = 1;
+	//影の適用。
+    if (0 < light.attenuation) shadowAttenuation = GetPunctualShadow(positionWS, normalWS, light.position, light.direction, normalizedDirection, light.type, light.shadowMapTileStartIndex);
+	half3 output = ToonLighting(normalWS, color, normalizedDirection, light.color, attenuation * shadowAttenuation);
 	return output * attenuation;
 }
 
@@ -175,7 +184,7 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
 	{
         DirectionalLight light = GetDirectionalLight(i);
         half attenuation = 1;
-        if (0 < light.attenuation) attenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.mapTileStartIndex);//shadowの適用。
+        if (0 < light.attenuation) attenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.shadowMapTileStartIndex); //shadowの適用。
         output += ToonLighting(normalWS, color, light.direction, light.color, attenuation);
     }
 

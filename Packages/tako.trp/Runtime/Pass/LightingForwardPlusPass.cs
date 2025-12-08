@@ -104,10 +104,10 @@ namespace Trp
 		public struct PunctualLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = sizeof(float) * 4 * 4;
+			public const int STRIDE = sizeof(float) * 4 * 5;
 
-			public float4 Data1, Data2, Data3, Data4;
-			public PunctualLightData(ref VisibleLight visibleLight, Light light)
+			public float4 Data1, Data2, Data3, Data4, Data5;
+			public PunctualLightData(ref VisibleLight visibleLight, Light light, PerLightShadowData shadowData)
 			{
 				if (visibleLight.lightType is not (LightType.Spot or LightType.Point)) throw new ArgumentException();
 
@@ -130,6 +130,14 @@ namespace Trp
 					// xy: スポットライトの絞りを無効化。
 					Data4 = new(0, 1, 0, 0);
 
+					/// <summary>
+					/// x: 影の強さ
+					/// y: シャドウマップのタイル番号
+					/// z: LightType
+					/// w: 未使用
+					/// </summary>
+					Data5 = new(shadowData.Strength, shadowData.MapTileStartIndex, shadowData.Type.HasValue ? (int)shadowData.Type : -1, 0);
+
 					return;
 				}
 				else if (visibleLight.lightType == LightType.Spot)
@@ -146,11 +154,19 @@ namespace Trp
 					float angleRangeInv = 1f / Mathf.Max(innerCos - outerCos, 0.001f);
 					Data4 = new(angleRangeInv, -outerCos * angleRangeInv, 0, 0);
 
+					/// <summary>
+					/// x: 影の強さ
+					/// y: シャドウマップのタイル番号
+					/// z: LightType
+					/// w: 未使用
+					/// </summary>
+					Data5 = new(shadowData.Strength, shadowData.MapTileStartIndex, shadowData.Type.HasValue ? (int)shadowData.Type : -1, 0);
 					return;
 				}
 
 				Data1 = float4.zero;
 				Data4 = float4.zero;
+				Data5 = float4.zero;
 			}
 		}
 
@@ -196,18 +212,18 @@ namespace Trp
 			{
 				VisibleLight visibleLight = visibleLights[i];
 				Light light = visibleLight.light;
+				PerLightShadowData shadowData = PerLightShadowData.Empty;
 
 				if (visibleLight.lightType == LightType.Directional)
 				{
-					PerLightShadowData shadowData = passParams.DrawShadow ?
-						_shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings) :
-						PerLightShadowData.Empty;
+					if (MAX_DIRECTIONAL_LIGHT_COUNT <= directionalLightCount) continue;
+					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings);
 					passData.DirectionalLightData[directionalLightCount] = new DirectionalLightData(ref visibleLight, light, shadowData);
 					directionalLightCount++;
 				}
 				else if (visibleLight.lightType is (LightType.Spot or LightType.Point))
 				{
-					if (MAX_PUNCTUAL_LIGHT_COUNT < punctualLightCount) continue;
+					if (MAX_PUNCTUAL_LIGHT_COUNT <= punctualLightCount) continue;
 
 					//Forward+のロジックのためライトのBoundsをRectで取得する。
 					//理想的にはライトの形状（球やコーン）に基づいて計算するのが良いかもしれないがロジックがかなり複雑になる。
@@ -215,8 +231,8 @@ namespace Trp
 					Rect lightBoundsRect = visibleLight.screenRect;
 					_lightBounds[punctualLightCount] = math.float4(lightBoundsRect.xMin, lightBoundsRect.yMin, lightBoundsRect.xMax, lightBoundsRect.yMax);
 
-					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight, light);
-
+					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterPunctualShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings);
+					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight, light, shadowData);
 					punctualLightCount++;
 				}
 			}

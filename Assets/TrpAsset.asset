@@ -24,6 +24,8 @@ MonoBehaviour:
       CascadeRatios: {x: 0.05, y: 0.1, z: 0.3}
       DistanceFade: 0.994
       CascadeFade: 0.918
+      DirectionalShadowMapSize: 2048
+      PunctualShadowMapSize: 2048
     _useOpaqueTextureOnReflection: 0
     _useDepthTextureOnReflection: 0
     _postFxLutSize: 20

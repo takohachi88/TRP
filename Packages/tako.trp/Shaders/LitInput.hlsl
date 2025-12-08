@@ -17,6 +17,7 @@ TEXTURE2D(_EmissionMap);
 SAMPLER(sampler_EmissionMap);
 
 TEXTURE2D_SHADOW(_DirectionalShadowMap);
+TEXTURE2D_SHADOW(_PunctualShadowMap);
 SAMPLER_CMP(sampler_LinearClampCompare);
 
 struct DirectionalLightBuffer
@@ -24,10 +25,20 @@ struct DirectionalLightBuffer
     float4 data1, data2, data3;
 };
 
+#define LIGHT_TYPE_IS_POINT(type) ((type) == 2)
+
 struct PunctualLightBuffer
 {
-	float4 data1, data2, data3, data4;
+	float4 data1, data2, data3, data4, data5;
 };
+
+struct PunctualShadowTileBuffer
+{
+    float4 tileData;
+    float4x4 worldToShadow;
+};
+
+StructuredBuffer<PunctualShadowTileBuffer> _PunctualShadowTileBuffer;
 
 CBUFFER_START(TrpLight)
 int _DirectionalLightCount;
@@ -41,6 +52,7 @@ float4 _CullingSphereRadiusSqrs;
 float4 _CullingSphereRanges;
 float4 _ShadowParams1;
 float4 _DirectionalShadowMap_TexelSize;
+float4 _PunctualShadowMap_TexelSize;
 
 int _PunctualLightCount;
 StructuredBuffer<PunctualLightBuffer> _PunctualLightBuffer;
