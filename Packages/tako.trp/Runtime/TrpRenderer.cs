@@ -145,7 +145,7 @@ namespace Trp
 			_debugForwardPlusPass = new (resources.DebugForwardPlusTileShader);
 			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
-			_oitPass = new(resources.OitShader);
+			_oitPass = new(resources.OitCompositeShader);
 		}
 
 		/// <summary>
@@ -364,7 +364,7 @@ namespace Trp
 				_copyColorPass.RecordRenderGraph(ref passParams, CopyColorPass.CopyColorMode.Transparent);
 
 				//Gizmoの描画。
-				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentDepth, GizmoSubset.PreImageEffects);
+				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.AttachmentColor, _cameraTextures.AttachmentDepth, GizmoSubset.PreImageEffects);
 
 				//ポストエフェクトの描画。
 				if (usePostFx) _postFxPassGroup.RecordRenderGraph(ref passParams);
@@ -383,7 +383,7 @@ namespace Trp
 				_wireOverlayPass.RecordRenderGraph(ref passParams);
 
 				//Gizmoの描画。
-				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.TargetDepth, GizmoSubset.PostImageEffects);
+				_gizmoPass.RecordRenderGraph(ref passParams, _cameraTextures.TargetColor, _cameraTextures.TargetDepth, GizmoSubset.PostImageEffects);
 
 				//OverlayなUIの描画。
 				if (isLastToBackbuffer) _uiPass.RecordRenderGraph(ref passParams);

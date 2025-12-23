@@ -9,7 +9,7 @@ namespace Trp
 	/// TRPにおけるカメラごとの設定。
 	/// Camera型は継承できないのでこのような形に。
 	/// </summary>
-	[RequireComponent(typeof(Camera)), DisallowMultipleComponent, ExecuteAlways]
+	[RequireComponent(typeof(Camera)), DisallowMultipleComponent, ExecuteAlways, SupportedOnRenderPipeline(typeof(TrpAsset))]
 	public class TrpCameraData : MonoBehaviour
 	{
 		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;

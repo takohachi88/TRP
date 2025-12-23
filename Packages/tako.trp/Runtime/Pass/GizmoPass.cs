@@ -25,7 +25,7 @@ namespace Trp
 		}
 
 		[Conditional(Defines.UNITY_EDITOR)]
-		public void RecordRenderGraph(ref PassParams passParams, TextureHandle dstDepth, GizmoSubset gizmoSubset)
+		public void RecordRenderGraph(ref PassParams passParams, TextureHandle dstColor, TextureHandle dstDepth, GizmoSubset gizmoSubset)
 		{
 #if UNITY_EDITOR
 			//TODO: SceneViewFilterModeが何なのか不明だがURPの実装を参考に一応記述。
@@ -35,7 +35,7 @@ namespace Trp
 			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
 
 			passData.GizmoRendererList = passParams.RenderGraph.CreateGizmoRendererList(passParams.Camera, gizmoSubset);
-			passData.Color = passParams.CameraTextures.TargetColor;
+			passData.Color = dstColor;
 			passData.Depth = dstDepth;
 
 			builder.UseTexture(passData.Color, AccessFlags.Write);

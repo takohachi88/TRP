@@ -74,20 +74,23 @@ namespace Trp
 		public override Material default2DMaterial => _resources?.SpriteUnlitMaterial;
 		public override Material defaultUIMaterial => _resources?.UiMaterial;
 		public override Material defaultParticleMaterial => _resources?.ParticleUnlitMaterial;
+		public override Material defaultLineMaterial => _resources?.UnlitMaterial;
+		public override Material defaultTerrainMaterial => _resources?.UnlitMaterial;
 
 		protected override RenderPipeline CreatePipeline()
 		{
-#if UNITY_EDITOR
-			//この処理がないとBlitter.Initializeでエラーになる。
-			TrpGlobalSettings globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
-			if (RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref globalSettings, "Assets/TrpGlobalSettings.asset", true))
-			{
-				AssetDatabase.SaveAssetIfDirty(globalSettings);
-			}
-#endif
 			_resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
 			
 			return new Trp(_commonSettings, _resources);
+		}
+
+		protected override void EnsureGlobalSettings()
+		{
+			base.EnsureGlobalSettings();
+
+#if UNITY_EDITOR
+			TrpGlobalSettings.Ensure();
+#endif
 		}
 	}
 }
