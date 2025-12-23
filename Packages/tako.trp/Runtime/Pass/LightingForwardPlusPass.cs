@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using TakoLib.Common;
 using TakoLib.Common.Extensions;
 using Unity.Collections;
 using Unity.Jobs;
@@ -85,7 +86,7 @@ namespace Trp
 		public struct DirectionalLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = sizeof(float) * 4 * 3; //float4のサイズ（= float（4バイト） x 4つ） x 変数の個数
+			public const int STRIDE = Defines.SizeOf.FLOAT4 * 3;
 
 			/// <summary>
 			/// xyz: 角度
@@ -120,7 +121,7 @@ namespace Trp
 		public struct PunctualLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = sizeof(float) * 4 * 5;
+			public const int STRIDE = Defines.SizeOf.FLOAT4 * 5;
 
 			public float4 Data1, Data2, Data3, Data4, Data5;
 			public float CookieIndex => Data4.z;

@@ -4,6 +4,7 @@ using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
+using TakoLib.Common;
 
 namespace Trp
 {
@@ -24,7 +25,7 @@ namespace Trp
 		public struct LightCookieBuffer
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = 4 * 16 + 4 * 4 + 4;
+			public const int STRIDE = Defines.SizeOf.FLOAT4X4 + Defines.SizeOf.FLOAT4 + Defines.SizeOf.FLOAT;
 
 			public Matrix4x4 WorldToLight;
 			public float4 UvScaleOffset;

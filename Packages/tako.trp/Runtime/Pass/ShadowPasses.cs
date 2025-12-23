@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using TakoLib.Common;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -34,7 +35,7 @@ namespace Trp
 	internal struct PunctualShadowTileBuffer
 	{
 		//このstructが何バイトか？
-		public const int STRIDE = sizeof(float) * 4 + sizeof(float) * 16;
+		public const int STRIDE = Defines.SizeOf.FLOAT4 + Defines.SizeOf.FLOAT4X4;
 
 		public float4 TileData;
 		public Matrix4x4 WorldToShadow;
