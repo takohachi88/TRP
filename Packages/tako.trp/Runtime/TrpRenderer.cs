@@ -112,7 +112,7 @@ namespace Trp
 
 		private readonly SetupPass _setupPass = new();
 		private readonly CreatePostFxLutPass _lutPass;
-		private readonly LightingForwardPlusPass _lightingPass = new();
+		private readonly LightingForwardPlusPass _lightingPass;
 		private readonly DepthNormalsPass _depthNormalsPass = new();
 		private readonly GeometryPass _geometryPass = new();
 		private readonly OitPass _oitPass;
@@ -140,6 +140,7 @@ namespace Trp
 
 			_coreBlitMaterial = CoreUtils.CreateEngineMaterial(resources.CoreBlitShader);
 
+			_lightingPass = new(commonSettings.LightCookieSettings);
 			_copyColorPass = new(_coreBlitMaterial);
 			_debugForwardPlusPass = new (resources.DebugForwardPlusTileShader);
 			_copyDepthPass = new(resources.CopyDepthShader);

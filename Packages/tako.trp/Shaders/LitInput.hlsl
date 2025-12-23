@@ -1,4 +1,4 @@
-#ifndef TRP_LIT_INPUT_INCLUDED
+ï»¿#ifndef TRP_LIT_INPUT_INCLUDED
 #define TRP_LIT_INPUT_INCLUDED
 
 #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
@@ -20,12 +20,12 @@ TEXTURE2D_SHADOW(_DirectionalShadowMap);
 TEXTURE2D_SHADOW(_PunctualShadowMap);
 SAMPLER_CMP(sampler_LinearClampCompare);
 
+TEXTURE2D(_LightCookieAtlas);
+
 struct DirectionalLightBuffer
 {
     float4 data1, data2, data3;
 };
-
-#define LIGHT_TYPE_IS_POINT(type) ((type) == 2)
 
 struct PunctualLightBuffer
 {
@@ -36,6 +36,13 @@ struct PunctualShadowTileBuffer
 {
     float4 tileData;
     float4x4 worldToShadow;
+};
+
+struct LightCookieBuffer
+{
+    float4x4 worldToLight;
+    float4 uvScaleOffset;
+    float wrapMode;
 };
 
 StructuredBuffer<PunctualShadowTileBuffer> _PunctualShadowTileBuffer;
@@ -57,10 +64,11 @@ float4 _PunctualShadowMap_TexelSize;
 int _PunctualLightCount;
 StructuredBuffer<PunctualLightBuffer> _PunctualLightBuffer;
 StructuredBuffer<int> _TileBuffer;
+StructuredBuffer<LightCookieBuffer> _LightCookieBuffer;
 
 //xy: Screen UV to tile coordinates
-//z: ˆês‚ ‚½‚è‚Ìƒ^ƒCƒ‹‚ÌŒÂ”
-//w: ƒ^ƒCƒ‹ƒf[ƒ^‚ÌƒTƒCƒY
+//z: ä¸€è¡Œã‚ãŸã‚Šã®ã‚¿ã‚¤ãƒ«ã®å€‹æ•°
+//w: ã‚¿ã‚¤ãƒ«ãƒ‡ãƒ¼ã‚¿ã®ã‚µã‚¤ã‚º
 float4 _ForwardPlusTileSettings;
 
 CBUFFER_END

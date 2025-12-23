@@ -82,7 +82,7 @@ half SamplePunctualShadow(float4 positionSTS, float2 offset, float3 bounds)
 half GetPunctualShadow(float3 positionWS, half3 normalWS, float3 lightPositionWS, float3 spotDirectionWS, half3 directionWS, int lightType, int index)
 {
     float3 lightPlane = spotDirectionWS;
-    if (LIGHT_TYPE_IS_POINT(lightType))
+    if (lightType == LIGHT_TYPE_POINT)
     {
         float faceOffset = CubeMapFaceID(-directionWS);
         index += faceOffset;

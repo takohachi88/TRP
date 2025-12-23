@@ -27,6 +27,15 @@
 //rcp(2 * PI)
 #define PI_TWO_RCP 0.159155
 
+//UnityEngine.LightTypeに準拠。
+#define LIGHT_TYPE_SPOT 0
+#define LIGHT_TYPE_DIRECTIONAL 1
+#define LIGHT_TYPE_POINT 2
+
+//UnityEngine.TextureWrapModeに準拠。
+#define WRAP_MODE_REPEAT 0
+#define WRAP_MODE_CLAMP 1
+
 //XR対応ないので「_X」は基本使わないが、LensFlareCommon.hlslなどで必要になってしまうので定義する。
 #define TEXTURE2D_X(textureName) TEXTURE2D(textureName)
 #define TEXTURE2D_X_LOD(textureName) TEXTURE2D_LOD(textureName)

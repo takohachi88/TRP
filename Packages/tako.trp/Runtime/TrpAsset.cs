@@ -19,6 +19,7 @@ namespace Trp
 		[SerializeField] private bool _useHdr = true;
 		[SerializeField] private MSAASamples _msaaSamples;
 		[SerializeField] private LightingForwardPlusSettings _lightingSettings;
+		[SerializeField] private LightCookieSettings _lightCookieSettings;
 		[SerializeField] private ShadowSettings _shadowSettings;
 		[SerializeField] private bool _useOpaqueTextureOnReflection, _useDepthTextureOnReflection;
 		[SerializeField, Min(4)] private int _postFxLutSize = 32;
@@ -29,6 +30,7 @@ namespace Trp
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public LightingForwardPlusSettings LightingSettings => _lightingSettings;
+		public LightCookieSettings LightCookieSettings  => _lightCookieSettings;
 		public ShadowSettings ShadowSettings => _shadowSettings;
 
 		/// <summary>
@@ -84,7 +86,7 @@ namespace Trp
 			}
 #endif
 			_resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
-
+			
 			return new Trp(_commonSettings, _resources);
 		}
 	}

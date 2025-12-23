@@ -4,6 +4,7 @@ namespace Trp
 	{
 		Setup,
 		LightingForward,
+		LightCookie,
 		Shadow,
 		DepthNormals,
 		OpaqueGeometry,

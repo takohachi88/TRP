@@ -25,6 +25,21 @@ namespace Trp
 	}
 
 	[Serializable]
+	public class LightCookieSettings
+	{
+		public LightCookieAtlasSize AtlasSize = LightCookieAtlasSize.Size2048;
+		[Min(4)] public int DefaultCookieDataCount = 32;
+	}
+
+	public enum LightCookieAtlasSize
+	{
+		[InspectorName("512")] Size512 = 512,
+		Size1024 = 1024,
+		Size2048 = 2048,
+		Size4096 = 4096,
+	}
+
+	[Serializable]
 	public class ShadowSettings
 	{
 		[Min(0)] public float MaxShadowDistance = 50;
@@ -34,13 +49,13 @@ namespace Trp
 		[Range(0.001f, 1f)] public float CascadeFade = 0.3f;
 		public enum MapSize
 		{
-			_1024 = 1024,
-			_2048 = 2048,
-			_4096 = 4096,
-			_8192 = 8192,
+			Size1024 = 1024,
+			Size2048 = 2048,
+			Size4096 = 4096,
+			Size8192 = 8192,
 		}
-		public int DirectionalShadowMapSize = (int)MapSize._2048;
-		public int PunctualShadowMapSize = (int)MapSize._2048;
+		public int DirectionalShadowMapSize = (int)MapSize.Size2048;
+		public int PunctualShadowMapSize = (int)MapSize.Size2048;
 	}
 
 	internal class LightingForwardPlusPass
@@ -64,6 +79,7 @@ namespace Trp
 		public JobHandle _tileJobHandle;
 
 		private readonly ShadowPasses _shadowPasses = new();
+		private readonly LightCookiePass _lightCookiePass;
 
 		[StructLayout(LayoutKind.Sequential)]
 		public struct DirectionalLightData
@@ -87,16 +103,16 @@ namespace Trp
 			/// x: 影の強さ
 			/// y: シャドウマップのタイル番号
 			/// z: normal bias
-			/// w: 未使用
+			/// w: light cookieの番号
 			/// </summary>
 			public float4 Data3;
 
-			public DirectionalLightData(ref VisibleLight visibleLight, Light light, PerLightShadowData shadowData)
+			public DirectionalLightData(ref VisibleLight visibleLight, Light light, int cookieIndex, PerLightShadowData shadowData)
 			{
 				Data1 = -visibleLight.localToWorldMatrix.GetColumn(2);
 				Data2 = visibleLight.finalColor.ToFloat4();
 				Data2.w = math.asfloat(light.renderingLayerMask);
-				Data3 = new(shadowData.Strength, shadowData.MapTileStartIndex, shadowData.NormalBias, 0);
+				Data3 = new(shadowData.Strength, shadowData.MapTileStartIndex, shadowData.NormalBias, cookieIndex);
 			}
 		}
 
@@ -107,7 +123,8 @@ namespace Trp
 			public const int STRIDE = sizeof(float) * 4 * 5;
 
 			public float4 Data1, Data2, Data3, Data4, Data5;
-			public PunctualLightData(ref VisibleLight visibleLight, Light light, PerLightShadowData shadowData)
+			public float CookieIndex => Data4.z;
+			public PunctualLightData(ref VisibleLight visibleLight, Light light, int cookieIndex, PerLightShadowData shadowData)
 			{
 				if (visibleLight.lightType is not (LightType.Spot or LightType.Point)) throw new ArgumentException();
 
@@ -127,8 +144,9 @@ namespace Trp
 					//w: 未使用
 					Data1 = Vector4.zero;
 
-					// xy: スポットライトの絞りを無効化。
-					Data4 = new(0, 1, 0, 0);
+					// xy: スポットライトの絞りを無効化
+					// z: light cookieのデータ番号
+					Data4 = new(0, 1, cookieIndex, 0);
 
 					/// <summary>
 					/// x: 影の強さ
@@ -149,10 +167,11 @@ namespace Trp
 					// saturate(d * a + b)^2というスポットライトの絞りの式の...、
 					//x: a
 					//y: b
+					//z: light cookieのテクスチャ番号
 					float innerCos = Mathf.Cos(Mathf.Deg2Rad * 0.5f * light.innerSpotAngle);
 					float outerCos = Mathf.Cos(Mathf.Deg2Rad * 0.5f * visibleLight.spotAngle);
 					float angleRangeInv = 1f / Mathf.Max(innerCos - outerCos, 0.001f);
-					Data4 = new(angleRangeInv, -outerCos * angleRangeInv, 0, 0);
+					Data4 = new(angleRangeInv, -outerCos * angleRangeInv, cookieIndex, 0);
 
 					/// <summary>
 					/// x: 影の強さ
@@ -170,6 +189,11 @@ namespace Trp
 			}
 		}
 
+		public LightingForwardPlusPass(LightCookieSettings settings)
+		{
+			_lightCookiePass = new((int)settings.AtlasSize, settings.DefaultCookieDataCount);
+		}
+
 
 		public class PassData
 		{
@@ -181,6 +205,7 @@ namespace Trp
 			public int DataCountPerTile;
 			public BufferHandle TileBuffer;
 			public Vector4 FowardPlusTileSettings;
+			public LightCookiePass LightCookieManager;
 
 			public int DirectionalLightCount;
 			public readonly DirectionalLightData[] DirectionalLightData = new DirectionalLightData[MAX_DIRECTIONAL_LIGHT_COUNT];
@@ -189,6 +214,8 @@ namespace Trp
 			public int PunctualLightCount;
 			public readonly PunctualLightData[] PunctualLightData = new PunctualLightData[MAX_PUNCTUAL_LIGHT_COUNT];
 			public BufferHandle PunctualLightBuffer;
+
+			public int CookieCount;
 		}
 
 		internal void RecordRenderGraph(ref PassParams passParams, LightingForwardPlusSettings lightingSettings)
@@ -196,6 +223,7 @@ namespace Trp
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			if(passParams.DrawShadow) _shadowPasses.Setup(passParams.CullingResults);
+			_lightCookiePass.Setup();
 
 			using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass(Sampler.name, out PassData passData, Sampler);
 
@@ -206,6 +234,7 @@ namespace Trp
 
 			int directionalLightCount = 0;
 			int punctualLightCount = 0;
+			int cookieCount = 0;
 
 			//TODO: ライト最大数の反映
 			for (int i = 0; i < visibleLights.Length; i++)
@@ -214,11 +243,14 @@ namespace Trp
 				Light light = visibleLight.light;
 				PerLightShadowData shadowData = PerLightShadowData.Empty;
 
+				int cookieIndex = light.cookie ? cookieCount : -1;
+				if (0 <= cookieIndex) _lightCookiePass.RegisterCookie(visibleLight, cookieIndex);
+
 				if (visibleLight.lightType == LightType.Directional)
 				{
 					if (MAX_DIRECTIONAL_LIGHT_COUNT <= directionalLightCount) continue;
 					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings);
-					passData.DirectionalLightData[directionalLightCount] = new DirectionalLightData(ref visibleLight, light, shadowData);
+					passData.DirectionalLightData[directionalLightCount] = new DirectionalLightData(ref visibleLight, light, cookieIndex, shadowData);
 					directionalLightCount++;
 				}
 				else if (visibleLight.lightType is (LightType.Spot or LightType.Point))
@@ -230,11 +262,12 @@ namespace Trp
 					//Jobに渡す都合上Bounds型からfloat4型にする。
 					Rect lightBoundsRect = visibleLight.screenRect;
 					_lightBounds[punctualLightCount] = math.float4(lightBoundsRect.xMin, lightBoundsRect.yMin, lightBoundsRect.xMax, lightBoundsRect.yMax);
-
 					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterPunctualShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings);
-					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight, light, shadowData);
+					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight, light, cookieIndex, shadowData);
 					punctualLightCount++;
 				}
+
+				if (light.cookie) cookieCount++;
 			}
 			passData.DirectionalLightCount = directionalLightCount;
 			passData.PunctualLightCount = punctualLightCount;
@@ -302,9 +335,12 @@ namespace Trp
 				};
 				passData.PunctualLightBuffer = renderGraph.CreateBuffer(punctualLightBufferDesc);
 				passData.FowardPlusTileSettings = new float4(screenUvToTileCoordinates, tileCountXY.x, dataCountPerTile);
+				passData.LightCookieManager = _lightCookiePass;
 				builder.UseBuffer(passData.TileBuffer, AccessFlags.Write);
 				builder.UseBuffer(passData.PunctualLightBuffer, AccessFlags.Write);
 			}
+
+			passData.CookieCount = cookieCount;
 
 			builder.AllowGlobalStateModification(true);
 			builder.AllowPassCulling(false);
@@ -339,13 +375,17 @@ namespace Trp
 			builder.Dispose();
 
 			//影の描画準備。
-			if (passParams.DrawShadow) _shadowPasses.RecordRenderGraph(ref passParams);
+			_shadowPasses.RecordRenderGraph(ref passParams);
+
+			//light cookieの描画。
+			_lightCookiePass.RecordRenderGraph(ref passParams, cookieCount);
 		}
 
 		public void Dispose()
 		{
 			if (_tileData.IsCreated) _tileData.Dispose();
 			if (_lightBounds.IsCreated) _lightBounds.Dispose();
+			_lightCookiePass?.Dispose();
 		}
 	}
 }
