@@ -18,6 +18,9 @@ MonoBehaviour:
     _lightingSettings:
       MaxLightCountPerTile: 16
       TileSize: 64
+    _lightCookieSettings:
+      AtlasSize: 2048
+      DefaultCookieDataCount: 32
     _shadowSettings:
       MaxShadowDistance: 50
       CascadeCount: 4

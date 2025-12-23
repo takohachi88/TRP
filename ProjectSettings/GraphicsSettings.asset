@@ -61,6 +61,8 @@ GraphicsSettings:
     TakoLib.Rp.Trp: {fileID: 0}
   m_ShaderBuildSettings:
     keywordDeclarationOverrides: []
+    numInternalDefines: 0
+    defines: []
   m_LightsUseLinearIntensity: 0
   m_LightsUseColorTemperature: 0
   m_LogWhenShaderIsCompiled: 0
