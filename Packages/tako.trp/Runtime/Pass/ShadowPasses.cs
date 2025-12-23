@@ -53,7 +53,7 @@ namespace Trp
 	/// </summary>
 	internal class ShadowPasses
 	{
-		private static readonly ProfilingSampler SamplerShadow = ProfilingSampler.Get(TrpProfileId.Shadow);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Shadow);
 
 		private int _directionalShadowCount = 0;
 		private const int MAX_DIRECTIONAL_SHADOW_COUNT = 4;
@@ -253,13 +253,13 @@ namespace Trp
 
 		public void RecordRenderGraph(ref PassParams passParams)
 		{
-			if (_directionalShadowCount + _punctualTileCount == 0) return;
+			if (!passParams.DrawShadow || _directionalShadowCount + _punctualTileCount == 0) return;
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 			CullingResults cullingResults = passParams.CullingResults;
 			ShadowSettings settings = passParams.CommonSettings.ShadowSettings;
 
-			IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(SamplerShadow.name, out PassData passData, SamplerShadow);
+			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
 			passData.ShadowPasses = this;
 			passData.Settings = settings;
 
@@ -303,16 +303,6 @@ namespace Trp
 
 					Matrix4x4 worldToShadow = GetShadowTransform(projection, view, offset, directionalMapSizeRcp, passData.DirectionalTileSize);
 
-					//cascadeがある場合はシャドウマップのタイルに合わせる。
-					if (1 < cascadeCount)
-					{
-/*						Matrix4x4 toTile = Matrix4x4.identity;
-						toTile.m00 = passData.DirectionalTileSize * directionalMapSizeRcp;
-						toTile.m11 = passData.DirectionalTileSize * directionalMapSizeRcp;
-						toTile.m03 = offset.x * directionalMapSizeRcp;
-						toTile.m13 = offset.y * directionalMapSizeRcp;
-						worldToShadow = toTile * worldToShadow;*/
-					}
 					Rect viewport = new(offset.x, offset.y, passData.DirectionalTileSize, passData.DirectionalTileSize);
 					_worldToDirectionalShadows[tileIndex] = worldToShadow;
 
