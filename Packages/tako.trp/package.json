@@ -2,7 +2,7 @@
   "name": "tako.trp",
   "description": "Tako Render Pipeline (TRP) is a custom scriptable render pipeline.",
   "version": "0.0.1",
-  "unity": "6000.4",
+  "unity": "6000.5",
   "displayName": "TRP",
   "dependencies": {
     "com.unity.mathematics": "1.2.1",
@@ -17,5 +17,8 @@
     "mobile",
     "render",
     "pipeline"
-  ]
+  ],
+  "author": {
+    "name": "takohachi"
+  }
 }
