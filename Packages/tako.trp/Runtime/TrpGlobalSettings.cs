@@ -24,10 +24,7 @@ namespace Trp
 #if UNITY_EDITOR
 			//この処理がないとBlitter.Initializeでエラーになる。
 			TrpGlobalSettings globalSettings = GraphicsSettings.GetSettingsForRenderPipeline<Trp>() as TrpGlobalSettings;
-			if (RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref globalSettings, "Assets/TrpGlobalSettings.asset", true))
-			{
-				AssetDatabase.SaveAssetIfDirty(globalSettings);
-			}
+			RenderPipelineGlobalSettingsUtils.TryEnsure<TrpGlobalSettings, Trp>(ref globalSettings, "Assets/TrpGlobalSettings.asset", true);
 #endif
 		}
 	}
