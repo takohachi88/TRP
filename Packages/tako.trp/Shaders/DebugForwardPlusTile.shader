@@ -8,6 +8,9 @@ Shader "Hidden/Trp/DebugForwardPlusTile"
 		
 		HLSLINCLUDE
 		#include "../ShaderLibrary/Common.hlsl"
+		#include "Packages/tako.trp/Shaders/LitInput.hlsl"
+		#include "Packages/tako.trp/Shaders/ToonInput.hlsl"
+        #include "Packages/tako.trp/ShaderLibrary/Lighting.hlsl"
 		#include "../ShaderLibrary/ForwardPlus.hlsl"
 		#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Packing.hlsl"
 		#include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"

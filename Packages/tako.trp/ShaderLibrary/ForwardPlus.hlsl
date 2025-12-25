@@ -1,14 +1,12 @@
-#ifndef TRP_FORWARD_PLUS
+ï»¿#ifndef TRP_FORWARD_PLUS
 #define TRP_FORWARD_PLUS
 
-#include "LitInput.hlsl"
-
 //xy: Screen UV to tile coordinates
-//z: ˆês‚ ‚½‚è‚Ìƒ^ƒCƒ‹‚ÌŒÂ”
-//w: ƒ^ƒCƒ‹ƒf[ƒ^‚ÌƒTƒCƒY
+//z: ä¸€è¡Œã‚ãŸã‚Šã®ã‚¿ã‚¤ãƒ«ã®å€‹æ•°
+//w: ã‚¿ã‚¤ãƒ«ãƒ‡ãƒ¼ã‚¿ã®ã‚µã‚¤ã‚º
 //float4 _ForwardPlusTileSettings;
 
-//CatlikeCoding‚ÌƒƒWƒbƒN‚ğQl‚ÉB
+//CatlikeCodingã®ãƒ­ã‚¸ãƒƒã‚¯ã‚’å‚è€ƒã«ã€‚
 struct ForwardPlusTile
 {
 	int2 coordinates;

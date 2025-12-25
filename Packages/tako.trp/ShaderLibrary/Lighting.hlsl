@@ -1,7 +1,6 @@
 ﻿#ifndef TRP_LIGHTING_INCLUDED
 #define TRP_LIGHTING_INCLUDED
 
-#include "Packages/tako.trp/Shaders/LitInput.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
 #include "Packages/tako.trp/ShaderLibrary/ForwardPlus.hlsl"
 #include "Packages/tako.trp/ShaderLibrary/Shadow.hlsl"

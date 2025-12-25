@@ -2,7 +2,6 @@
 #define TRP_TOON_INPUT_INCLUDED
 
 #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
-#include "Packages/tako.trp/Shaders/LitInput.hlsl"
 
 TEXTURE2D(_ControlMap1);
 SAMPLER(sampler_ControlMap1);
