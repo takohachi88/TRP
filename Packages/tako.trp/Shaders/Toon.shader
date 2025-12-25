@@ -63,6 +63,7 @@ Shader "TRP/Toon"
         #include "Packages/tako.trp/Shaders/LitInput.hlsl"
         #include "Packages/tako.trp/Shaders/ToonInput.hlsl"
         #include "Packages/tako.trp/ShaderLibrary/Lighting.hlsl"
+        #include "Packages/tako.trp/ShaderLibrary/ToonLighting.hlsl"
 
         ENDHLSL
 
