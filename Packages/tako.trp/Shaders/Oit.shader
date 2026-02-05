@@ -1,9 +1,10 @@
-Shader "TRP/Oit"
+﻿Shader "TRP/Oit"
 {
     Properties
     {
         [MainTexture] _BaseMap ("Base Map", 2D) = "white" {}
         [MainColor][HDR] _BaseColor ("Base Color", color) = (1, 1, 1, 1)
+        _AlphaFactor ("Alpha Factor", float) = 1 //透けない完全な不透明を表現したい場合などに調整する。
 
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", int) = 2
@@ -73,7 +74,7 @@ Shader "TRP/Oit"
 
             float4 _BaseMap_ST;
             half4 _BaseColor;
-            float2 _OitDepthRange;
+            half _AlphaFactor;
 
             CBUFFER_END
 
@@ -109,7 +110,7 @@ Shader "TRP/Oit"
                 color.rgb = MixFog(color.rgb, fogFactor);
 
                 color.rgb *= color.a;
-                color *= OitWeight2(input.z, color.a);
+                color *= OitWeight2(input.z, color.a * _AlphaFactor);
 
                 output.color = color;
 
