@@ -193,3 +193,18 @@ float3 VFXGetCameraWorldDirection()
 {
     return unity_CameraToWorld._m02_m12_m22;
 }
+
+#if defined(_GBUFFER_NORMALS_OCT)
+#define VFXComputePixelOutputToNormalBuffer(i,normalWS,uvData,outNormalBuffer) \
+{ \
+    float2 octNormalWS = PackNormalOctQuadEncode(normalWS);         /*values between [-1, +1], must use fp32 on some platforms*/ \
+    float2 remappedOctNormalWS = saturate(octNormalWS * 0.5 + 0.5); /*values between [ 0,  1]*/ \
+    half3 packedNormalWS = PackFloat2To888(remappedOctNormalWS);    /*values between [ 0,  1]*/ \
+	outNormalBuffer = float4(packedNormalWS, 0.0); \
+}
+#else
+#define VFXComputePixelOutputToNormalBuffer(i,normalWS,uvData,outNormalBuffer) \
+{ \
+    outNormalBuffer = float4(normalWS, 0.0); \
+}
+#endif

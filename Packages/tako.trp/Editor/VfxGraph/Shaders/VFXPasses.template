@@ -1,4 +1,7 @@
 ﻿${VFXBegin:VFXPassForward}"SRPDefaultUnlit"${VFXEnd}
+${VFXBegin:VFXPassDepthNormal}"DepthNormalsOnly"${VFXEnd}
+${VFXBegin:VFXPassShadow}"ShadowCaster"${VFXEnd}
+${VFXBegin:VFXPassVelocity}"MotionVectors"${VFXEnd}
 
 ${VFXBegin:VFXPassForwardAdditionalPragma}
 #pragma multi_compile_fog
