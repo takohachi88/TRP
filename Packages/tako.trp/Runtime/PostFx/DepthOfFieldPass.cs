@@ -124,6 +124,8 @@ namespace Trp.PostFx
 		/// <returns></returns>
 		private LastTarget BokehUrp(ref PassParams passParams, DepthOfField depthOfField, TextureHandle src, TextureHandle dst)
 		{
+			if (!passParams.CameraTextures.TextureDepth.IsValid()) return LastTarget.None;
+			
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			int downSample = 2;
