@@ -51,16 +51,6 @@ namespace Trp
 			builder.SetRenderAttachment(cameraTextures.AttachmentColor, 0, AccessFlags.Write);
 			builder.SetRenderAttachmentDepth(cameraTextures.AttachmentDepth, AccessFlags.Write);
 
-			//Transparent描画時、OpaqueTexture等を使うならRead。
-			if (!isOpaque)
-			{
-				if (cameraTextures.TextureOpaque.IsValid()) builder.UseTexture(cameraTextures.TextureOpaque, AccessFlags.Read);
-				if (cameraTextures.TextureDepth.IsValid()) builder.UseTexture(cameraTextures.TextureDepth, AccessFlags.Read);
-			}
-
-
-			//TODO: ライティング関係のテクスチャの登録・確保。
-
 			builder.SetRenderFunc<PassData>(static (passData, context) =>
 			{
 				context.cmd.DrawRendererList(passData.RendererListHandle);
