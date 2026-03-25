@@ -46,6 +46,7 @@ namespace Trp
 			RendererListHandle oitList = renderGraph.CreateRendererList(
 				new RendererListDesc(IdOit, passParams.CullingResults, passParams.Camera)
 				{
+					layerMask = passParams.CommonSettings.TransparentLayerMask,
 					sortingCriteria = SortingCriteria.None,//OITはソート不要。
 					renderQueueRange = RenderQueueRange.transparent,
 					renderingLayerMask = (uint)passParams.RenderingLayerMask,

@@ -3,11 +3,6 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 
-
-#if UNITY_EDITOR
-using UnityEditor;
-#endif
-
 namespace Trp
 {
 	/// <summary>
@@ -26,6 +21,8 @@ namespace Trp
 		[SerializeField] private FilterMode _postFxLutFilterMode = FilterMode.Bilinear;
 		[SerializeField, Min(1)] private int _defaultMaxBackbufferCameraCount = 16;
 		[SerializeField, Min(1)] private int _defaultMaxRenderTextureCameraCount = 16;
+		[SerializeField] private LayerMask _opaqueLayerMask = ~0;
+		[SerializeField] private LayerMask _transparentLayerMask = ~0;
 		public List<CustomPass> CustomPasses;
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
@@ -46,6 +43,8 @@ namespace Trp
 		public FilterMode PostFxLutFilterMode => _postFxLutFilterMode;
 		public int DefaultMaxBackbufferCameraCount => _defaultMaxBackbufferCameraCount;
 		public int DefaultMaxRenderTextureCameraCount => _defaultMaxRenderTextureCameraCount;
+		public LayerMask OpaqueLayerMask => _opaqueLayerMask;
+		public LayerMask TransparentLayerMask => _transparentLayerMask;
 	}
 
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "TrpAsset", fileName = "TrpAsset")]

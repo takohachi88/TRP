@@ -29,6 +29,8 @@ namespace Trp
 			passData.RendererListHandle = renderGraph.CreateRendererList(
 				new RendererListDesc(ShaderTagId, passParams.CullingResults, passParams.Camera)
 				{
+					layerMask = passParams.CommonSettings.OpaqueLayerMask,
+
 					sortingCriteria = SortingCriteria.CommonOpaque,
 
 					//rendererConfiguration =

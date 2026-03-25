@@ -77,6 +77,7 @@ namespace Trp.Sample
 
 			passData.RendererList = renderGraph.CreateRendererList(new RendererListDesc(IdLiquidGlass, passParams.CullingResults, passParams.Camera)
 			{
+				layerMask = passParams.CommonSettings.TransparentLayerMask,
 				renderQueueRange = RenderQueueRange.transparent,
 			});
 			passData.Src = passParams.CameraTextures.AttachmentColor;
