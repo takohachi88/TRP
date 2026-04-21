@@ -54,8 +54,6 @@ namespace Trp
 			VolumeManager.instance.Initialize();
 			RtHandlePool.Instance.Initialize();
 
-			_renderGraph.nativeRenderPassesEnabled = true;
-
 			GraphicsSettings.useScriptableRenderPipelineBatching = true;
 
 			_renderTextureCameras = new(commonSettings.DefaultMaxRenderTextureCameraCount);

@@ -39,8 +39,7 @@ namespace Trp
 				Application.platform != RuntimePlatform.OSXEditor &&//OSXとAMDではできないらしい。
 				Application.platform != RuntimePlatform.OSXPlayer &&
 				SystemInfo.supportsMultisampleResolveDepth &&
-				SystemInfo.supportsMultisampleResolveStencil &&
-				renderGraph.nativeRenderPassesEnabled;
+				SystemInfo.supportsMultisampleResolveStencil;
 
 			//デバイスでのdepth resolveができないならMSAA画像を手動でbindする。
 			return !deviceResolve;

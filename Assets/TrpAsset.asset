@@ -35,6 +35,12 @@ MonoBehaviour:
     _postFxLutFilterMode: 1
     _defaultMaxBackbufferCameraCount: 16
     _defaultMaxRenderTextureCameraCount: 16
+    _opaqueLayerMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
+    _transparentLayerMask:
+      serializedVersion: 2
+      m_Bits: 4294967295
     CustomPasses: []
   _useSmoothNormalImporter: 1
   _smoothNormalImportRegex: _outline
