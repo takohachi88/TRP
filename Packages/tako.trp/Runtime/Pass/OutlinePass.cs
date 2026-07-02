@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RendererUtils;
@@ -10,7 +11,7 @@ namespace Trp
 	/// </summary>
 	internal class OutlinePass
 	{
-		private static readonly  ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Outline);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(OutlinePass), MarkerFlags.Default);
 		private static readonly ShaderTagId ShaderTagId = new(TrpConstants.PassNames.OUTLINE);
 		private static readonly int IdTanFov = Shader.PropertyToID("_TanFov");
 
@@ -23,7 +24,16 @@ namespace Trp
 		internal void RecordRenderGraph(ref PassParams passParams)
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
-			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(nameof(OutlinePass), out PassData passData, Sampler);
+			LightingResources lightingResources = passParams.LightingResources;
+
+			builder.UseAllGlobalTextures(true);
+			if (lightingResources.DirectionalShadowMap.IsValid()) builder.UseTexture(lightingResources.DirectionalShadowMap, AccessFlags.Read);
+			if (lightingResources.PunctualShadowMap.IsValid()) builder.UseTexture(lightingResources.PunctualShadowMap, AccessFlags.Read);
+			if (lightingResources.DirectionalLightDataBuffer.IsValid()) builder.UseBuffer(lightingResources.DirectionalLightDataBuffer, AccessFlags.Read);
+			if (lightingResources.PunctualLightDataBuffer.IsValid()) builder.UseBuffer(lightingResources.PunctualLightDataBuffer, AccessFlags.Read);
+			if (lightingResources.ForwardPlusTileBuffer.IsValid()) builder.UseBuffer(lightingResources.ForwardPlusTileBuffer, AccessFlags.Read);
+			if (lightingResources.PunctualShadowDataBuffer.IsValid()) builder.UseBuffer(lightingResources.PunctualShadowDataBuffer, AccessFlags.Read);
 
 			passData.TanFov = Mathf.Tan(passParams.Camera.fieldOfView / 180f);
 			passData.RendererListHandle = renderGraph.CreateRendererList(

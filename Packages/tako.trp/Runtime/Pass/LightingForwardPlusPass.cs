@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using System;
 using System.Runtime.InteropServices;
 using TakoLib.Common;
@@ -61,7 +62,7 @@ namespace Trp
 
 	internal class LightingForwardPlusPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.LightingForward);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(LightingForwardPlusPass), MarkerFlags.Default);
 
 		private static readonly int IdDirectionalLightCount = Shader.PropertyToID("_DirectionalLightCount");
 		private static readonly int IdDirectionalLightBuffer = Shader.PropertyToID("_DirectionalLightBuffer");
@@ -226,7 +227,7 @@ namespace Trp
 			if(passParams.DrawShadow) _shadowPasses.Setup(passParams.CullingResults);
 			_lightCookiePass.Setup();
 
-			using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass(Sampler.name, out PassData passData, Sampler);
+			using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass(nameof(LightingForwardPlusPass), out PassData passData, Sampler);
 
 			passData.Pass = this;
 
@@ -290,6 +291,7 @@ namespace Trp
 				name = "Directional Light Buffer",
 			};
 			passData.DirectionalLightBuffer = renderGraph.CreateBuffer(directionalLightBufferDesc);
+			passParams.LightingResources.DirectionalLightDataBuffer = passData.DirectionalLightBuffer;
 			builder.UseBuffer(passData.DirectionalLightBuffer, AccessFlags.Write);
 
 			if (0 < punctualLightCount)
@@ -335,6 +337,7 @@ namespace Trp
 					name = "Punctual Light Buffer",
 				};
 				passData.PunctualLightBuffer = renderGraph.CreateBuffer(punctualLightBufferDesc);
+				passParams.LightingResources.PunctualLightDataBuffer = passData.PunctualLightBuffer;
 				passData.FowardPlusTileSettings = new float4(screenUvToTileCoordinates, tileCountXY.x, dataCountPerTile);
 				passData.LightCookieManager = _lightCookiePass;
 				builder.UseBuffer(passData.TileBuffer, AccessFlags.Write);
@@ -349,11 +352,11 @@ namespace Trp
 			{
 				IComputeCommandBuffer cmd = context.cmd;
 
-				cmd.SetGlobalFloat(IdDirectionalLightCount, passData.DirectionalLightCount);
+				cmd.SetGlobalInteger(IdDirectionalLightCount, passData.DirectionalLightCount);
 				cmd.SetBufferData(passData.DirectionalLightBuffer, passData.DirectionalLightData, 0, 0, passData.DirectionalLightCount);
 				cmd.SetGlobalBuffer(IdDirectionalLightBuffer, passData.DirectionalLightBuffer);
 
-				cmd.SetGlobalFloat(IdPunctualLightCount, passData.PunctualLightCount);
+				cmd.SetGlobalInteger(IdPunctualLightCount, passData.PunctualLightCount);
 
 				if (0 < passData.PunctualLightCount)
 				{
@@ -367,7 +370,7 @@ namespace Trp
 					cmd.SetGlobalBuffer(IdTileBuffer, passData.TileBuffer);
 
 					cmd.SetGlobalVector(IdFowardPlusTileSettings, passData.FowardPlusTileSettings);
-					cmd.SetGlobalFloat(IdPunctualLightCount, passData.PunctualLightCount);
+					cmd.SetGlobalInteger(IdPunctualLightCount, passData.PunctualLightCount);
 				}
 				if(passData.Pass._tileData.IsCreated) passData.Pass._tileData.Dispose();
 				passData.Pass._lightBounds.Dispose();

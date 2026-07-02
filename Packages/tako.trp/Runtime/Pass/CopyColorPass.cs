@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -9,8 +10,8 @@ namespace Trp
 	/// </summary>
 	internal class CopyColorPass
 	{
-		private static readonly ProfilingSampler SamplerOpaque = ProfilingSampler.Get(TrpProfileId.CopyColorToOpaque);
-		private static readonly ProfilingSampler SamplerTransparent = ProfilingSampler.Get(TrpProfileId.CopyColorToTransparent);
+		private static readonly ProfilingSampler SamplerOpaque = ProfilingSampler.Create(nameof(CopyColorPass) + ".Opaque", MarkerFlags.Default);
+		private static readonly ProfilingSampler SamplerTransparent = ProfilingSampler.Create(nameof(CopyColorPass) + ".Transparent", MarkerFlags.Default);
 
 		public enum CopyColorMode
 		{
@@ -46,6 +47,7 @@ namespace Trp
 						passParams.CameraTextures.AttachmentColor,
 						passParams.CameraTextures.TextureOpaque = renderGraph.CreateTexture(desc),
 						TrpConstants.ShaderIds.CameraOpaqueTexture,
+						SamplerOpaque.name,
 						SamplerOpaque,
 						passParams.Camera);
 					break;
@@ -59,6 +61,7 @@ namespace Trp
 						passParams.CameraTextures.AttachmentColor,
 						passParams.CameraTextures.TextureTransparent = renderGraph.CreateTexture(desc),
 						TrpConstants.ShaderIds.CameraTransparentTexture,
+						SamplerTransparent.name,
 						SamplerTransparent,
 						passParams.Camera);
 					break;
@@ -73,12 +76,12 @@ namespace Trp
 			public Camera Camera;
 		}
 
-		private void CopyTexture(RenderGraph renderGraph, TextureHandle attachment, TextureHandle texture, int dstId, ProfilingSampler sampler, Camera camera)
+		private void CopyTexture(RenderGraph renderGraph, TextureHandle attachment, TextureHandle texture, int dstId, string passName, ProfilingSampler sampler, Camera camera)
 		{
 			//renderGraph.AddCopyPass(attachment, texture);
 			//return;
 			
-			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(sampler.name, out PassData passData, sampler);
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out PassData passData, sampler);
 
 			passData.Attachment = attachment;
 			passData.Texture = texture;

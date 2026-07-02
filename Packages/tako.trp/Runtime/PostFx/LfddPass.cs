@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
@@ -15,8 +16,8 @@ namespace Trp.PostFx
 		[SerializeField] private Shader _shader;
 		private Material _material;
 
-		private static readonly ProfilingSampler SamplerDataDrivenOcclusion = ProfilingSampler.Get(TrpProfileId.LensFlareDataDrivenOcclusion);
-		private static readonly ProfilingSampler SamplerDataDriven = ProfilingSampler.Get(TrpProfileId.LensFlareDataDriven);
+		private static readonly ProfilingSampler SamplerDataDrivenOcclusion = ProfilingSampler.Create(nameof(LfddPass) + ".DataDrivenOcclusion", MarkerFlags.Default);
+		private static readonly ProfilingSampler SamplerDataDriven = ProfilingSampler.Create(nameof(LfddPass) + ".DataDriven", MarkerFlags.Default);
 
 		//TRPにはSR対応はないが、LensFlareCommonSRPが要求してくるので仕方なく。
 		private XRPass _xrPass;

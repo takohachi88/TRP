@@ -123,12 +123,6 @@ namespace Trp
 			Blitter.BlitTexture(cmd, src, GetFinalBlitScaleBias(src, dst, camera), _cameraBlitMaterial, (int)CopyPassMode.Color);
 		}
 
-		public static void SetResolusion(int width, int height, FullScreenMode fullScreenMode)
-		{
-			Screen.SetResolution(width, height, fullScreenMode);
-			RtHandlePool.Instance.Dispose();
-		}
-
 		private class RasterPassData
 		{
 			public TextureHandle Src;

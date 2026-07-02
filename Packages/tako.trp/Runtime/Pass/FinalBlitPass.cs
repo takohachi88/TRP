@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -9,7 +10,7 @@ namespace Trp
 	/// </summary>
 	internal class FinalBlitPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.FinalBlit);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(FinalBlitPass), MarkerFlags.Default);
 
 		private class PassData
 		{
@@ -22,7 +23,7 @@ namespace Trp
 
 		public void RecordRenderGraph(ref PassParams passParams, TextureHandle src, BlendMode blendSrc, BlendMode blendDst)
 		{
-			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(nameof(FinalBlitPass), out PassData passData, Sampler);
 
 			TextureHandle dst = passParams.CameraTextures.TargetColor;
 

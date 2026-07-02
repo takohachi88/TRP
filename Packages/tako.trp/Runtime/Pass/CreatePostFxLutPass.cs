@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -10,7 +11,7 @@ namespace Trp.PostFx
 	/// </summary>
 	internal class CreatePostFxLutPass : IDisposable
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.CreateLut);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(CreatePostFxLutPass), MarkerFlags.Default);
 		private Material _material;
 		private static readonly int IdLutParam = Shader.PropertyToID("_LutParams");
 		private static readonly int IdNegaIntensity = Shader.PropertyToID("_NegaIntensity");
@@ -94,7 +95,7 @@ namespace Trp.PostFx
 				)
 				return;
 
-			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(nameof(CreatePostFxLutPass), out PassData passData, Sampler);
 
 			TextureDesc desc = new(lutSize * lutSize, lutSize)
 			{

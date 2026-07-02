@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using System.Diagnostics;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -15,7 +16,7 @@ namespace Trp
 	/// </summary>
 	internal class GizmoPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Gizmo);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(GizmoPass), MarkerFlags.Default);
 
 		internal class PassData
 		{
@@ -32,7 +33,7 @@ namespace Trp
 			if (!Handles.ShouldRenderGizmos() || passParams.Camera.sceneViewFilterMode == Camera.SceneViewFilterMode.ShowFiltered) return;
 
 			//Rasterパスでもいけそうに見えるが、Unity6000.1.6ではUnsafeパスにしないとエラーが出た。
-			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
+			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(nameof(GizmoPass), out PassData passData, Sampler);
 
 			passData.GizmoRendererList = passParams.RenderGraph.CreateGizmoRendererList(passParams.Camera, gizmoSubset);
 			passData.Color = dstColor;

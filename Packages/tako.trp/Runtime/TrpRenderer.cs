@@ -177,8 +177,6 @@ namespace Trp
 			int renderingLayerMask = -1;
 			MSAASamples msaa = MSAASamples.None;
 
-			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
-			CommandBuffer cmd = CommandBufferPool.Get();
 			ProfilingSampler sampler;
 
 			_postFxPassGroup = rendererParams.PostFxPassGroup;
@@ -279,6 +277,8 @@ namespace Trp
 			VolumeManager.instance.Update(VolumeManager.instance.stack, camera.transform, cameraData ? cameraData.VolumeMask : 1);
 
 			//RenderGraphの登録と実行。
+			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
+			CommandBuffer cmd = CommandBufferPool.Get();
 			RenderGraphParameters renderGraphParameters = new()
 			{
 				executionId = camera.GetEntityId(),
@@ -288,9 +288,11 @@ namespace Trp
 				currentFrameIndex = Time.frameCount,
 			};
 
-			using (new ProfilingScope(cmd, sampler))
+			try
 			{
-				renderGraph.BeginRecording(renderGraphParameters);
+				using (new ProfilingScope(cmd, sampler))
+				{
+					renderGraph.BeginRecording(renderGraphParameters);
 
 				//Passに渡すデータの構築。
 				PassParams passParams = new()
@@ -398,12 +400,21 @@ namespace Trp
 				if (camera.cameraType == CameraType.SceneView) _setEditorTargetPass.RecordAndExecute(ref passParams);
 
 				//RenderGraph終了。
-				renderGraph.EndRecordingAndExecute();
-			}
+					renderGraph.EndRecordingAndExecute();
+				}
 
-			context.ExecuteCommandBuffer(cmd);
-			cmd.Clear();
-			context.Submit();
+				context.ExecuteCommandBuffer(cmd);
+				cmd.Clear();
+				context.Submit();
+			}
+			catch (Exception e)
+			{
+				if (renderGraph.ResetGraphAndLogException(e)) throw;
+			}
+			finally
+			{
+				CommandBufferPool.Release(cmd);
+			}
 		}
 
 		private void ExecuteCustomPasses(TrpCameraData cameraData, ref PassParams passParams, ExecutionPhase phase)

@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using System.Diagnostics;
 using TakoLib.Common;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace Trp
 	/// </summary>
 	internal class WireOverlayPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.WireOverlay);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(WireOverlayPass), MarkerFlags.Default);
 
 		public class PassData
 		{
@@ -26,7 +27,7 @@ namespace Trp
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 
-			using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler))
+			using (IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(nameof(WireOverlayPass), out PassData passData, Sampler))
 			{
 				passData.RendererListHandle = renderGraph.CreateWireOverlayRendererList(passParams.Camera);
 				

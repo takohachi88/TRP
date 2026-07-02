@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using System;
 using System.Runtime.InteropServices;
 using Unity.Mathematics;
@@ -13,7 +14,7 @@ namespace Trp
 	/// </summary>
 	public class LightCookiePass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.LightCookie);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(LightCookiePass), MarkerFlags.Default);
 
 		/// <summary>
 		/// Cookieのアトラス。
@@ -78,7 +79,7 @@ namespace Trp
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 
-			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
+			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(nameof(LightCookiePass), out PassData passData, Sampler);
 
 			passData.Lights = _lights;
 			passData.CookieAtlas = _cookieAtlas;

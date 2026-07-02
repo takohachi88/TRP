@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RendererUtils;
@@ -10,7 +11,7 @@ namespace Trp
 	/// </summary>
 	internal class DepthNormalsPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.DepthNormals);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(DepthNormalsPass), MarkerFlags.Default);
 		private static readonly ShaderTagId ShaderTagId = new("DepthNormalsOnly");
 		private class PassData
 		{
@@ -23,7 +24,7 @@ namespace Trp
 
 			RenderGraph renderGraph = passParams.RenderGraph;
 
-			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(nameof(DepthNormalsPass), out PassData passData, Sampler);
 
 			passData.RendererListHandle = renderGraph.CreateRendererList(
 			new RendererListDesc(ShaderTagId, passParams.CullingResults, passParams.Camera)

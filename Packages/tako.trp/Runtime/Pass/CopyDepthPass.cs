@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -9,7 +10,7 @@ namespace Trp
 	/// </summary>
 	internal class CopyDepthPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.CopyDepth);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(CopyDepthPass), MarkerFlags.Default);
 
 		private readonly Material _copyDepthToTargetMaterial;
 
@@ -37,7 +38,7 @@ namespace Trp
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
 
-			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(nameof(CopyDepthPass), out PassData passData, Sampler);
 
 			CameraTextures cameraTextures = passParams.CameraTextures;
 

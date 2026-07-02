@@ -65,8 +65,8 @@ namespace Trp
 			base.Dispose(disposing);
 			LensFlareCommonSRP.Dispose();
 			VolumeManager.instance?.Deinitialize();
-			RtHandlePool.Instance?.Dispose();
 			_renderer.Dispose();
+			RtHandlePool.Instance?.Dispose();
 			CameraCaptureBridge.enabled = false;
 			_renderGraph.Cleanup();
 			RenderingUtils.Dispose();

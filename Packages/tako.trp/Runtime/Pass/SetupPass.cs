@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -23,7 +24,7 @@ namespace Trp
 
 		private Vector2Int _prevAttachmentSize;
 
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Setup);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(SetupPass), MarkerFlags.Default);
 		private static readonly int IdAttachmentSize = Shader.PropertyToID("_AttachmentSize");
 		private static readonly int IdAspectFit = Shader.PropertyToID("_AspectFit");
 		private static readonly int IdScaledScreenParams = Shader.PropertyToID("_ScaledScreenParams");
@@ -197,7 +198,7 @@ namespace Trp
 			cameraTextures.TargetDepth = targetDepth;
 
 			//RasterPassはSetRenderAttachmentが必須だが、このパスではその必要がないためUnsafePassにする。RGViewerの表記の観点からもその方が良い。
-			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
+			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(nameof(SetupPass), out PassData passData, Sampler);
 
 			passData.AttachmentSize = attachmentSize;
 			passData.Camera = camera;
@@ -255,8 +256,9 @@ namespace Trp
 		{
 			_targetColorRt?.Release();
 			_targetDepthRt?.Release();
-			_prevAttachmentColorRt?.Release();
-			_prevAttachmentDepthRt?.Release();
+			// Intermediate attachments are owned and released by RtHandlePool.
+			_prevAttachmentColorRt = null;
+			_prevAttachmentDepthRt = null;
 		}
 	}
 }

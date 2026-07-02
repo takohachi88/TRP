@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using System.Diagnostics;
 using TakoLib.Common;
 using UnityEngine;
@@ -11,7 +12,7 @@ namespace Trp
 	/// </summary>
 	internal class DebugForwardPlusPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.DebugForwardPlus);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(DebugForwardPlusPass), MarkerFlags.Default);
 		private readonly Material _tileMaterial;
 
 		private static readonly int IdDebugForwardPlusTileOpacity = Shader.PropertyToID("_DebugForwardPlusTileOpacity");
@@ -41,7 +42,7 @@ namespace Trp
 
 			if (passParams.ForwardPlusCameraDebugValue == null || !passParams.ForwardPlusCameraDebugValue.ShowTiles) return;
 
-			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(nameof(DebugForwardPlusPass), out PassData passData, Sampler);
 			passData.Material = _tileMaterial;
 			passData.CameraDebugValue = passParams.ForwardPlusCameraDebugValue;
 			builder.SetRenderAttachment(passParams.CameraTextures.AttachmentColor, 0, AccessFlags.Write);

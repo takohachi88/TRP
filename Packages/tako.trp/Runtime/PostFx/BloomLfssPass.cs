@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using System;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -38,9 +39,9 @@ namespace Trp.PostFx
 		[SerializeField] private Shader _lfssShader;
 		private Material _lfssMaterial;
 
-		private static readonly ProfilingSampler SamplerBlitBloomMipmaps = ProfilingSampler.Get(TrpProfileId.BlitBloomMipmaps);
-		private static readonly ProfilingSampler SamplerBloomComposite = ProfilingSampler.Get(TrpProfileId.BloomComposite);
-		private static readonly ProfilingSampler SamplerLfss = ProfilingSampler.Get(TrpProfileId.LensFlareScreenSpace);
+		private static readonly ProfilingSampler SamplerBlitBloomMipmaps = ProfilingSampler.Create(nameof(BloomLfssPass) + ".BlitBloomMipmaps", MarkerFlags.Default);
+		private static readonly ProfilingSampler SamplerBloomComposite = ProfilingSampler.Create(nameof(BloomLfssPass) + ".BloomComposite", MarkerFlags.Default);
+		private static readonly ProfilingSampler SamplerLfss = ProfilingSampler.Create(nameof(BloomLfssPass) + ".LensFlareScreenSpace", MarkerFlags.Default);
 
 		protected override void OnInitialize()
 		{

@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -6,7 +7,7 @@ namespace Trp
 {
 	public class UiPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Ui);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(UiPass), MarkerFlags.Default);
 
 		private class PassData
 		{
@@ -15,7 +16,7 @@ namespace Trp
 
 		public void RecordRenderGraph(ref PassParams passParams)
 		{
-			using (IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler))
+			using (IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(nameof(UiPass), out PassData passData, Sampler))
 			{
 				passData.RendererList = passParams.RenderGraph.CreateUIOverlayRendererList(passParams.Camera, UISubset.UIToolkit_UGUI);
 

@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
@@ -10,7 +11,7 @@ namespace Trp
 	/// </summary>
 	public class CameraCapturePass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.CameraCapture);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(CameraCapturePass), MarkerFlags.Default);
 
 		public class PassData
 		{
@@ -23,7 +24,7 @@ namespace Trp
 			IEnumerator<Action<RenderTargetIdentifier, CommandBuffer>> captureActions = CameraCaptureBridge.GetCaptureActions(passParams.Camera);
 			if (captureActions == null) return;
 
-			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
+			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(nameof(CameraCapturePass), out PassData passData, Sampler);
 
 			passData.Src = passParams.CameraTextures.AttachmentColor;
 			passData.CaptureActions = captureActions;

@@ -1,3 +1,4 @@
+using Unity.Profiling.LowLevel;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
@@ -9,7 +10,7 @@ namespace Trp
 	/// </summary>
 	internal class SkyboxPass
 	{
-		private static readonly ProfilingSampler Sampler = ProfilingSampler.Get(TrpProfileId.Skybox);
+		private static readonly ProfilingSampler Sampler = ProfilingSampler.Create(nameof(SkyboxPass), MarkerFlags.Default);
 
 		public class PassData
 		{
@@ -18,7 +19,7 @@ namespace Trp
 
 		public void RecordRenderGraph(ref PassParams passParams)
 		{
-			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
+			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(nameof(SkyboxPass), out PassData passData, Sampler);
 			
 			RendererListHandle rendererListHandle = passParams.RenderGraph.CreateSkyboxRendererList(passParams.Camera);
 			passData.RendererListHandle = rendererListHandle;

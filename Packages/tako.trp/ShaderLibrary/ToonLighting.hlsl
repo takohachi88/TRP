@@ -62,11 +62,14 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
         output += ToonLighting(normalWS, color, light.direction, light.color, attenuation, cookie);
     }
 
-	ForwardPlusTile tile = GetForwardPlusTile(screenUv);
-	int lastIndex = tile.GetLastLightIndexInTile();
-	for(int j = tile.GetFirstLightIndexInTile(); j <= lastIndex; j++)
+	if (_PunctualLightCount > 0)
 	{
-		output += PunctualLighting(tile.GetLightIndex(j), positionWS, normalWS, color);
+		ForwardPlusTile tile = GetForwardPlusTile(screenUv);
+		int lastIndex = tile.GetLastLightIndexInTile();
+		for(int j = tile.GetFirstLightIndexInTile(); j <= lastIndex; j++)
+		{
+			output += PunctualLighting(tile.GetLightIndex(j), positionWS, normalWS, color);
+		}
 	}
 
 	return output;
