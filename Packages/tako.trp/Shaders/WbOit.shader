@@ -1,4 +1,4 @@
-﻿Shader "TRP/Oit"
+﻿Shader "TRP/WbOit"
 {
     Properties
     {
@@ -36,7 +36,7 @@
         {
             Tags
             {
-                "LightMode" = "Oit"
+                "LightMode" = "WbOit"
             }
             Blend 0 One One
             Blend 1 Zero OneMinusSrcAlpha
@@ -49,7 +49,7 @@
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
 
             #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
-            #include "Packages/tako.trp/ShaderLibrary/Oit.hlsl"
+            #include "Packages/tako.trp/ShaderLibrary/WbOit.hlsl"
 
             struct Attributes
             {
@@ -92,9 +92,9 @@
             }
 
 
-            FragmentOitOutputs Fragment (Varyings input)
+            FragmentWbOitOutputs Fragment (Varyings input)
             {
-                FragmentOitOutputs output = (FragmentOitOutputs)0;
+                FragmentWbOitOutputs output = (FragmentWbOitOutputs)0;
 
                 float4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
 
@@ -110,7 +110,7 @@
                 color.rgb = MixFog(color.rgb, fogFactor);
 
                 color.rgb *= color.a;
-                color *= OitWeight2(input.z, color.a * _AlphaFactor);
+                color *= WbOitWeight2(input.z, color.a * _AlphaFactor);
 
                 output.color = color;
 

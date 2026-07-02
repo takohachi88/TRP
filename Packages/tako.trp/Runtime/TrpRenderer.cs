@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Trp.PostFx;
 using UnityEngine;
@@ -115,7 +116,7 @@ namespace Trp
 		private readonly LightingForwardPlusPass _lightingPass;
 		private readonly DepthNormalsPass _depthNormalsPass = new();
 		private readonly GeometryPass _geometryPass = new();
-		private readonly OitPass _oitPass;
+		private readonly WbOitPass _wbOitPass;
 		private readonly OutlinePass _outlinePass = new();
 		private readonly SkyboxPass _skyboxPass = new();
 		private readonly CopyColorPass _copyColorPass;
@@ -145,7 +146,7 @@ namespace Trp
 			_debugForwardPlusPass = new (resources.DebugForwardPlusTileShader);
 			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
-			_oitPass = new(resources.OitCompositeShader);
+			_wbOitPass = new(resources.WbOitCompositeShader);
 		}
 
 		/// <summary>
@@ -171,8 +172,8 @@ namespace Trp
 			bool useDepthNormalsTexture = true;
 			bool drawShadow = true;
 			bool useOutline = true;
-			bool useOit = true;
-			float oitScale = 1f;
+			bool useWbOit = true;
+			float wbOitScale = 1f;
 			int renderingLayerMask = -1;
 			MSAASamples msaa = MSAASamples.None;
 
@@ -209,8 +210,8 @@ namespace Trp
 				useDepthNormalsTexture = cameraData.UseDepthNormalsTexture;
 				drawShadow = cameraData.DrawShadow;
 				useOutline = cameraData.UseOutline;
-				useOit = cameraData.UseOit;
-				oitScale = cameraData.OitScale;
+				useWbOit = cameraData.UseWbOit;
+				wbOitScale = cameraData.WbOitScale;
 				renderingLayerMask = cameraData.RenderingLayerMask;
 				msaa = _commonSettings.Msaa;
 				sampler = cameraData.Sampler;
@@ -353,8 +354,8 @@ namespace Trp
 				//CameraDepthTextureの作成。
 				_depthNormalsPass.RecordRenderGraph(ref passParams);
 
-				//OITの描画。
-				if(useOit) _oitPass.RecordRenderGraph(ref passParams, oitScale);
+				//WbOitの描画。
+				if(useWbOit) _wbOitPass.RecordRenderGraph(ref passParams, wbOitScale);
 
 				//Transparentジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, false);
@@ -422,7 +423,7 @@ namespace Trp
 			CoreUtils.Destroy(_coreBlitMaterial);
 			_lutPass.Dispose();
 			_lightingPass.Dispose();
-			_oitPass.Dispose();
+			_wbOitPass.Dispose();
 		}
 	}
 }
