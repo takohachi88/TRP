@@ -15,6 +15,8 @@ namespace Trp
 		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 		[SerializeField, Range(0.1f, 1f)] private float _wbOitScale = 1f;
 		[SerializeField] private bool _useWbOit;
+		[SerializeField] private bool _usePpllOit;
+		[SerializeField, Range(1, 16), Tooltip("1ピクセルあたりに確保する平均フラグメント数。ピクセル単位の上限ではなく、画面全体のNode Buffer容量を決める値。")] private int _ppllOitAverageFragmentsPerPixel = 4;
 		[SerializeField] private LayerMask _volumeMask = 1;
 		[SerializeField] private bool _useOpaqueTexture, _useTransparentTexture, _useDepthNormalsTexture;
 		[SerializeField] private int _renderinLayerMask = -1;
@@ -44,6 +46,13 @@ namespace Trp
 		public float RenderScale => _renderScale;
 		public float WbOitScale => _wbOitScale;
 		public bool UseWbOit => _useWbOit;
+		public bool UsePpllOit => _usePpllOit;
+		/// <summary>
+		/// 画面全体へ確保するNode数を決める平均値。
+		/// 容量は「PPLLの幅 × 高さ × この値」で、個々のピクセルがこの数を超えること自体は可能。
+		/// 画面全体で容量を使い切った後のフラグメントは破棄される。
+		/// </summary>
+		public int PpllOitAverageFragmentsPerPixel => _ppllOitAverageFragmentsPerPixel;
 		public bool UseScaledRendering => !_renderScale.IsInRange(0.95f, 1.05f);
 		public bool UseOpaqueTexture => _useOpaqueTexture;
 		public bool UseTransparentTexture => _useTransparentTexture;

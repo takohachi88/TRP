@@ -28,6 +28,8 @@ namespace Trp
 		[SerializeField][ResourcePath("Shaders/PostFx/CreatePostFxLut.shader")] private Shader _postFxLutShader;
 		[SerializeField][ResourcePath("Shaders/DebugForwardPlusTile.shader")] private Shader _debugForwardPlusTileShader;
 		[SerializeField][ResourcePath("Shaders/WbOitComposite.shader")] private Shader _wbOitCompositeShader;
+		[SerializeField][ResourcePath("Shaders/PpllOitResolve.shader")] private Shader _ppllOitResolveShader;
+		[SerializeField][ResourcePath("Shaders/PpllOitClear.compute")] private ComputeShader _ppllOitClearCompute;
 
 		[SerializeField][ResourcePath("Shaders/Unlit.shader")] private Shader _unlitShader;
 		[SerializeField][ResourcePath("Materials/trp_unlit.mat")] private Material _unlitMaterial;
@@ -44,6 +46,8 @@ namespace Trp
 		public Shader PostFxLutShader => _postFxLutShader;
 		public Shader DebugForwardPlusTileShader => _debugForwardPlusTileShader;
 		public Shader WbOitCompositeShader => _wbOitCompositeShader;
+		public Shader PpllOitResolveShader => _ppllOitResolveShader;
+		public ComputeShader PpllOitClearCompute => _ppllOitClearCompute;
 		public Shader UnlitShader => _unlitShader;
 		public Material UnlitMaterial => _unlitMaterial;
 		public Material SpriteUnlitMaterial => _spriteUnlitMaterial;

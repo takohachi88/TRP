@@ -192,6 +192,8 @@ MonoBehaviour:
         _postFxLutShader: {fileID: 4800000, guid: 3711d3bc7f160e1458cd1858bf603541, type: 3}
         _debugForwardPlusTileShader: {fileID: 4800000, guid: 7f22f92467e64f844ad64d76fc183f7a, type: 3}
         _wbOitCompositeShader: {fileID: 4800000, guid: 0f0bf2bf425af7d479ff2a44c347cbed, type: 3}
+        _ppllOitResolveShader: {fileID: 4800000, guid: 12b7a43b04054d2d94b5dd63182f1944, type: 3}
+        _ppllOitClearCompute: {fileID: 7200000, guid: 4221b1ae4366481ebee26af21e1baa28, type: 3}
         _unlitShader: {fileID: 4800000, guid: 93745d845ae16214f8d60da21b891647, type: 3}
         _unlitMaterial: {fileID: 2100000, guid: a1a8f90831b4ee843b8c6d7ae07e71be, type: 2}
         _spriteUnlitMaterial: {fileID: 2100000, guid: 26760c13b4380e940a7a62cb3d2de83a, type: 2}

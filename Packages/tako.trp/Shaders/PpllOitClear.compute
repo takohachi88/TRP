@@ -1,0 +1,15 @@
+#pragma kernel ClearPpllOitHeads
+#pragma target 5.0
+
+RWByteAddressBuffer _PpllOitHeads;
+int _PpllOitPixelCount;
+
+// 各ピクセルのリスト先頭を終端値0へ戻す。Node本体は上書きされるため消去不要。
+[numthreads(256, 1, 1)]
+void ClearPpllOitHeads(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x < (uint)_PpllOitPixelCount)
+    {
+        _PpllOitHeads.Store(id.x * 4u, 0u);
+    }
+}
