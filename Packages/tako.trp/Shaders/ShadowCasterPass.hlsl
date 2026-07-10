@@ -51,7 +51,7 @@ half4 ShadowPassFragment(Varyings input) : SV_TARGET
 #endif
 
 #if defined(LOD_FADE_CROSSFADE)
-        LODFadeCrossFade(input.positionCS);
+        //LODFadeCrossFade(input.positionCS);
 #endif
 
     return 0;
