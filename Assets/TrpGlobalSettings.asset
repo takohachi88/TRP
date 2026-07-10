@@ -31,18 +31,17 @@ MonoBehaviour:
       - rid: 5291756480562200787
       - rid: 5291756480562200788
       - rid: 5291756480562200789
-      - rid: 4212165509553324329
     m_RuntimeSettings:
-      m_List: []
+      m_List:
+      - rid: 5291756480562200776
+      - rid: 5291756480562200777
+      - rid: 5291756480562200778
+      - rid: 5291756480562200780
+      - rid: 5291756480562200782
+      - rid: 5291756480562200789
   references:
     version: 2
     RefIds:
-    - rid: 4212165509553324329
-      type: {class: MipGenRenderPipelineRuntimeResources, ns: UnityEngine.Rendering, asm: Unity.RenderPipelines.Universal.Runtime}
-      data:
-        m_ColorPyramidPS: {fileID: 4800000, guid: 63b92baba208e314c8fdebe52ca0cc34, type: 3}
-        m_ColorPyramidCS: {fileID: 7200000, guid: 28969cfddd9ef3f4e94b971690146a4f, type: 3}
-        m_DepthPyramidCS: {fileID: 7200000, guid: 90a204702cd44e54cac7ed4fc6e5d86b, type: 3}
     - rid: 5291756480562200774
       type: {class: RayTracingRenderPipelineResources, ns: UnityEngine.Rendering.UnifiedRayTracing, asm: Unity.UnifiedRayTracing.Runtime}
       data:
