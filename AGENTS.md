@@ -4,7 +4,7 @@
 
 ## Project Overview
 
-- このプロジェクトは、TRPという独自のレンダーパイプラインを制作するプロジェクトです。
+- このプロジェクトは、UnityでTRPという独自のレンダーパイプラインを制作するプロジェクトです。
 - `unity-cli-loop`（https://github.com/hatayama/unity-cli-loop/tree/v3-beta）を導入済みであり、Unityの操作はこれを通じて行えます。
 
 ## Git
@@ -27,7 +27,7 @@
 
 ## Main Working Area
 
-- ダンジョン実装の主な作業対象は `Packages/tako.trp/` です。
+- 主な作業対象は `Packages/tako.trp/` です。
 - 既存の命名に合わせて、小さく安全に変更してください。
 
 ## Coding Style
