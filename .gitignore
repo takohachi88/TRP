@@ -75,3 +75,4 @@ crashlytics-build.properties
 # Takohachi Custom
 /[Aa]ssets/_GitIgnore/
 IndexingPerformanceReport/
+.uloop/outputs/
