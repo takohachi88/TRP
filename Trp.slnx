@@ -11,7 +11,10 @@
   <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
   <Project Path="Unity.Collections.csproj" />
   <Project Path="UnityEngine.UI.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Runtime.csproj" />
   <Project Path="Unity.MemoryProfiler.Editor.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.2D.Runtime.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
   <Project Path="Unity.PerformanceTesting.Editor.csproj" />
   <Project Path="UnityEngine.TestRunner.csproj" />
   <Project Path="takolib.common.csproj" />
@@ -45,6 +48,7 @@
   <Project Path="Unity.Performance.Profile-Analyzer.Editor.csproj" />
   <Project Path="UnityEditor.UI.csproj" />
   <Project Path="UnityCLILoop.Application.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.2D.Editor.Overrides.csproj" />
   <Project Path="UnityCLILoop.Domain.csproj" />
   <Project Path="Unity.2D.Sprite.Editor.csproj" />
   <Project Path="UnityCLILoop.Presentation.csproj" />
@@ -76,6 +80,7 @@
   <Project Path="Unity.InternalAPIEngineBridge.RenderPipelines.Core.Runtime.Shared.csproj" />
   <Project Path="Unity.Collections.Tests.CoreCLR.InternalJobNestedPrivate.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
+  <Project Path="Unity.RenderPipeline.Universal.ShaderLibrary.csproj" />
   <Project Path="UnityCLILoop.FirstPartyTools.Common.MouseUi.Editor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="UnityCLILoop.FirstPartyTools.Screenshot.Editor.csproj" />
@@ -90,7 +95,8 @@
   <Project Path="Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric.csproj" />
   <Project Path="UnityCLILoop.FirstPartyTools.Common.InputSystem.Editor.csproj" />
   <Project Path="UnityCLILoop.FirstPartyTools.Common.InputSimulation.Editor.csproj" />
-  <Project Path="Unity.RenderPipelines.Universal.Editor.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Shaders.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Editor-testable.csproj" />
   <Project Path="Unity.InternalAPIEditorBridge.ShaderGraph.Editor.csproj" />
   <Project Path="Unity.MemoryProfiler.csproj" />
   <Project Path="Unity.Collections.Tests.CoreCLR.PrivateJobNested.csproj" />
@@ -102,6 +108,7 @@
   <Project Path="Unity.Rendering.LightTransport.Editor.csproj" />
   <Project Path="Unity.Collections.Editor.csproj" />
   <Project Path="Unity.Mathematics.csproj" />
+  <Project Path="Unity.RenderPipelines.Universal.Config.Runtime.csproj" />
   <Project Path="Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary.csproj" />
   <Project Path="Unity.RenderPipelines.Core.ShaderLibrary.csproj" />
 </Solution>
