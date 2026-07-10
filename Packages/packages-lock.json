@@ -132,6 +132,13 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.nuget.newtonsoft-json": {
+      "version": "3.2.2",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
     "com.unity.performance.profile-analyzer": {
       "version": "1.4.0",
       "depth": 1,
@@ -252,6 +259,16 @@
         "com.unity.shadergraph": "17.6.0",
         "com.unity.render-pipelines.core": "17.6.0"
       }
+    },
+    "io.github.hatayama.uloopmcp": {
+      "version": "3.0.0-beta.48",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.nuget.newtonsoft-json": "3.2.1",
+        "com.unity.ugui": "1.0.0"
+      },
+      "url": "https://package.openupm.com"
     },
     "tako.trp": {
       "version": "file:tako.trp",
