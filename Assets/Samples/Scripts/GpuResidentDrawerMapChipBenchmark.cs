@@ -16,6 +16,14 @@ namespace Trp.Samples
 	/// </summary>
 	public sealed class GpuResidentDrawerMapChipBenchmark : MonoBehaviour
 	{
+		public enum LayoutMode
+		{
+			/// <summary>遮蔽の少ない通常の平面グリッド。</summary>
+			Grid,
+			/// <summary>カメラの視線方向へ同一mapchipを重ね、遮蔽カリングの効果を検証する。</summary>
+			OcclusionColumns,
+		}
+
 		private const string LogPrefix = "[TRP GRD Benchmark]";
 		private static readonly int MapChipGlobalTextureId = Shader.PropertyToID("_MapChipGlobalTexture");
 
@@ -28,6 +36,7 @@ namespace Trp.Samples
 		[SerializeField, Min(1)] private int _warmupFrames = 240;
 		[SerializeField, Min(1)] private int _sampleFrames = 600;
 		[SerializeField] private bool _runOnStart = true;
+		[SerializeField] private LayoutMode _layoutMode;
 
 		private readonly List<Mesh> _validMeshes = new();
 		private readonly List<double> _cpuFrameTimes = new();
@@ -37,6 +46,7 @@ namespace Trp.Samples
 		private readonly FrameTiming[] _frameTimings = new FrameTiming[1];
 
 		private GameObject _instancesRoot;
+		private readonly List<Transform> _instanceTransforms = new();
 		private Material[] _materials;
 		private Texture2D _globalTexture;
 		private ProfilerRecorder _trpRenderRecorder;
@@ -165,6 +175,7 @@ namespace Trp.Samples
 				instance.isStatic = true;
 				instance.transform.SetParent(_instancesRoot.transform, false);
 				instance.transform.localPosition = gridOffset + new Vector3(column * spacing, 0f, row * spacing);
+				_instanceTransforms.Add(instance.transform);
 
 				MeshFilter filter = instance.AddComponent<MeshFilter>();
 				filter.sharedMesh = mesh;
@@ -178,6 +189,7 @@ namespace Trp.Samples
 			}
 
 			PositionCamera(columns, rows, spacing, meshBounds);
+			if (_layoutMode == LayoutMode.OcclusionColumns) ArrangeOcclusionColumns(meshBounds, spacing);
 			Debug.Log($"{LogPrefix} 配置完了: instances={_instanceCount}, sourceMeshes={_validMeshes.Count}, materialVariants={_materials.Length}");
 		}
 
@@ -267,6 +279,44 @@ namespace Trp.Samples
 			camera.fieldOfView = 55f;
 		}
 
+		/// <summary>
+		/// 100個前後の画面上の列に分け、各列のmapchipをカメラの視線方向へ重ねる。
+		/// 手前の同形状Meshが後方のMeshを覆うため、遮蔽カリングの有効性を測れる。
+		/// </summary>
+		private void ArrangeOcclusionColumns(Bounds meshBounds, float spacing)
+		{
+			Camera camera = Camera.main;
+			if (camera == null || _instanceTransforms.Count == 0) return;
+
+			const int TargetDepthLayers = 100;
+			int columnCount = Mathf.Clamp(Mathf.CeilToInt(Mathf.Sqrt(_instanceTransforms.Count / (float)TargetDepthLayers)), 2, 16);
+			int rowCount = Mathf.CeilToInt(_instanceTransforms.Count / (float)(columnCount * TargetDepthLayers));
+			int columnGroupCount = columnCount * rowCount;
+			float lateralSpacing = spacing * 2.5f;
+			float depthSpacing = spacing * 1.1f;
+			float nearDistance = Mathf.Max(
+				Mathf.Max(spacing * 4f, Mathf.Max(meshBounds.size.x, meshBounds.size.z) * 8f),
+				lateralSpacing * Mathf.Max(columnCount, rowCount) * 1.5f);
+
+			Vector3 right = camera.transform.right;
+			Vector3 up = camera.transform.up;
+			Vector3 forward = camera.transform.forward;
+			Vector3 origin = camera.transform.position + forward * nearDistance;
+			for (int index = 0; index < _instanceTransforms.Count; index++)
+			{
+				int groupIndex = index % columnGroupCount;
+				int depthLayer = index / columnGroupCount;
+				int column = groupIndex % columnCount;
+				int row = groupIndex / columnCount;
+				float depth = depthLayer * depthSpacing;
+				// 画面上の列が奥行きによらず重なるよう、投影距離に比例して横方向を補正する。
+				float perspectiveScale = (nearDistance + depth) / nearDistance;
+				Vector3 lateralOffset = (right * ((column - (columnCount - 1) * 0.5f) * lateralSpacing)
+					+ up * ((row - (rowCount - 1) * 0.5f) * lateralSpacing)) * perspectiveScale;
+				_instanceTransforms[index].position = origin + lateralOffset + forward * depth;
+			}
+		}
+
 		private void CollectFrameSample()
 		{
 			uint timingCount = FrameTimingManager.GetLatestTimings(1, _frameTimings);
@@ -292,8 +342,9 @@ namespace Trp.Samples
 			// これはGRDへの実登録数ではないため、結果ではProfiler値として明示する。
 			long grdProfilerCounterValue = _grdRendererCounts.Count > 0 ? _grdRendererCounts[_grdRendererCounts.Count - 1] : 0;
 			LastResult = string.Format(
-				"mode={0}, instances={1}, meshes={2}, materialVariants={3}, cpu={4:F3} ms ({5} samples), gpu={6}, TRP.Render={7:F3} ms, GRD profiler counter={8}",
+				"mode={0}, layout={1}, instances={2}, meshes={3}, materialVariants={4}, cpu={5:F3} ms ({6} samples), gpu={7}, TRP.Render={8:F3} ms, GRD profiler counter={9}",
 				GetDrawerMode(),
+				_layoutMode,
 				_instanceCount,
 				_validMeshes.Count,
 				_materials?.Length ?? 0,

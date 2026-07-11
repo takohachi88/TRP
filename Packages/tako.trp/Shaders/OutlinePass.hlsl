@@ -12,6 +12,7 @@ struct Attributes
     half4 color : COLOR;
     float2 uv : TEXCOORD0;
     half4 smoothNormalTS : TEXCOORD2;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 struct Varyings
@@ -21,11 +22,14 @@ struct Varyings
     half3 normalWS : NORMAL;
     float2 uv : TEXCOORD0;
     float fogFactor : FOG_FACTOR;
+    UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
 Varyings OutlineVertex(Attributes input)
 {
     Varyings output = (Varyings)0;
+    UNITY_SETUP_INSTANCE_ID(input);
+    UNITY_TRANSFER_INSTANCE_ID(input, output);
 
     VertexInputs vertexInputs = GetVertexInputs(input.positionOS.xyz, input.normalOS);
     output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
@@ -60,6 +64,7 @@ Varyings OutlineVertex(Attributes input)
 
 half4 OutlineFragment(Varyings input) : SV_TARGET
 {
+    UNITY_SETUP_INSTANCE_ID(input);
     #if defined(OUTLINE_SINGLE_COLOR)
 
     half4 output = _OutlineColor;

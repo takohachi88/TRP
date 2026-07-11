@@ -58,7 +58,10 @@ namespace Trp
 		// 専用の深度ピラミッドを必要とするため、現段階では明示的に無効としている。
 		[Header("GPU Resident Drawer")]
 		[SerializeField] private GPUResidentDrawerMode _gpuResidentDrawerMode = GPUResidentDrawerMode.Disabled;
+		[Tooltip("画面に占める面積がこの値（%）未満の GPU Resident Drawer 対象Meshを描画しません。0 は無効です。LODGroup のRendererには適用されません。")]
 		[SerializeField, Range(0f, 20f)] private float _gpuResidentDrawerSmallMeshScreenPercentage;
+		[Tooltip("既存の DepthNormalsOnly パスから深度ピラミッドを作成し、GPU Resident Drawer の遮蔽カリングを有効にします。対応する DepthNormalsOnly パスを持たないシェーダーは遮蔽物として扱われません。現状DepthNormalsOnlyパスの描画のほうがトータルで重たいケースのほうが多いため、使用は慎重に。")]
+		[SerializeField] private bool _gpuResidentDrawerEnableOcclusionCulling;
 
 #if UNITY_EDITOR
 		[SerializeField] private bool _useSmoothNormalImporter = true;
@@ -102,8 +105,8 @@ namespace Trp
 		GPUResidentDrawerSettings IGPUResidentRenderPipeline.gpuResidentDrawerSettings => new()
 		{
 			mode = _gpuResidentDrawerMode,
-			// TRPにはまだGPU Occlusion Culling用の深度ピラミッドパスがない。
-			enableOcclusionCulling = false,
+			// 深度ピラミッドはTrpRenderer内でDepthNormalsOnlyの出力から更新する。
+			enableOcclusionCulling = _gpuResidentDrawerEnableOcclusionCulling,
 			allowInEditMode = true,
 			supportDitheringCrossFade = false,
 			smallMeshScreenPercentage = _gpuResidentDrawerSmallMeshScreenPercentage,
@@ -119,6 +122,13 @@ namespace Trp
 			message = string.Empty;
 			severity = LogType.Log;
 			return true;
+		}
+
+		// Inspectorから設定を変えた際にもGRDを再初期化し、enum表示のまま即時反映する。
+		protected override void OnValidate()
+		{
+			base.OnValidate();
+			GPUResidentDrawer.ReinitializeIfNeeded();
 		}
 
 		protected override RenderPipeline CreatePipeline()

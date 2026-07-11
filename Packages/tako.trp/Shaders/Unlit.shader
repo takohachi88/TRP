@@ -49,9 +49,14 @@ Shader "TRP/Unlit"
             Cull [_Cull]
 
             HLSLPROGRAM
+            #pragma target 4.5
             #pragma vertex Vertex
             #pragma fragment Fragment
+            #pragma multi_compile _ DOTS_INSTANCING_ON
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
+
+            #define UNITY_SETUP_DOTS_SH_COEFFS
+            #define UNITY_SETUP_DOTS_RENDER_BOUNDS
 
             #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
 
@@ -60,6 +65,7 @@ Shader "TRP/Unlit"
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
                 half4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -68,6 +74,7 @@ Shader "TRP/Unlit"
                 float2 uv : TEXCOORD0;
                 half4 color : COLOR;
                 float fogCoord : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -85,7 +92,9 @@ Shader "TRP/Unlit"
 
             Varyings Vertex (Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 Varyings output;
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 VertexInputs vertexInput = GetVertexInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
@@ -96,6 +105,7 @@ Shader "TRP/Unlit"
 
             half4 Fragment (Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
 
                 #if (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
@@ -123,10 +133,14 @@ Shader "TRP/Unlit"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 4.5
             #pragma vertex DepthNormalsVertex
             #pragma fragment DepthNormalsFragment
             #pragma shader_feature_local_fragment ALPHA_CLIP
-            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+
+            #define UNITY_SETUP_DOTS_SH_COEFFS
+            #define UNITY_SETUP_DOTS_RENDER_BOUNDS
             #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
 
             TEXTURE2D(_BaseMap);

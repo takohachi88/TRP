@@ -109,5 +109,75 @@ Shader "TRP/Samples/Map Chip GPU Resident Benchmark"
             }
             ENDHLSL
         }
+
+        // GRDの遮蔽カリング用。TRP既存のDepthNormalsOnly経路に参加する。
+        // 独立したDepthOnlyパスは追加しない。
+        Pass
+        {
+            Name "DepthNormalsOnly"
+            Tags { "LightMode" = "DepthNormalsOnly" }
+            ZWrite On
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma target 4.5
+            #pragma exclude_renderers gles
+            #pragma vertex DepthNormalsVertex
+            #pragma fragment DepthNormalsFragment
+            #pragma multi_compile _ DOTS_INSTANCING_ON
+            #pragma shader_feature_local MAPCHIP_VERTEX_WIND
+
+            #define UNITY_SETUP_DOTS_SH_COEFFS
+            #define UNITY_SETUP_DOTS_RENDER_BOUNDS
+
+            #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
+
+            struct Attributes
+            {
+                float4 positionOS : POSITION;
+                half3 normalOS : NORMAL;
+                half4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            struct Varyings
+            {
+                float4 positionCS : SV_POSITION;
+                half3 normalWS : TEXCOORD0;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
+            };
+
+            CBUFFER_START(UnityPerMaterial)
+                half4 _BaseColor;
+                float _GlobalTextureScale;
+                float _WindAmplitude;
+                float _WindFrequency;
+                float4 _WindDirection;
+            CBUFFER_END
+
+            Varyings DepthNormalsVertex(Attributes input)
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                Varyings output;
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+                float3 positionWS = TransformObjectToWorld(input.positionOS.xyz);
+                #if defined(MAPCHIP_VERTEX_WIND)
+                    float windPhase = dot(positionWS.xz, float2(0.17, 0.23)) + _Time.y * _WindFrequency;
+                    positionWS.xz += normalize(_WindDirection.xz) * (sin(windPhase) * _WindAmplitude * input.color.a);
+                #endif
+
+                output.positionCS = TransformWorldToHClip(positionWS);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                return output;
+            }
+
+            half4 DepthNormalsFragment(Varyings input) : SV_Target
+            {
+                UNITY_SETUP_INSTANCE_ID(input);
+                return half4(NormalizeNormalPerPixel(input.normalWS), 0.0h);
+            }
+            ENDHLSL
+        }
     }
 }

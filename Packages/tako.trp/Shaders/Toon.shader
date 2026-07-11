@@ -59,6 +59,8 @@ Shader "TRP/Toon"
     {
         HLSLINCLUDE
 
+        #define UNITY_SETUP_DOTS_SH_COEFFS
+        #define UNITY_SETUP_DOTS_RENDER_BOUNDS
         #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
         #include "Packages/tako.trp/Shaders/LitInput.hlsl"
         #include "Packages/tako.trp/Shaders/ToonInput.hlsl"
@@ -94,8 +96,10 @@ Shader "TRP/Toon"
             Cull [_Cull]
 
             HLSLPROGRAM
+            #pragma target 4.5
             #pragma vertex Vertex
             #pragma fragment Fragment
+            #pragma multi_compile _ DOTS_INSTANCING_ON
 
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ LOD_FADE_CROSSFADE
@@ -113,6 +117,7 @@ Shader "TRP/Toon"
                 GI_ATTRIBUTES
                 half3 normalOS : NORMAL;
                 half4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -125,11 +130,14 @@ Shader "TRP/Toon"
                 float fogFactor : FOG_FACTOR;
                 float3 positionWS : POSITION_WS;
                 half3 directionVS : DIRECTION_VS;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             Varyings Vertex (Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 Varyings output = (Varyings)0;
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 VertexInputs vertexInputs = GetVertexInputs(input.positionOS.xyz, input.normalOS);
                 output.positionCS = vertexInputs.positionCS;
                 output.positionWS = vertexInputs.positionWS;
@@ -145,6 +153,7 @@ Shader "TRP/Toon"
 
             half4 Fragment (Varyings input) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_LinearClamp, input.uv);
 
                 AlphaClip(output.a, _Cutoff);
@@ -186,8 +195,10 @@ Shader "TRP/Toon"
 
             HLSLPROGRAM
             
+            #pragma target 4.5
             #pragma vertex OutlineVertex
             #pragma fragment OutlineFragment
+            #pragma multi_compile _ DOTS_INSTANCING_ON
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2SA
             #pragma shader_feature_local_fragment ALPHA_CLIP
             #pragma shader_feature_local_fragment OUTLINE_SINGLE_COLOR
@@ -213,12 +224,13 @@ Shader "TRP/Toon"
 
             HLSLPROGRAM
 
+            #pragma target 4.5
             #pragma vertex ShadowPassVertex
             #pragma fragment ShadowPassFragment
 
             #pragma shader_feature_local _ALPHATEST_ON
 
-            #pragma multi_compile_instancing
+            #pragma multi_compile _ DOTS_INSTANCING_ON
 
             #pragma multi_compile _ LOD_FADE_CROSSFADE
 
@@ -238,11 +250,11 @@ Shader "TRP/Toon"
             ZWrite On
 
             HLSLPROGRAM
+            #pragma target 4.5
             #pragma vertex DepthNormalsVertex
             #pragma fragment DepthNormalsFragment
             #pragma shader_feature_local_fragment ALPHA_CLIP
-            #pragma multi_compile_instancing
-            #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
+            #pragma multi_compile _ DOTS_INSTANCING_ON
             #include "Packages/tako.trp/Shaders/DepthNormalsPass.hlsl"
             ENDHLSL
         }

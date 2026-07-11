@@ -43,7 +43,11 @@ Shader "TRP/PpllOit"
             #pragma target 5.0
             #pragma vertex Vertex
             #pragma fragment Fragment
+            #pragma multi_compile _ DOTS_INSTANCING_ON
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
+
+            #define UNITY_SETUP_DOTS_SH_COEFFS
+            #define UNITY_SETUP_DOTS_RENDER_BOUNDS
 
             #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
             #include "Packages/tako.trp/ShaderLibrary/PpllOit.hlsl"
@@ -53,6 +57,7 @@ Shader "TRP/PpllOit"
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
                 half4 color : COLOR;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -61,6 +66,7 @@ Shader "TRP/PpllOit"
                 float2 uv : TEXCOORD0;
                 half4 color : COLOR;
                 float fogCoord : TEXCOORD1;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             TEXTURE2D(_BaseMap);
@@ -78,7 +84,9 @@ Shader "TRP/PpllOit"
 
             Varyings Vertex(Attributes input)
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 Varyings output;
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 VertexInputs vertexInput = GetVertexInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
@@ -90,6 +98,7 @@ Shader "TRP/PpllOit"
             [earlydepthstencil]
             half4 Fragment(Varyings input, uint sampleIndex : SV_SampleIndex) : SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
                 clip(color.a - 1e-5h);
 

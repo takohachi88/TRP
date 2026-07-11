@@ -115,6 +115,7 @@ namespace Trp
 		private readonly CreatePostFxLutPass _lutPass;
 		private readonly LightingForwardPlusPass _lightingPass;
 		private readonly DepthNormalsPass _depthNormalsPass = new();
+		private readonly GpuOcclusionCullingPass _gpuOcclusionCullingPass = new();
 		private readonly GeometryPass _geometryPass = new();
 		private readonly WbOitPass _wbOitPass;
 		private readonly PpllOitPass _ppllOitPass;
@@ -350,6 +351,10 @@ namespace Trp
 				//PostProcessで使うLUTの生成。
 				_lutPass.RecordRenderGraph(ref passParams, _commonSettings.PostFxLutFilterMode);
 
+				// GRD遮蔽カリングは既存のDepthNormalsOnlyを前段で描画して深度ピラミッドを更新する。
+				// TRPでは独立したDepthOnlyパスは持たない。
+				bool depthNormalsRenderedForGpuOcclusion = _gpuOcclusionCullingPass.RecordRenderGraph(ref passParams, _depthNormalsPass);
+
 				//Opaqueジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, true);
 				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.AfterRenderingOpaques);
@@ -365,7 +370,7 @@ namespace Trp
 				_copyColorPass.RecordRenderGraph(ref passParams, CopyColorPass.CopyColorMode.Opaque);
 
 				//CameraDepthTextureの作成。
-				_depthNormalsPass.RecordRenderGraph(ref passParams);
+				if (!depthNormalsRenderedForGpuOcclusion) _depthNormalsPass.RecordRenderGraph(ref passParams);
 
 				//WbOitの描画。
 				if(useWbOit) _wbOitPass.RecordRenderGraph(ref passParams, wbOitScale);
