@@ -79,8 +79,51 @@ namespace Trp
 			public int Compare(Camera a, Camera b) => a.depth.CompareTo(b.depth);
 		}
 
+		/// <summary>
+		/// SRP標準のカメラ描画通知を発火してからTRPのカメラ描画を実行する。
+		/// GPU Resident Drawerはこの通知でカリング用のカメラ状態を準備する。
+		/// </summary>
+		private void RenderCamera(ref RendererParams renderParams)
+		{
+			BeginCameraRendering(renderParams.Context, renderParams.Camera);
+			try
+			{
+				_renderer.Render(ref renderParams);
+			}
+			finally
+			{
+				EndCameraRendering(renderParams.Context, renderParams.Camera);
+			}
+		}
+
+		/// <summary>
+		/// プロファイリング対象のカメラ描画でも、カメラ通知の対称性を維持する。
+		/// </summary>
+		private void RenderCamera(ref RendererParams renderParams, ProfilingSampler sampler)
+		{
+			BeginCameraRendering(renderParams.Context, renderParams.Camera);
+			try
+			{
+				using (new ProfilingScope(sampler))
+				{
+					_renderer.Render(ref renderParams);
+				}
+			}
+			finally
+			{
+				EndCameraRendering(renderParams.Context, renderParams.Camera);
+			}
+		}
+
 		protected override void Render(ScriptableRenderContext context, List<Camera> cameras)
 		{
+			// 設定アセットでの有効・無効切り替えや、エディタ上での互換性変化を反映する。
+			// URPと同様にフレーム先頭で確認し、GPU Resident Drawerの寿命をTRPに同期させる。
+			GPUResidentDrawer.ReinitializeIfNeeded();
+			BeginContextRendering(context, cameras);
+			try
+			{
+
 			//UIオーバーレイをTRP側で描画するため、エンジン側の描画はオフにする。ただしCameraが無いならオンにしておく。
 			SupportedRenderingFeatures.active.rendersUIOverlay = 0 < cameras.Count;
 
@@ -118,10 +161,7 @@ namespace Trp
 					BackbufferCameras = _backbufferCameras,
 					ForwardPlusCameraDebugValue = null,
 				};
-				using (new ProfilingScope(SamplerRenderTexture))
-				{
-					_renderer.Render(ref renderParams);
-				}
+				RenderCamera(ref renderParams, SamplerRenderTexture);
 			}
 
 			//Game画面（backbuffer）を描画先とするカメラの描画。
@@ -144,10 +184,7 @@ namespace Trp
 					BackbufferCameras = _backbufferCameras,
 					ForwardPlusCameraDebugValue = DebugForwardPlus.GetCameraDebugValue(_backbufferCameras[i]),
 				};
-				using (new ProfilingScope(Sampler))
-				{
-					_renderer.Render(ref renderParams);
-				}
+				RenderCamera(ref renderParams, Sampler);
 			}
 
 			//SceneViewやPreviewなどエディタ用の描画のカメラの描画。
@@ -169,10 +206,15 @@ namespace Trp
 					BackbufferCameras = _backbufferCameras,
 					ForwardPlusCameraDebugValue = DebugForwardPlus.GetCameraDebugValue(_editorCameras[i]),
 				};
-				_renderer.Render(ref renderParams);
+				RenderCamera(ref renderParams);
 			}
 
 			_renderGraph.EndFrame();
+			}
+			finally
+			{
+				EndContextRendering(context, cameras);
+			}
 		}
 	}
 }

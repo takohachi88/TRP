@@ -48,9 +48,17 @@ namespace Trp
 	}
 
 	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "TrpAsset", fileName = "TrpAsset")]
-	public class TrpAsset : RenderPipelineAsset<Trp>
+	public class TrpAsset : RenderPipelineAsset<Trp>, IGPUResidentRenderPipeline
 	{
 		[SerializeField] private TrpCommonSettings _commonSettings;
+
+		// GPU Resident Drawerは、互換シェーダーを使用するMeshRendererの描画提出を
+		// BatchRendererGroupへ移し、メインスレッドの描画提出コストを削減する。
+		// TRPではまずインスタンシング描画のみを提供する。GPU Occlusion Cullingは
+		// 専用の深度ピラミッドを必要とするため、現段階では明示的に無効としている。
+		[Header("GPU Resident Drawer")]
+		[SerializeField] private GPUResidentDrawerMode _gpuResidentDrawerMode = GPUResidentDrawerMode.Disabled;
+		[SerializeField, Range(0f, 20f)] private float _gpuResidentDrawerSmallMeshScreenPercentage;
 
 #if UNITY_EDITOR
 		[SerializeField] private bool _useSmoothNormalImporter = true;
@@ -75,6 +83,43 @@ namespace Trp
 		public override Material defaultParticleMaterial => _resources?.ParticleUnlitMaterial;
 		public override Material defaultLineMaterial => _resources?.UnlitMaterial;
 		public override Material defaultTerrainMaterial => _resources?.UnlitMaterial;
+
+		/// <summary>
+		/// GPU Resident Drawerの動作モード。
+		/// 実行中に切り替えた場合も、次フレームの再初期化で反映される。
+		/// </summary>
+		public GPUResidentDrawerMode gpuResidentDrawerMode
+		{
+			get => _gpuResidentDrawerMode;
+			set
+			{
+				if (_gpuResidentDrawerMode == value) return;
+				_gpuResidentDrawerMode = value;
+				GPUResidentDrawer.ReinitializeIfNeeded();
+			}
+		}
+
+		GPUResidentDrawerSettings IGPUResidentRenderPipeline.gpuResidentDrawerSettings => new()
+		{
+			mode = _gpuResidentDrawerMode,
+			// TRPにはまだGPU Occlusion Culling用の深度ピラミッドパスがない。
+			enableOcclusionCulling = false,
+			allowInEditMode = true,
+			supportDitheringCrossFade = false,
+			smallMeshScreenPercentage = _gpuResidentDrawerSmallMeshScreenPercentage,
+			shadowSmallMeshScreenPercentages = default,
+		};
+
+		/// <summary>
+		/// TRPの通常のRendererList描画はBatchRendererGroupの間接描画を受け入れられる。
+		/// ただし、対象シェーダーにはDOTS Instancingバリアントが必要である。
+		/// </summary>
+		public bool IsGPUResidentDrawerSupportedBySRP(out string message, out LogType severity)
+		{
+			message = string.Empty;
+			severity = LogType.Log;
+			return true;
+		}
 
 		protected override RenderPipeline CreatePipeline()
 		{

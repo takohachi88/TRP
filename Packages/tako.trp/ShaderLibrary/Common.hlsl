@@ -15,6 +15,7 @@
 
 #include "UnityInput.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/UnityInstancing.hlsl"
+#include "GpuResidentDrawerInput.hlsl"
 
 #ifdef HAVE_VFX_MODIFICATION
 #include "Packages/com.unity.visualeffectgraph/Shaders/VFXMatricesOverride.hlsl"

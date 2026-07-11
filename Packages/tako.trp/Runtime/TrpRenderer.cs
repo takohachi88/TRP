@@ -269,6 +269,13 @@ namespace Trp
 			}
 			else return;//カリング失敗ならこのカメラの描画は中断。
 
+			//Cull後にGPU Resident Drawerへ描画要求用のCommandBufferを渡す。
+			//GRDはRendererListに含まれる互換Rendererを間接描画へ差し替えるため、
+			//以降のGeometryPassは従来と同じRendererList APIのままでよい。
+			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
+			CommandBuffer cmd = CommandBufferPool.Get();
+			GPUResidentDrawer.PostCullBeginCameraRendering(new RenderRequestBatcherContext { commandBuffer = cmd });
+
 			//ScaledRenderingする場合。
 			if (useScaledRendering)
 			{
@@ -283,8 +290,6 @@ namespace Trp
 			VolumeManager.instance.Update(VolumeManager.instance.stack, camera.transform, cameraData ? cameraData.VolumeMask : 1);
 
 			//RenderGraphの登録と実行。
-			//引数でcmdに名前を付けるとSamplerのnameよりもcmdのnameの方が優先されてしまうので、このcmdには名前を付けてはならない。
-			CommandBuffer cmd = CommandBufferPool.Get();
 			RenderGraphParameters renderGraphParameters = new()
 			{
 				executionId = camera.GetEntityId(),
