@@ -42,8 +42,9 @@ MonoBehaviour:
       serializedVersion: 2
       m_Bits: 4294967295
     CustomPasses: []
-  _gpuResidentDrawerMode: 1
+  _gpuResidentDrawerMode: 0
   _gpuResidentDrawerSmallMeshScreenPercentage: 0
+  _gpuResidentDrawerEnableOcclusionCulling: 0
   _useSmoothNormalImporter: 1
   _smoothNormalImportRegex: _outline
   _smoothNormalTexcoordIndex: 2

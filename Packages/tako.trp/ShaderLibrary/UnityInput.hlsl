@@ -3,7 +3,10 @@
 
 //https://docs.unity3d.com/ja/2023.2/Manual/SL-UnityShaderVariables.html
 
-//UnityPerDrawはこの順序と組み合わせでなければならない。（こうでないとSRPBatcherは機能しない。）
+// UnityPerDrawはこの順序と組み合わせでなければならない。（こうでないとSRPBatcherは機能しない。）
+// DOTS Instancing時はGPU Resident DrawerがBuiltinPropertyMetadataから同等の値を供給する。
+// 通常のUnityPerDrawを同時に宣言すると、BatchRendererGroupのcbufferレイアウトが不一致になる。
+#if !defined(UNITY_DOTS_INSTANCING_ENABLED)
 CBUFFER_START(UnityPerDraw)
 
 float4x4 unity_ObjectToWorld;
@@ -29,6 +32,7 @@ float4 unity_SpriteColor;
 float4 unity_SpriteProps;
 
 CBUFFER_END
+#endif
 
 float4x4 unity_MatrixVP;
 float4x4 unity_MatrixV;
