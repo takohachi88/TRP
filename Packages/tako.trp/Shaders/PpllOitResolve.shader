@@ -1,4 +1,4 @@
-Shader "TRP/Hidden/PpllOitResolve"
+Shader "Hidden/Trp/PpllOitResolve"
 {
     SubShader
     {

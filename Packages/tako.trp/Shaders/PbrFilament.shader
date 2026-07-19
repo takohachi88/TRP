@@ -13,7 +13,7 @@ Shader "TRP/PbrFilament"
 
         [Normal][NoScaleOffset] _BumpMap ("Normal Map", 2D) = "bump" {}
         _BumpScale ("Normal Scale", Range(-3, 3)) = 1
-        _ShadowNormalDistortion ("Shadow Normal Distortion", Range(0, 1)) = 0
+        _ShadowNormalDistortion ("Shadow Normal Distortion", Range(0, 0.3)) = 0.05
 
         [NoScaleOffset] _EmissionMap ("Emission Map", 2D) = "white" {}
         [HDR] _EmissionColor ("Emission Color", Color) = (0, 0, 0, 0)

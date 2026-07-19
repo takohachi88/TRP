@@ -1,4 +1,4 @@
-﻿Shader "TRP/Hidden/WbOitComposite"
+Shader "Hidden/Trp/WbOitComposite"
 {
     SubShader
     {

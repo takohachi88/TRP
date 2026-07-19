@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Trp::Trp.TrpAsset
   _commonSettings:
     _useHdr: 1
-    _msaaSamples: 2
+    _msaaSamples: 4
     _lightingSettings:
       MaxLightCountPerTile: 16
       TileSize: 64
@@ -26,7 +26,7 @@ MonoBehaviour:
       CascadeCount: 4
       CascadeRatios: {x: 0.05, y: 0.1, z: 0.3}
       DistanceFade: 0.994
-      CascadeFade: 0.918
+      CascadeFade: 0.367
       DirectionalShadowMapSize: 2048
       PunctualShadowMapSize: 2048
     _useOpaqueTextureOnReflection: 0

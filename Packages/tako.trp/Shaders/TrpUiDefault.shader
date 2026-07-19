@@ -1,4 +1,4 @@
-﻿Shader "TRP/UI/Default"
+Shader "TRP/Ui/Default"
 {
     Properties
     {
