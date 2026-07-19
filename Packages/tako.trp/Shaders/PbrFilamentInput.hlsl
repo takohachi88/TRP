@@ -21,6 +21,7 @@ half _SpecularIblStrength;
 half _UseBurleyDiffuse;
 float _HexTilingRotationStrength;
 half _HexTilingGain;
+half _ShadowNormalDistortion;
 half _Padding1;
 CBUFFER_END
 

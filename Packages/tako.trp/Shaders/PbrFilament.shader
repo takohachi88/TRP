@@ -13,6 +13,7 @@ Shader "TRP/PbrFilament"
 
         [Normal][NoScaleOffset] _BumpMap ("Normal Map", 2D) = "bump" {}
         _BumpScale ("Normal Scale", Range(-3, 3)) = 1
+        _ShadowNormalDistortion ("Shadow Normal Distortion", Range(0, 1)) = 0
 
         [NoScaleOffset] _EmissionMap ("Emission Map", 2D) = "white" {}
         [HDR] _EmissionColor ("Emission Color", Color) = (0, 0, 0, 0)
@@ -111,7 +112,8 @@ Shader "TRP/PbrFilament"
             half3 blendWeights;
             samples.baseMap = SampleHexTiledColor(context, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap), _HexTilingGain, blendWeights);
             samples.maskMap = SampleHexTiledTexture(context, TEXTURE2D_ARGS(_MaskMap, sampler_MaskMap), blendWeights);
-            samples.normalTS = SampleHexTiledNormal(context, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap), _BumpScale, blendWeights);
+            // 法線は回転後の勾配から専用ウェイトを求め、タイルごとの向きを正しく合成する。
+            samples.normalTS = SampleHexTiledNormal(context, TEXTURE2D_ARGS(_BumpMap, sampler_BumpMap), _BumpScale, _HexTilingGain);
             samples.emission = SampleHexTiledTexture(context, TEXTURE2D_ARGS(_EmissionMap, sampler_EmissionMap), blendWeights).rgb;
             #else
             samples.baseMap = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv);
@@ -200,7 +202,7 @@ Shader "TRP/PbrFilament"
                 return radiance * environmentBrdf * specularOcclusion * _SpecularIblStrength;
             }
 
-            half3 EvaluateDirectionalLights(PbrMaterialData material, float3 positionWS, half3 normalWS, half3 geometryNormalWS, half3 viewDirectionWS, half cascadeIndex)
+            half3 EvaluateDirectionalLights(PbrMaterialData material, float3 positionWS, half3 normalWS, half3 shadowNormalWS, half3 viewDirectionWS, half cascadeIndex)
             {
                 half3 lighting = 0;
 
@@ -216,7 +218,7 @@ Shader "TRP/PbrFilament"
                     half attenuation = 1;
                     if (0 < light.attenuation)
                     {
-                        attenuation = GetDirectionalShadow(cascadeIndex, positionWS, geometryNormalWS, light.normalBias, light.shadowMapTileStartIndex);
+                        attenuation = GetDirectionalShadow(cascadeIndex, positionWS, shadowNormalWS, light.normalBias, light.shadowMapTileStartIndex);
                     }
 
                     lighting += EvaluatePbrDirect(material, normalWS, viewDirectionWS, light.direction, _UseBurleyDiffuse > 0.5h) * light.color * cookie * attenuation;
@@ -225,7 +227,7 @@ Shader "TRP/PbrFilament"
                 return lighting;
             }
 
-            half3 EvaluatePunctualLight(int lightIndex, PbrMaterialData material, float3 positionWS, half3 normalWS, half3 geometryNormalWS, half3 viewDirectionWS)
+            half3 EvaluatePunctualLight(int lightIndex, PbrMaterialData material, float3 positionWS, half3 normalWS, half3 shadowNormalWS, half3 viewDirectionWS)
             {
                 PunctualLight light = GetPunctualLight(lightIndex);
                 float3 surfaceToLight = light.position - positionWS;
@@ -241,7 +243,7 @@ Shader "TRP/PbrFilament"
                 half shadowAttenuation = 1;
                 if (0 < light.attenuation)
                 {
-                    shadowAttenuation = GetPunctualShadow(positionWS, geometryNormalWS, light.position, light.direction, lightDirectionWS, light.type, light.shadowMapTileStartIndex);
+                    shadowAttenuation = GetPunctualShadow(positionWS, shadowNormalWS, light.position, light.direction, lightDirectionWS, light.type, light.shadowMapTileStartIndex);
                 }
 
                 half3 cookie = 1;
@@ -274,6 +276,8 @@ Shader "TRP/PbrFilament"
                 half3 geometryNormalWS = SafeNormalize(input.normalWS);
                 half3x3 tangentToWorld = half3x3(SafeNormalize(input.tangentWS), SafeNormalize(input.bitangentWS), geometryNormalWS);
                 half3 normalWS = SafeNormalize(mul(surfaceSamples.normalTS, tangentToWorld));
+                // 影の輪郭そのものではなく、受影時の Normal Bias にだけ法線マップの凹凸を反映する。
+                half3 shadowNormalWS = SafeNormalize(lerp(geometryNormalWS, normalWS, _ShadowNormalDistortion));
                 half3 viewDirectionWS = SafeNormalize(-input.directionVS);
 
                 PbrMaterialData material = CreatePbrMaterialData(baseMap.rgb, metallic, 1.0h - smoothness);
@@ -284,7 +288,7 @@ Shader "TRP/PbrFilament"
 
                 half dither = InterleavedGradientNoise(input.positionCS.xy, 0);
                 half cascadeIndex = ComputeCascadeIndex(input.positionWS, dither);
-                color += EvaluateDirectionalLights(material, input.positionWS, normalWS, geometryNormalWS, viewDirectionWS, cascadeIndex);
+                color += EvaluateDirectionalLights(material, input.positionWS, normalWS, shadowNormalWS, viewDirectionWS, cascadeIndex);
 
                 if (0 < _PunctualLightCount)
                 {
@@ -293,7 +297,7 @@ Shader "TRP/PbrFilament"
                     int lastIndex = tile.GetLastLightIndexInTile();
                     for (int i = tile.GetFirstLightIndexInTile(); i <= lastIndex; i++)
                     {
-                        color += EvaluatePunctualLight(tile.GetLightIndex(i), material, input.positionWS, normalWS, geometryNormalWS, viewDirectionWS);
+                        color += EvaluatePunctualLight(tile.GetLightIndex(i), material, input.positionWS, normalWS, shadowNormalWS, viewDirectionWS);
                     }
                 }
 
