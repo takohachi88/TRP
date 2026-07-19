@@ -14,6 +14,10 @@ float4x4 unity_WorldToObject;
 float4 unity_LODFade;
 real4 unity_WorldTransformParams;
 
+// Reflection Probe 0のHDRデコードパラメーター。
+// Builtin Propertyのため、GPU Resident Drawer対応にはUnityPerDraw内での宣言が必須。
+float4 unity_SpecCube0_HDR;
+
 float4 unity_LightmapST;
 float4 unity_DynamicLightmapST; //deprecatedな機能だが、ここで宣言しないとSRPBatcherが無効になってしまう。
 

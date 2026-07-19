@@ -32,13 +32,7 @@ MonoBehaviour:
       - rid: 5291756480562200788
       - rid: 5291756480562200789
     m_RuntimeSettings:
-      m_List:
-      - rid: 5291756480562200776
-      - rid: 5291756480562200777
-      - rid: 5291756480562200778
-      - rid: 5291756480562200780
-      - rid: 5291756480562200782
-      - rid: 5291756480562200789
+      m_List: []
   references:
     version: 2
     RefIds:
@@ -195,6 +189,7 @@ MonoBehaviour:
         _coreBlitShader: {fileID: 4800000, guid: 6e1c853e23641fb4b8778e3ef5bebf84, type: 3}
         _coreBlitColorAndDepthShader: {fileID: 4800000, guid: 9e98a857e08dace4286b14299287a83d, type: 3}
         _copyDepthShader: {fileID: 4800000, guid: cec0e7a07808a0f4e9870e0abd01f4b5, type: 3}
+        _fallbackErrorShader: {fileID: 4800000, guid: cdeee51d7d58be641a393dc4ca89884c, type: 3}
         _postFxLutShader: {fileID: 4800000, guid: 3711d3bc7f160e1458cd1858bf603541, type: 3}
         _debugForwardPlusTileShader: {fileID: 4800000, guid: 7f22f92467e64f844ad64d76fc183f7a, type: 3}
         _wbOitCompositeShader: {fileID: 4800000, guid: 0f0bf2bf425af7d479ff2a44c347cbed, type: 3}
@@ -202,6 +197,7 @@ MonoBehaviour:
         _ppllOitClearCompute: {fileID: 7200000, guid: 4221b1ae4366481ebee26af21e1baa28, type: 3}
         _unlitShader: {fileID: 4800000, guid: 93745d845ae16214f8d60da21b891647, type: 3}
         _unlitMaterial: {fileID: 2100000, guid: a1a8f90831b4ee843b8c6d7ae07e71be, type: 2}
+        _litMaterial: {fileID: 2100000, guid: d994987f80ef6094ca4071a3100143e1, type: 2}
         _spriteUnlitMaterial: {fileID: 2100000, guid: 26760c13b4380e940a7a62cb3d2de83a, type: 2}
         _uiMaterial: {fileID: 2100000, guid: 57cbf722553ebd54daf0395e57296468, type: 2}
         _particleUnlitMaterial: {fileID: 2100000, guid: 05c9318fa1bf97e43b0377b0909213c1, type: 2}

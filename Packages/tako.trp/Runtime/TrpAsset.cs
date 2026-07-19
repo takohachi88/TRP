@@ -102,16 +102,33 @@ namespace Trp
 			}
 		}
 
-		GPUResidentDrawerSettings IGPUResidentRenderPipeline.gpuResidentDrawerSettings => new()
+		GPUResidentDrawerSettings IGPUResidentRenderPipeline.gpuResidentDrawerSettings
 		{
-			mode = _gpuResidentDrawerMode,
-			// 深度ピラミッドはTrpRenderer内でDepthNormalsOnlyの出力から更新する。
-			enableOcclusionCulling = _gpuResidentDrawerEnableOcclusionCulling,
-			allowInEditMode = true,
-			supportDitheringCrossFade = false,
-			smallMeshScreenPercentage = _gpuResidentDrawerSmallMeshScreenPercentage,
-			shadowSmallMeshScreenPercentages = default,
-		};
+			get
+			{
+				// CreatePipelineより先にGRDが設定を問い合わせる場合もあるため、
+				// ランタイムで必要なError ShaderはGraphicsSettingsのリソースから直接取得する。
+				TrpResources resources = _resources ?? GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+				GPUResidentDrawerSettings settings = new()
+				{
+					mode = _gpuResidentDrawerMode,
+					// 深度ピラミッドはTrpRenderer内でDepthNormalsOnlyの出力から更新する。
+					enableOcclusionCulling = _gpuResidentDrawerEnableOcclusionCulling,
+					allowInEditMode = true,
+					supportDitheringCrossFade = false,
+					smallMeshScreenPercentage = _gpuResidentDrawerSmallMeshScreenPercentage,
+					shadowSmallMeshScreenPercentages = default,
+					errorShader = resources?.FallbackErrorShader,
+				};
+
+#if UNITY_EDITOR
+				// PickingとLoadingはUnity Core側でもEditor専用のBRG描画にのみ使用される。
+				settings.pickingShader = Shader.Find("Hidden/Trp/BrgPicking");
+				settings.loadingShader = Shader.Find("Hidden/Trp/FallbackLoading");
+#endif
+				return settings;
+			}
+		}
 
 		/// <summary>
 		/// TRPの通常のRendererList描画はBatchRendererGroupの間接描画を受け入れられる。

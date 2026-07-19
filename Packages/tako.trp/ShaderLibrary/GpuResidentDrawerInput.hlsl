@@ -24,6 +24,11 @@
         UNITY_DOTS_INSTANCED_PROP_OVERRIDE_SUPPORTED(uint, unity_RendererUserValuesPropertyEntry)
     UNITY_DOTS_INSTANCING_END(BuiltinPropertyMetadata)
 
+    // BRGのPickingではRenderer単位のEntity IDとSubMesh番号から選択IDを復元する。
+    // _SelectionIDはPicking Pass側、unity_SubmeshIndexはUnityのBRG選択描画側から設定される。
+    int unity_SubmeshIndex;
+    #define unity_SelectionID UNITY_ACCESS_DOTS_INSTANCED_SELECTION_VALUE(unity_EntityId, unity_SubmeshIndex, _SelectionID)
+
     #define unity_LODFade LoadDOTSInstancedData_LODFade()
     #define unity_SpecCube0_HDR UNITY_ACCESS_DOTS_INSTANCED_PROP_WITH_CUSTOM_DEFAULT(float4, unity_SpecCube0_HDR, unity_DOTS_SpecCube0_HDR)
     #define unity_LightmapST UNITY_ACCESS_DOTS_INSTANCED_PROP(float4, unity_LightmapST)
@@ -46,6 +51,9 @@
     #define UNITY_SETUP_DOTS_SH_COEFFS SetupDOTSSHCoeffs(UNITY_DOTS_INSTANCED_METADATA_NAME(SH, unity_SHCoefficients))
     #undef UNITY_SETUP_DOTS_RENDER_BOUNDS
     #define UNITY_SETUP_DOTS_RENDER_BOUNDS SetupDOTSRendererBounds(UNITY_DOTS_MATRIX_M)
+#else
+    // 通常のRendererによるPickingではUnityから渡された値をそのまま使用する。
+    #define unity_SelectionID _SelectionID
 #endif
 
 #endif
