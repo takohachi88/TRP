@@ -328,10 +328,16 @@ namespace Trp
 				cmd.SetGlobalVector(IdCullingSphereRanges, new Vector4(
 					SafeRcp(radiusSq.x), SafeRcp(radiusSq.y - radiusSq.x),
 					SafeRcp(radiusSq.z - radiusSq.y), SafeRcp(radiusSq.w - radiusSq.z)));
+
+				// DistanceFadeは最大シャドウ距離に対する割合なので、シェーダーで使う二乗距離の幅へ変換する。
+				float maxShadowDistance = data.Settings.MaxShadowDistance;
+				float fadeStartDistance = maxShadowDistance * (1f - data.Settings.DistanceFade);
+				float maxShadowDistanceSqr = maxShadowDistance * maxShadowDistance;
+				float distanceFadeRangeSqr = maxShadowDistanceSqr - fadeStartDistance * fadeStartDistance;
 				cmd.SetGlobalVector(IdShadowParams1, new Vector4(
 					-5f * data.Settings.CascadeFade,
-					data.Settings.DistanceFade,
-					data.Settings.MaxShadowDistance * data.Settings.MaxShadowDistance,
+					distanceFadeRangeSqr,
+					maxShadowDistanceSqr,
 					data.CascadeCount));
 			});
 		}
