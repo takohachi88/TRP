@@ -25,6 +25,7 @@ namespace Trp
 		[SerializeField][ResourcePath("Shaders/Utilities/CoreBlit.shader")] private Shader _coreBlitShader;
 		[SerializeField][ResourcePath("Shaders/Utilities/CoreBlitColorAndDepth.shader")] private Shader _coreBlitColorAndDepthShader;
 		[SerializeField][ResourcePath("Shaders/Utilities/CopyDepth.shader")] private Shader _copyDepthShader;
+		[SerializeField][ResourcePath("Shaders/Utilities/FallbackError.shader")] private Shader _fallbackErrorShader;
 		[SerializeField][ResourcePath("Shaders/PostFx/CreatePostFxLut.shader")] private Shader _postFxLutShader;
 		[SerializeField][ResourcePath("Shaders/DebugForwardPlusTile.shader")] private Shader _debugForwardPlusTileShader;
 		[SerializeField][ResourcePath("Shaders/WbOitComposite.shader")] private Shader _wbOitCompositeShader;
@@ -33,6 +34,7 @@ namespace Trp
 
 		[SerializeField][ResourcePath("Shaders/Unlit.shader")] private Shader _unlitShader;
 		[SerializeField][ResourcePath("Materials/trp_unlit.mat")] private Material _unlitMaterial;
+		[SerializeField][ResourcePath("Materials/trp_lit.mat")] private Material _litMaterial;
 		[SerializeField][ResourcePath("Materials/trp_sprite_unlit.mat")] private Material _spriteUnlitMaterial;
 		[SerializeField][ResourcePath("Materials/trp_ui_default.mat")] private Material _uiMaterial;
 		[SerializeField][ResourcePath("Materials/trp_particle_unlit.mat")] private Material _particleUnlitMaterial;
@@ -43,6 +45,7 @@ namespace Trp
 		public Shader CoreBlitShader => _coreBlitShader;
 		public Shader CoreBlitColorAndDepthShader => _coreBlitColorAndDepthShader;
 		public Shader CopyDepthShader => _copyDepthShader;
+		public Shader FallbackErrorShader => _fallbackErrorShader;
 		public Shader PostFxLutShader => _postFxLutShader;
 		public Shader DebugForwardPlusTileShader => _debugForwardPlusTileShader;
 		public Shader WbOitCompositeShader => _wbOitCompositeShader;
@@ -50,6 +53,7 @@ namespace Trp
 		public ComputeShader PpllOitClearCompute => _ppllOitClearCompute;
 		public Shader UnlitShader => _unlitShader;
 		public Material UnlitMaterial => _unlitMaterial;
+		public Material LitMaterial => _litMaterial;
 		public Material SpriteUnlitMaterial => _spriteUnlitMaterial;
 		public Material UiMaterial => _uiMaterial;
 		public Material ParticleUnlitMaterial => _particleUnlitMaterial;

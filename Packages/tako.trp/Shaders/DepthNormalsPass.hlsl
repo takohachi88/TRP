@@ -2,6 +2,10 @@
 #ifndef TRP_DEPTH_NORMALS_PASS_INCLUDED
 #define TRP_DEPTH_NORMALS_PASS_INCLUDED
 
+#ifndef TRP_SAMPLE_BASE_MAP
+    #define TRP_SAMPLE_BASE_MAP(uv) SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv)
+#endif
+
 struct Attributes
 {
     float4 positionOS : POSITION;
@@ -46,7 +50,7 @@ void DepthNormalsFragment(
     UNITY_SETUP_INSTANCE_ID(input);
 
     #if defined(ALPHA_CLIP)
-        AlphaClip(SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv).a, _Cutoff);
+        AlphaClip(TRP_SAMPLE_BASE_MAP(input.uv).a, _Cutoff);
     #endif
 
     #if defined(LOD_FADE_CROSSFADE)

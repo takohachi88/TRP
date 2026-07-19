@@ -4,6 +4,10 @@
 #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 
+#ifndef TRP_SAMPLE_BASE_MAP
+    #define TRP_SAMPLE_BASE_MAP(uv) SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, uv)
+#endif
+
 struct Attributes
 {
     float4 positionOS : POSITION;
@@ -47,7 +51,7 @@ half4 ShadowPassFragment(Varyings input) : SV_TARGET
     UNITY_SETUP_INSTANCE_ID(input);
 
 #if defined(_ALPHATEST_ON)
-        Alpha(SampleAlbedoAlpha(input.uv, TEXTURE2D_ARGS(_BaseMap, sampler_BaseMap)).a, _BaseColor, _Cutoff);
+        AlphaClip(TRP_SAMPLE_BASE_MAP(input.uv).a * _BaseColor.a, _Cutoff);
 #endif
 
 #if defined(LOD_FADE_CROSSFADE)

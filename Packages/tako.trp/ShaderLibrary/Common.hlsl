@@ -1,4 +1,4 @@
-﻿#ifndef TRP_COMMON
+#ifndef TRP_COMMON
 #define TRP_COMMON
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
@@ -77,6 +77,19 @@ half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool
 float Schlick(float t, float k)
 {
     return t / (k - k * t + t);
+}
+
+// Schlick近似によるFresnel反射率。
+half3 SchlickFresnel(half3 f0, half f90, half cosTheta)
+{
+    half fresnel = Pow5(1.0h - saturate(cosTheta));
+    return f0 + (f90.xxx - f0) * fresnel;
+}
+
+half SchlickFresnel(half f0, half f90, half cosTheta)
+{
+    half fresnel = Pow5(1.0h - saturate(cosTheta));
+    return f0 + (f90 - f0) * fresnel;
 }
 
 float2 Rotate(float2 uv, float radian, float2 center)
