@@ -59,6 +59,10 @@ float4 _ScaledScreenParams;
 
 float4 _Time;
 
+#ifndef TRP_TIME
+#define TRP_TIME _Time.y
+#endif
+
 half DotDistance(float2 uv, float2 center, float sizeInv, float smoothness, bool fitAspect)
 {
     float2 dist = abs(uv - center) * sizeInv;

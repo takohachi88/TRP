@@ -83,11 +83,15 @@ Material:
     - _GlossMapScale: 1
     - _Glossiness: 0.5
     - _GlossyReflections: 1
+    - _HexTiling: 0
+    - _HexTilingGain: 0.5
+    - _HexTilingRotationStrength: 0
     - _Metallic: 0
     - _Mode: 0
     - _MultiplyRgbA: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.02
+    - _ShadowNormalDistortion: 0
     - _Smoothness: 0.5
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
@@ -98,9 +102,12 @@ Material:
     - _StencilFail: 0
     - _StencilOp: 0
     - _StencilZFail: 0
+    - _SwayAmplitude: 0.1
+    - _SwayPeriodScale: 1
     - _UVSec: 0
     - _UseBurleyDiffuse: 0
     - _VertexColorBlend: 0
+    - _VertexSway: 0
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}

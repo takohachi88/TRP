@@ -39,7 +39,7 @@ float3 ApplyPbrVertexSway(float3 positionOS, half vertexWeight)
     float3 positionWS = TransformObjectToWorld(positionOS);
     float period = max((float)_SwayPeriodScale, 0.01);
     float spatialPhase = dot(positionWS.xz, float2(0.173, 0.219));
-    float sway = sin(_Time.y * TWO_PI * rcp(period) + spatialPhase) * _SwayAmplitude * saturate(vertexWeight);
+    float sway = sin(TRP_TIME * TWO_PI * rcp(period) + spatialPhase) * _SwayAmplitude * saturate(vertexWeight);
 
     // ワールド空間の一定方向へ動かし、オブジェクトの向きが異なっても風向きを揃える。
     positionWS.xz += float2(0.8, 0.6) * sway;
