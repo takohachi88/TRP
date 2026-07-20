@@ -28,6 +28,11 @@ Shader "TRP/PbrFilament"
         [Toggle(ALPHA_CLIP)] _AlphaClip ("Alpha Clip", Float) = 0
         _Cutoff ("Alpha Cutoff", Range(0, 1)) = 0.5
 
+        [Header(Vertex Sway)]
+        [Toggle] _VertexSway ("Vertex Sway", Float) = 0
+        _SwayAmplitude ("Sway Amplitude", Float) = 0.1
+        _SwayPeriodScale ("Sway Period Scale", Float) = 1
+
         [Header(Common Settings)]
         [Toggle] _ZWrite ("Z Write", Int) = 1
         [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull Mode", Int) = 2
@@ -152,6 +157,7 @@ Shader "TRP/PbrFilament"
                 float4 positionOS : POSITION;
                 half3 normalOS : NORMAL;
                 half4 tangentOS : TANGENT;
+                half4 color : COLOR;
                 float2 uv : TEXCOORD0;
                 GI_ATTRIBUTES
                 UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -177,7 +183,8 @@ Shader "TRP/PbrFilament"
                 Varyings output = (Varyings)0;
                 UNITY_TRANSFER_INSTANCE_ID(input, output);
 
-                VertexInputs vertexInputs = GetVertexInputs(input.positionOS.xyz, input.normalOS, input.tangentOS);
+                float3 positionOS = ApplyPbrVertexSway(input.positionOS.xyz, input.color.r);
+                VertexInputs vertexInputs = GetVertexInputs(positionOS, input.normalOS, input.tangentOS);
                 output.positionCS = vertexInputs.positionCS;
                 output.positionWS = vertexInputs.positionWS;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
@@ -330,6 +337,7 @@ Shader "TRP/PbrFilament"
             #if defined(ALPHA_CLIP)
             #define _ALPHATEST_ON
             #endif
+            #define TRP_APPLY_VERTEX_DEFORMATION(positionOS, vertexColor) ApplyPbrVertexSway(positionOS, vertexColor.r)
             #define TRP_SAMPLE_BASE_MAP(uv) SamplePbrBaseMap(uv)
             #include "Packages/tako.trp/Shaders/ShadowCasterPass.hlsl"
             ENDHLSL
@@ -350,6 +358,7 @@ Shader "TRP/PbrFilament"
             #pragma multi_compile _ DOTS_INSTANCING_ON
             #pragma shader_feature_local_fragment ALPHA_CLIP
             #pragma shader_feature_local_fragment HEX_TILING
+            #define TRP_APPLY_VERTEX_DEFORMATION(positionOS, vertexColor) ApplyPbrVertexSway(positionOS, vertexColor.r)
             #define TRP_SAMPLE_BASE_MAP(uv) SamplePbrBaseMap(uv)
             #include "Packages/tako.trp/Shaders/DepthNormalsPass.hlsl"
             ENDHLSL

@@ -1,4 +1,4 @@
-﻿#ifndef TRP_SHADOW_CASTER_PASS_INCLUDED
+#ifndef TRP_SHADOW_CASTER_PASS_INCLUDED
 #define TRP_SHADOW_CASTER_PASS_INCLUDED
 
 #include "Packages/tako.trp/ShaderLibrary/Common.hlsl"
@@ -13,6 +13,9 @@ struct Attributes
     float4 positionOS : POSITION;
     float3 normalOS : NORMAL;
     float2 texcoord : TEXCOORD0;
+#if defined(TRP_APPLY_VERTEX_DEFORMATION)
+    half4 color : COLOR;
+#endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -30,6 +33,10 @@ Varyings ShadowPassVertex(Attributes input)
     Varyings output;
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+#if defined(TRP_APPLY_VERTEX_DEFORMATION)
+    input.positionOS.xyz = TRP_APPLY_VERTEX_DEFORMATION(input.positionOS.xyz, input.color);
+#endif
 
 #if defined(_ALPHATEST_ON)
     output.uv = TRANSFORM_TEX(input.texcoord, _BaseMap);

@@ -1,4 +1,4 @@
-﻿//_CameraDepthTextureと_CameraNormalsTextureを生成するためのパス。
+//_CameraDepthTextureと_CameraNormalsTextureを生成するためのパス。
 #ifndef TRP_DEPTH_NORMALS_PASS_INCLUDED
 #define TRP_DEPTH_NORMALS_PASS_INCLUDED
 
@@ -12,6 +12,9 @@ struct Attributes
     float4 tangentOS : TANGENT;
     float2 uv : TEXCOORD0;
     float3 normal : NORMAL;
+#if defined(TRP_APPLY_VERTEX_DEFORMATION)
+    half4 color : COLOR;
+#endif
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -29,6 +32,10 @@ Varyings DepthNormalsVertex(Attributes input)
     Varyings output = (Varyings)0;
     UNITY_SETUP_INSTANCE_ID(input);
     UNITY_TRANSFER_INSTANCE_ID(input, output);
+
+#if defined(TRP_APPLY_VERTEX_DEFORMATION)
+    input.positionOS.xyz = TRP_APPLY_VERTEX_DEFORMATION(input.positionOS.xyz, input.color);
+#endif
 
     output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
         
