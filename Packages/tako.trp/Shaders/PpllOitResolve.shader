@@ -53,11 +53,20 @@ Shader "Hidden/Trp/PpllOitResolve"
                         // Insert while traversing so no second sorting pass is needed.
                         uint packedDepth = node.depthSampleIndex >> 8u;
                         uint insertionIndex = fragmentCount;
-                        while (insertionIndex > 0u &&
-                               (fragments[insertionIndex - 1u].depthSampleIndex >> 8u) < packedDepth)
+                        // ローカル配列を動的インデックスで移動するため、最大回数を固定して展開する。
+                        // 配列参照をループ条件に含めるとDX12で範囲外と判定されるため、本体内で評価する。
+                        [unroll(PPLL_OIT_MAX_FRAGMENTS_PER_PIXEL)]
+                        for (uint sortStep = 0u; sortStep < PPLL_OIT_MAX_FRAGMENTS_PER_PIXEL; sortStep++)
                         {
-                            fragments[insertionIndex] = fragments[insertionIndex - 1u];
-                            insertionIndex--;
+                            if (insertionIndex == 0u)
+                                break;
+
+                            uint previousIndex = insertionIndex - 1u;
+                            if ((fragments[previousIndex].depthSampleIndex >> 8u) >= packedDepth)
+                                break;
+
+                            fragments[insertionIndex] = fragments[previousIndex];
+                            insertionIndex = previousIndex;
                         }
                         fragments[insertionIndex] = node;
                         fragmentCount++;
