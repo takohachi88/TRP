@@ -2,6 +2,7 @@ using Unity.Profiling.LowLevel;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RendererUtils;
+using UnityEngine;
 
 namespace Trp
 {
@@ -34,8 +35,6 @@ namespace Trp
 			using IRasterRenderGraphBuilder builder = renderGraph.AddRasterRenderPass(passName, out PassData passData, sampler);
 			LightingResources lightingResources = passParams.LightingResources;
 
-			// Renderer-list shaders can consume textures through global bindings. Declaring this
-			// dependency keeps SetGlobalTextureAfterPass resources alive until this draw.
 			builder.UseAllGlobalTextures(true);
 			if (lightingResources.DirectionalShadowMap.IsValid()) builder.UseTexture(lightingResources.DirectionalShadowMap, AccessFlags.Read);
 			if (lightingResources.PunctualShadowMap.IsValid()) builder.UseTexture(lightingResources.PunctualShadowMap, AccessFlags.Read);
@@ -44,10 +43,13 @@ namespace Trp
 			if (lightingResources.ForwardPlusTileBuffer.IsValid()) builder.UseBuffer(lightingResources.ForwardPlusTileBuffer, AccessFlags.Read);
 			if (lightingResources.PunctualShadowDataBuffer.IsValid()) builder.UseBuffer(lightingResources.PunctualShadowDataBuffer, AccessFlags.Read);
 
+			LayerMask layerMask = isOpaque ? passParams.CommonSettings.OpaqueLayerMask : passParams.CommonSettings.TransparentLayerMask;
+			if (passParams.Camera.cameraType is CameraType.SceneView or CameraType.Preview) layerMask = ~0;
+
 			passData.RendererListHandle = renderGraph.CreateRendererList(
 				new RendererListDesc(ShaderTagIds, passParams.CullingResults, passParams.Camera)
 				{
-					layerMask = isOpaque ? passParams.CommonSettings.OpaqueLayerMask : passParams.CommonSettings.TransparentLayerMask,
+					layerMask = layerMask,
 
 					sortingCriteria = isOpaque ? SortingCriteria.CommonOpaque : SortingCriteria.CommonTransparent,
 
