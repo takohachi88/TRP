@@ -40,17 +40,23 @@ namespace Trp
 			[SerializeField] private Color _colorValue = Color.white;
 			[SerializeField] private Vector4 _vectorValue;
 			[SerializeField] private Texture _textureValue;
+			[SerializeField] private bool _hasScaleOffset;
+			[SerializeField] private Vector2 _textureScale = Vector2.one;
+			[SerializeField] private Vector2 _textureOffset;
 
 			public string Name => _name;
 			public PropertyType Type => _type;
+			public bool Enabled => _enabled;
 
-			public Property(string name, string displayName, PropertyType type, bool toggleIsInteger, string keyword)
+			public Property(string name, string displayName, PropertyType type, bool toggleIsInteger, string keyword,
+				bool hasScaleOffset)
 			{
 				_name = name;
 				_displayName = displayName;
 				_type = type;
 				_toggleIsInteger = toggleIsInteger;
 				_keyword = keyword;
+				_hasScaleOffset = hasScaleOffset;
 			}
 
 			public bool Matches(string name, PropertyType type)
@@ -58,11 +64,12 @@ namespace Trp
 				return _name == name && _type == type;
 			}
 
-			public void UpdateMetadata(string displayName, bool toggleIsInteger, string keyword)
+			public void UpdateMetadata(string displayName, bool toggleIsInteger, string keyword, bool hasScaleOffset)
 			{
 				_displayName = displayName;
 				_toggleIsInteger = toggleIsInteger;
 				_keyword = keyword;
+				_hasScaleOffset = hasScaleOffset;
 			}
 
 			public void InitializeValue(Material material)
@@ -89,6 +96,11 @@ namespace Trp
 						break;
 					case PropertyType.Texture:
 						_textureValue = material.GetTexture(_name);
+						if (_hasScaleOffset)
+						{
+							_textureScale = material.GetTextureScale(_name);
+							_textureOffset = material.GetTextureOffset(_name);
+						}
 						break;
 				}
 			}
@@ -134,6 +146,13 @@ namespace Trp
 					case PropertyType.Texture:
 						Texture texture = _enabled && weight >= _threshold ? _textureValue : source.GetTexture(_name);
 						destination.SetTexture(_name, texture);
+						if (_hasScaleOffset)
+						{
+							destination.SetTextureScale(_name,
+								Vector2.Lerp(source.GetTextureScale(_name), _textureScale, appliedWeight));
+							destination.SetTextureOffset(_name,
+								Vector2.Lerp(source.GetTextureOffset(_name), _textureOffset, appliedWeight));
+						}
 						break;
 				}
 			}
@@ -225,15 +244,17 @@ namespace Trp
 				bool isToggle = TryGetToggleKeyword(shader.GetPropertyAttributes(i), out string keyword);
 				PropertyType propertyType = isToggle ? PropertyType.Toggle : ConvertPropertyType(shaderPropertyType);
 				bool toggleIsInteger = shaderPropertyType == ShaderPropertyType.Int;
+				bool hasScaleOffset = shaderPropertyType == ShaderPropertyType.Texture &&
+					(shader.GetPropertyFlags(i) & ShaderPropertyFlags.NoScaleOffset) == 0;
 				Property property = properties.Find(x => x.Matches(propertyName, propertyType));
 				if (property == null)
 				{
-					property = new Property(propertyName, displayName, propertyType, toggleIsInteger, keyword);
+					property = new Property(propertyName, displayName, propertyType, toggleIsInteger, keyword, hasScaleOffset);
 					property.InitializeValue(material);
 				}
 				else
 				{
-					property.UpdateMetadata(displayName, toggleIsInteger, keyword);
+					property.UpdateMetadata(displayName, toggleIsInteger, keyword, hasScaleOffset);
 				}
 
 				refreshed.Add(property);
@@ -307,13 +328,15 @@ namespace Trp
 		/// 指定されたMaterialへ補間結果を適用する共通処理。
 		/// ListとMaterialは呼び出し側で保持し、毎フレームGCAllocを発生させない。
 		/// </summary>
-		internal static void ApplyProperties(Material source, Material destination, float weight, List<Property> properties)
+		internal static void ApplyProperties(Material source, Material destination, float weight, List<Property> properties,
+			bool applyDisabledProperties = true)
 		{
 			if (source == null || destination == null) return;
 
 			float clampedWeight = Mathf.Clamp01(weight);
 			foreach (Property property in properties)
 			{
+				if (!applyDisabledProperties && !property.Enabled) continue;
 				if (source.HasProperty(property.Name))
 				{
 					property.Apply(source, destination, clampedWeight);

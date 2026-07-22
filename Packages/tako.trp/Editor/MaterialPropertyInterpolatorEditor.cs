@@ -144,6 +144,12 @@ namespace TrpEditor
 					SerializedProperty threshold = property.FindPropertyRelative("_threshold");
 					EditorGUILayout.Slider(threshold, 0f, 1f, new GUIContent("Threshold", "Weightがこの値以上になると切り替わります。"));
 				}
+				if (propertyType == MaterialPropertyInterpolator.PropertyType.Texture &&
+					property.FindPropertyRelative("_hasScaleOffset").boolValue)
+				{
+					EditorGUILayout.PropertyField(property.FindPropertyRelative("_textureScale"), new GUIContent("Tiling"));
+					EditorGUILayout.PropertyField(property.FindPropertyRelative("_textureOffset"), new GUIContent("Offset"));
+				}
 				EditorGUI.indentLevel--;
 			}
 		}

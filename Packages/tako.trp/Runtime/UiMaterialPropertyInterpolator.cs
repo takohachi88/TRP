@@ -116,7 +116,8 @@ namespace Trp
 			Material renderingMaterial = targetGraphic.materialForRendering;
 			if (renderingMaterial != null && renderingMaterial != _instanceMaterial)
 			{
-				MaterialPropertyInterpolator.ApplyProperties(_sourceMaterial, renderingMaterial, _weight, _properties);
+				// UIシステムが設定したStencil値を壊さないよう、有効項目だけを派生Materialへ反映する。
+				MaterialPropertyInterpolator.ApplyProperties(_sourceMaterial, renderingMaterial, _weight, _properties, false);
 			}
 		}
 
