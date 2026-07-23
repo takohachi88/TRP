@@ -64,12 +64,20 @@ namespace Trp
 				return _name == name && _type == type;
 			}
 
-			public void UpdateMetadata(string displayName, bool toggleIsInteger, string keyword, bool hasScaleOffset)
+			public void UpdateMetadata(string displayName, bool toggleIsInteger, string keyword, bool hasScaleOffset,
+				Material material)
 			{
+				bool shouldInitializeScaleOffset = !_hasScaleOffset && hasScaleOffset;
 				_displayName = displayName;
 				_toggleIsInteger = toggleIsInteger;
 				_keyword = keyword;
 				_hasScaleOffset = hasScaleOffset;
+				if (shouldInitializeScaleOffset)
+				{
+					// NoScaleOffset指定が外れた場合や旧バージョンからの移行時は、元Materialの値で初期化する。
+					_textureScale = material.GetTextureScale(_name);
+					_textureOffset = material.GetTextureOffset(_name);
+				}
 			}
 
 			public void InitializeValue(Material material)
@@ -163,7 +171,8 @@ namespace Trp
 		[SerializeField] private List<Property> _properties = new();
 
 		[NonSerialized] private Renderer _renderer;
-		[NonSerialized] private Material _sourceMaterial;
+		// Edit/Play Mode遷移やDomain Reload後にも元Materialを復元できるよう、参照を永続化する。
+		[SerializeField, HideInInspector] private Material _sourceMaterial;
 		[NonSerialized] private Material _instanceMaterial;
 		[NonSerialized] private int _instanceMaterialIndex = -1;
 		[NonSerialized] private List<Material> _sharedMaterials;
@@ -179,6 +188,13 @@ namespace Trp
 
 		public int MaterialIndex => _materialIndex;
 		public IReadOnlyList<Property> Properties => _properties;
+
+#if UNITY_EDITOR
+		/// <summary>
+		/// Editorの保存・Play Mode遷移中に一時Materialの再生成を停止するためのフラグ。
+		/// </summary>
+		public static bool EditorMaterialCreationSuspended { get; set; }
+#endif
 
 		private void OnEnable()
 		{
@@ -227,7 +243,7 @@ namespace Trp
 		{
 			if (material == null || material.shader == null)
 			{
-				properties.Clear();
+				// Play Mode遷移などの一時的な参照切れで、登録済みデータを消さない。
 				return;
 			}
 
@@ -254,7 +270,7 @@ namespace Trp
 				}
 				else
 				{
-					property.UpdateMetadata(displayName, toggleIsInteger, keyword, hasScaleOffset);
+					property.UpdateMetadata(displayName, toggleIsInteger, keyword, hasScaleOffset, material);
 				}
 
 				refreshed.Add(property);
@@ -269,6 +285,8 @@ namespace Trp
 		public void RecreateMaterialInstance()
 		{
 			RestoreSourceMaterial();
+			// Material Index変更時は、新しいスロットのMaterialを補間元として採用する。
+			_sourceMaterial = null;
 			EnsureMaterialInstance();
 			RefreshProperties();
 			Apply();
@@ -276,6 +294,9 @@ namespace Trp
 
 		private void EnsureMaterialInstance()
 		{
+#if UNITY_EDITOR
+			if (EditorMaterialCreationSuspended) return;
+#endif
 			if (!TryGetRenderer(out Renderer targetRenderer)) return;
 
 			List<Material> materials = GetSharedMaterials(targetRenderer);
@@ -302,7 +323,11 @@ namespace Trp
 				materials = GetSharedMaterials(targetRenderer);
 			}
 
-			Material source = materials[_materialIndex];
+			Material currentMaterial = materials[_materialIndex];
+			Material source = currentMaterial != null &&
+				(currentMaterial.hideFlags & HideFlags.DontSave) == 0
+				? currentMaterial
+				: _sourceMaterial;
 			if (source == null) return;
 
 			_sourceMaterial = source;
@@ -372,11 +397,28 @@ namespace Trp
 			ReleaseMaterialInstance(true);
 		}
 
+		/// <summary>
+		/// Editorがシーンをシリアライズする前に、一時Materialを元Materialへ戻す。
+		/// 元Material参照と補間設定は保持する。
+		/// </summary>
+		public void PrepareForEditorSerialization()
+		{
+			ReleaseMaterialInstance(true);
+		}
+
+		/// <summary>
+		/// Editorの保存・Play Mode遷移完了後に一時Materialを再生成する。
+		/// </summary>
+		public void ResumeAfterEditorSerialization()
+		{
+			EnsureMaterialInstance();
+			Apply();
+		}
+
 		private void ReleaseMaterialInstance(bool restoreSource)
 		{
 			if (_instanceMaterial == null)
 			{
-				_sourceMaterial = null;
 				_instanceMaterialIndex = -1;
 				return;
 			}
@@ -396,7 +438,6 @@ namespace Trp
 			if (Application.isPlaying) Destroy(_instanceMaterial);
 			else DestroyImmediate(_instanceMaterial);
 
-			_sourceMaterial = null;
 			_instanceMaterial = null;
 			_instanceMaterialIndex = -1;
 		}

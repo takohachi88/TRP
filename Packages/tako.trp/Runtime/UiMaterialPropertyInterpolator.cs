@@ -16,9 +16,10 @@ namespace Trp
 		[SerializeField] private List<MaterialPropertyInterpolator.Property> _properties = new();
 
 		[NonSerialized] private Graphic _graphic;
-		[NonSerialized] private Material _sourceMaterial;
+		// Edit/Play Mode遷移やDomain Reload後にも元Materialを復元できるよう、参照を永続化する。
+		[SerializeField, HideInInspector] private Material _sourceMaterial;
 		[NonSerialized] private Material _instanceMaterial;
-		[NonSerialized] private bool _sourceWasDefaultMaterial;
+		[SerializeField, HideInInspector] private bool _sourceWasDefaultMaterial;
 
 		/// <summary>
 		/// 元の値から設定値へ補間する割合。Animatorからの操作対象。
@@ -74,6 +75,8 @@ namespace Trp
 		public void RecreateMaterialInstance()
 		{
 			RestoreSourceMaterial();
+			_sourceMaterial = null;
+			_sourceWasDefaultMaterial = false;
 			EnsureMaterialInstance();
 			RefreshProperties();
 			Apply();
@@ -81,6 +84,9 @@ namespace Trp
 
 		private void EnsureMaterialInstance()
 		{
+#if UNITY_EDITOR
+			if (MaterialPropertyInterpolator.EditorMaterialCreationSuspended) return;
+#endif
 			if (!TryGetGraphic(out Graphic targetGraphic)) return;
 
 			Material currentMaterial = targetGraphic.material;
@@ -93,13 +99,22 @@ namespace Trp
 				currentMaterial = targetGraphic.material;
 			}
 
-			if (currentMaterial == null) return;
-
-			_sourceMaterial = currentMaterial;
-			_sourceWasDefaultMaterial = currentMaterial == targetGraphic.defaultMaterial;
-			_instanceMaterial = new Material(currentMaterial)
+			Material source = currentMaterial;
+			if (_sourceMaterial != null &&
+				(currentMaterial == null ||
+				(currentMaterial == targetGraphic.defaultMaterial && !_sourceWasDefaultMaterial) ||
+				(currentMaterial.hideFlags & HideFlags.DontSave) != 0))
 			{
-				name = $"{currentMaterial.name} (UI Property Interpolator)",
+				// 一時MaterialがPlay Mode遷移で失われた場合は、永続化した元Materialから復元する。
+				source = _sourceMaterial;
+			}
+			if (source == null) return;
+
+			_sourceMaterial = source;
+			_sourceWasDefaultMaterial = source == targetGraphic.defaultMaterial;
+			_instanceMaterial = new Material(source)
+			{
+				name = $"{source.name} (UI Property Interpolator)",
 				hideFlags = HideFlags.HideAndDontSave
 			};
 			targetGraphic.material = _instanceMaterial;
@@ -139,12 +154,27 @@ namespace Trp
 			ReleaseMaterialInstance(true);
 		}
 
+		/// <summary>
+		/// Editorがシーンをシリアライズする前に、一時Materialを元Materialへ戻す。
+		/// </summary>
+		public void PrepareForEditorSerialization()
+		{
+			ReleaseMaterialInstance(true);
+		}
+
+		/// <summary>
+		/// Editorの保存・Play Mode遷移完了後に一時Materialを再生成する。
+		/// </summary>
+		public void ResumeAfterEditorSerialization()
+		{
+			EnsureMaterialInstance();
+			Apply();
+		}
+
 		private void ReleaseMaterialInstance(bool restoreSource)
 		{
 			if (_instanceMaterial == null)
 			{
-				_sourceMaterial = null;
-				_sourceWasDefaultMaterial = false;
 				return;
 			}
 
@@ -157,9 +187,7 @@ namespace Trp
 			if (Application.isPlaying) Destroy(_instanceMaterial);
 			else DestroyImmediate(_instanceMaterial);
 
-			_sourceMaterial = null;
 			_instanceMaterial = null;
-			_sourceWasDefaultMaterial = false;
 		}
 	}
 }
