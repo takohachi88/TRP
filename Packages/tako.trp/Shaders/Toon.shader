@@ -105,7 +105,7 @@ Shader "TRP/Toon"
             #pragma multi_compile _ LOD_FADE_CROSSFADE
             #pragma shader_feature_local PUNCTUAL_LIGHT_IS_TOON
 
-            #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2SA
+            #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
             #pragma shader_feature_local_fragment TOON_PUNCTUAL_LIGHT
             #pragma shader_feature_local_fragment ALPHA_CLIP
             #pragma shader_feature_local_fragment RIM_LIGHT
@@ -127,7 +127,7 @@ Shader "TRP/Toon"
                 GI_VARYINGS
                 half3 normalWS : NORMAL;
                 half4 color : COLOR;
-                float fogFactor : FOG_FACTOR;
+                float fogCoord : FOG_COORD;
                 float3 positionWS : POSITION_WS;
                 half3 directionVS : DIRECTION_VS;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
@@ -144,7 +144,7 @@ Shader "TRP/Toon"
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
                 GI_TRANSFER(input, output);
                 output.color = input.color;
-                output.fogFactor = vertexInputs.fogFactor;
+                output.fogCoord = vertexInputs.positionVS.z;
                 output.normalWS = vertexInputs.normalWS;
                 output.directionVS = vertexInputs.directionVS;
 
@@ -174,7 +174,7 @@ Shader "TRP/Toon"
 
                 output *= _BaseColor;
 
-                output.rgb = MixFog(output.rgb, input.fogFactor);
+                output.rgb = MixFog(output.rgb, input.fogCoord);
 
                 return output;
             }
@@ -199,7 +199,7 @@ Shader "TRP/Toon"
             #pragma vertex OutlineVertex
             #pragma fragment OutlineFragment
             #pragma multi_compile _ DOTS_INSTANCING_ON
-            #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2SA
+            #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
             #pragma shader_feature_local_fragment ALPHA_CLIP
             #pragma shader_feature_local_fragment OUTLINE_SINGLE_COLOR
             #pragma shader_feature_local_vertex OUTLINE_SOFT_EDGE

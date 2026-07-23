@@ -21,7 +21,7 @@ struct Varyings
     float3 positionWS : POSITION_WS;
     half3 normalWS : NORMAL;
     float2 uv : TEXCOORD0;
-    float fogFactor : FOG_FACTOR;
+    float fogCoord : FOG_COORD;
     UNITY_VERTEX_INPUT_INSTANCE_ID
 };
 
@@ -35,7 +35,7 @@ Varyings OutlineVertex(Attributes input)
     output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
     output.positionWS = vertexInputs.positionWS;
     output.normalWS = vertexInputs.normalWS;
-    output.fogFactor = vertexInputs.fogFactor;
+    output.fogCoord = vertexInputs.positionVS.z;
 
     half width = input.color.r;
 
@@ -68,7 +68,7 @@ half4 OutlineFragment(Varyings input) : SV_TARGET
     #if defined(OUTLINE_SINGLE_COLOR)
 
     half4 output = _OutlineColor;
-    output.rgb = MixFog(output.rgb, input.fogFactor);
+    output.rgb = MixFog(output.rgb, input.fogCoord);
     return output;
 
     #else
@@ -83,7 +83,7 @@ half4 OutlineFragment(Varyings input) : SV_TARGET
     output.rgb *= _OutlineColor.rgb;
     half smoothness = 0.05;
     output.rgb += smoothstep(_OutlineLightStrengthThreshold - smoothness, _OutlineLightStrengthThreshold + smoothness, luminance) * lighting * _OutlineLightStrength;
-    output.rgb = MixFog(output.rgb, input.fogFactor);
+    output.rgb = MixFog(output.rgb, input.fogCoord);
     return output;
 
     #endif

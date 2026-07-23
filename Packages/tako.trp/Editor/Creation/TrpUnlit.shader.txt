@@ -1,4 +1,4 @@
-Shader "TRP/Unlit"
+Shader "TRP/#NAME#"
 {
     Properties
     {
@@ -9,10 +9,6 @@ Shader "TRP/Unlit"
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 0
-        [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
-        [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
-        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
-        [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
         
         [Toggle] _ZWrite ("Z Write", int) = 1
         
@@ -64,7 +60,6 @@ Shader "TRP/Unlit"
             {
                 float4 positionOS : POSITION;
                 float2 uv : TEXCOORD0;
-                half4 color : COLOR;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -72,7 +67,6 @@ Shader "TRP/Unlit"
             {
                 float4 positionCS : SV_POSITION;
                 float2 uv : TEXCOORD0;
-                half4 color : COLOR;
                 float fogCoord : FOG_COORD;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -84,8 +78,6 @@ Shader "TRP/Unlit"
 
             float4 _BaseMap_ST;
             half4 _BaseColor;
-            half _MultiplyRgbA;
-            int _VertexColorBlend;
 
             CBUFFER_END
 
@@ -98,7 +90,6 @@ Shader "TRP/Unlit"
                 VertexInputs vertexInput = GetVertexInputs(input.positionOS.xyz);
                 output.positionCS = vertexInput.positionCS;
                 output.uv = TRANSFORM_TEX(input.uv, _BaseMap);
-                output.color = input.color;
                 output.fogCoord = vertexInput.positionVS.z;
                 return output;
             }
@@ -106,8 +97,9 @@ Shader "TRP/Unlit"
             half4 Fragment (Varyings input) : SV_Target
             {
                 UNITY_SETUP_INSTANCE_ID(input);
-                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
+                half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor;
                 output.rgb = MixFog(output.rgb, input.fogCoord);
+
                 return output;
             }
 
@@ -141,8 +133,6 @@ Shader "TRP/Unlit"
 
             float4 _BaseMap_ST;
             half4 _BaseColor;
-            half _MultiplyRgbA;
-            int _VertexColorBlend;
 
             CBUFFER_END
 
@@ -150,5 +140,4 @@ Shader "TRP/Unlit"
             ENDHLSL
         }
     }
-    CustomEditor "TrpEditor.ShaderGui.UnlitGui"
 }

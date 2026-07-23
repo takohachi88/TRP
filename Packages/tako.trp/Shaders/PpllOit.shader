@@ -102,14 +102,7 @@ Shader "TRP/PpllOit"
                 half4 color = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
                 clip(color.a - 1e-5h);
 
-                #if (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
-                    float viewZ = -input.fogCoord;
-                    float nearToFarZ = max(viewZ - _ProjectionParams.y, 0);
-                    half fogFactor = ComputeFogFactorZ0ToFar(nearToFarZ);
-                #else
-                    half fogFactor = 0;
-                #endif
-                color.rgb = MixFog(color.rgb, fogFactor);
+                color.rgb = MixFog(color.rgb, input.fogCoord);
 
                 // 画面全体で共有するcounterから、このフラグメント専用のNodeを確保する。
                 uint nodeIndex = _PpllOitNodes.IncrementCounter();

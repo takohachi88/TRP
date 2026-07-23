@@ -122,25 +122,6 @@ bool IsPerspectiveProjection()
 }
 
 //URPから移植。
-#if UNITY_REVERSED_Z
-    // TODO: workaround. There's a bug where SHADER_API_GL_CORE gets erroneously defined on switch.
-    #if (defined(SHADER_API_GLCORE) && !defined(SHADER_API_SWITCH)) || defined(SHADER_API_GLES3)
-        //GL with reversed z => z clip range is [near, -far] -> remapping to [0, far]
-        #define UNITY_Z_0_FAR_FROM_CLIPSPACE(coord) max((coord - _ProjectionParams.y)/(-_ProjectionParams.z-_ProjectionParams.y)*_ProjectionParams.z, 0)
-    #else
-        //D3d with reversed Z => z clip range is [near, 0] -> remapping to [0, far]
-        //max is required to protect ourselves from near plane not being correct/meaningful in case of oblique matrices.
-        #define UNITY_Z_0_FAR_FROM_CLIPSPACE(coord) max(((1.0-(coord)/_ProjectionParams.y)*_ProjectionParams.z),0)
-    #endif
-#elif UNITY_UV_STARTS_AT_TOP
-    //D3d without reversed z => z clip range is [0, far] -> nothing to do
-    #define UNITY_Z_0_FAR_FROM_CLIPSPACE(coord) (coord)
-#else
-    //Opengl => z clip range is [-near, far] -> remapping to [0, far]
-    #define UNITY_Z_0_FAR_FROM_CLIPSPACE(coord) max(((coord + _ProjectionParams.y)/(_ProjectionParams.z+_ProjectionParams.y))*_ProjectionParams.z, 0)
-#endif
-
-//URPから移植。
 real ComputeFogFactorZ0ToFar(float z)
 {
     #if defined(FOG_LINEAR)
@@ -157,24 +138,17 @@ real ComputeFogFactorZ0ToFar(float z)
 }
 
 //URPから移植。
-real ComputeFogFactor(float zPositionCS)
-{
-    float clipZ_0Far = UNITY_Z_0_FAR_FROM_CLIPSPACE(zPositionCS);
-    return ComputeFogFactorZ0ToFar(clipZ_0Far);
-}
-
-//URPから移植。
 half ComputeFogIntensity(half fogFactor)
 {
     half fogIntensity = half(0.0);
     #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
         #if defined(FOG_EXP)
             // factor = exp(-density*z)
-            // fogFactor = density*z compute at vertex
+            // fogFactor = density*z
             fogIntensity = saturate(exp2(-fogFactor));
         #elif defined(FOG_EXP2)
             // factor = exp(-(density*z)^2)
-            // fogFactor = density*z compute at vertex
+            // fogFactor = density*z
             fogIntensity = saturate(exp2(-fogFactor * fogFactor));
         #elif defined(FOG_LINEAR)
             fogIntensity = fogFactor;
@@ -183,12 +157,24 @@ half ComputeFogIntensity(half fogFactor)
     return fogIntensity;
 }
 
-
-//URPから移植。
-half3 MixFog(half3 fragColor, half fogFactor)
+// 頂点から補間した視空間Zを使用し、フラグメント単位でFog強度を求める。
+half ComputeFogIntensityFromPositionVS(float positionVSZ)
 {
     #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
-        half fogIntensity = ComputeFogIntensity(fogFactor);
+        float viewZ = -positionVSZ;
+        // カメラ位置を0とする視空間Zを、ニア平面からの距離へ変換する。
+        float nearToFarZ = max(viewZ - _ProjectionParams.y, 0.0);
+        return ComputeFogIntensity(ComputeFogFactorZ0ToFar(nearToFarZ));
+    #else
+        return half(0.0);
+    #endif
+}
+
+// 視空間ZからFog強度を計算し、フラグメントカラーへ適用する。
+half3 MixFog(half3 fragColor, float positionVSZ)
+{
+    #if defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2)
+        half fogIntensity = ComputeFogIntensityFromPositionVS(positionVSZ);
         // Workaround for UUM-61728: using a manual lerp to avoid rendering artifacts on some GPUs when Vulkan is used
         fragColor = fragColor * fogIntensity + unity_FogColor.rgb * (half(1.0) - fogIntensity);
     #endif
@@ -205,7 +191,6 @@ struct VertexInputs
     half3 tangentWS;
     half3 bitangentWS;
     half3 normalWS;
-    float fogFactor;
 };
 
 VertexInputs GetVertexInputs(float3 positionOS, half3 normalOS = half3(0, 0, 1), half4 tangentOS = half4(1, 0, 0, 1))
@@ -226,8 +211,6 @@ VertexInputs GetVertexInputs(float3 positionOS, half3 normalOS = half3(0, 0, 1),
     output.normalWS = TransformObjectToWorldNormal(normalOS);
     output.tangentWS = real3(TransformObjectToWorldDir(tangentOS.xyz));
     output.bitangentWS = real3(cross(output.normalWS, float3(output.tangentWS))) * sign;
-
-    output.fogFactor = ComputeFogFactor(output.positionCS.z);
 
     return output;
 }

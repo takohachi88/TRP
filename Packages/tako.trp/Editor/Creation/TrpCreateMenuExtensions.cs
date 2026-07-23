@@ -18,6 +18,12 @@ namespace TrpEditor
 		private static void CreateTrpCustomPassObject() => CreateFile(FileType.Cs, "TrpCustomPassObject", "CustomPassObject");
 
 		/// <summary>
+		/// TRPのUnlitシェーダーを作成する。
+		/// </summary>
+		[MenuItem(TrpMenuItemShaderRoot + "Unlit Shader", priority = -1000)]
+		private static void CreateTrpUnlitShader() => CreateFile(FileType.Shader, "TrpUnlit", "Unlit");
+
+		/// <summary>
 		/// TRPのUI標準シェーダーを作成する。
 		/// </summary>
 		[MenuItem(TrpMenuItemShaderRoot + "UI Default Shader", priority = -1000)]

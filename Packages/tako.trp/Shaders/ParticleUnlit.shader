@@ -103,14 +103,7 @@ Shader "TRP/ParticleUnlit"
                 output.a *= DepthFade(_Near, _Far, input.positionNDC, input.positionWS);
                 #endif
 
-                #if (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
-                    float viewZ = -input.fogCoord;
-                    float nearToFarZ = max(viewZ - _ProjectionParams.y, 0);
-                    half fogFactor = ComputeFogFactorZ0ToFar(nearToFarZ);
-                #else
-                    half fogFactor = 0;
-                #endif
-                output.rgb = MixFog(output.rgb, fogFactor);
+                output.rgb = MixFog(output.rgb, input.fogCoord);
 
                 VERTEX_COLOR_BLEND(output, input.color);
                 MULTIPLY_RGB_A(output);

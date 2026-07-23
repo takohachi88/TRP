@@ -174,8 +174,9 @@ float4 VFXApplyFog(float4 color,float4 posCS,float3 posWS)
    float4 fog = (float4)0;
    
    fog.rgb = unity_FogColor.rgb;
-   float fogFactor = ComputeFogFactor(posCS.z * posCS.w);
-   fog.a = ComputeFogIntensity(fogFactor);
+   // VFXも通常シェーダーと同じフラグメントFog経路を使用する。
+   float positionVSZ = TransformWorldToView(posWS).z;
+   fog.a = ComputeFogIntensityFromPositionVS(positionVSZ);
     
 #if VFX_BLENDMODE_ALPHA || IS_OPAQUE_PARTICLE
    color.rgb = lerp(fog.rgb, color.rgb, fog.a);

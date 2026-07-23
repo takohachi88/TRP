@@ -110,14 +110,7 @@
 
                 output.alpha = color.a;
 
-                #if (defined(FOG_LINEAR) || defined(FOG_EXP) || defined(FOG_EXP2))
-                    float viewZ = -input.fogCoord;
-                    float nearToFarZ = max(viewZ - _ProjectionParams.y, 0);
-                    half fogFactor = ComputeFogFactorZ0ToFar(nearToFarZ);
-                #else
-                    half fogFactor = 0;
-                #endif
-                color.rgb = MixFog(color.rgb, fogFactor);
+                color.rgb = MixFog(color.rgb, input.fogCoord);
 
                 color.rgb *= color.a;
                 color *= WbOitWeight2(input.z, color.a * _AlphaFactor);

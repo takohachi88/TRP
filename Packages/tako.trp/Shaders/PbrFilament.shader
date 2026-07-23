@@ -173,7 +173,7 @@ Shader "TRP/PbrFilament"
                 half3 tangentWS : TANGENT;
                 half3 bitangentWS : BITANGENT;
                 half3 directionVS : DIRECTION_VS;
-                half fogFactor : FOG_FACTOR;
+                float fogCoord : FOG_COORD;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -192,7 +192,7 @@ Shader "TRP/PbrFilament"
                 output.tangentWS = vertexInputs.tangentWS;
                 output.bitangentWS = vertexInputs.bitangentWS;
                 output.directionVS = vertexInputs.directionVS;
-                output.fogFactor = vertexInputs.fogFactor;
+                output.fogCoord = vertexInputs.positionVS.z;
                 GI_TRANSFER(input, output);
                 return output;
             }
@@ -310,7 +310,7 @@ Shader "TRP/PbrFilament"
 
                 half3 emission = surfaceSamples.emission * _EmissionColor.rgb;
                 color += emission;
-                color = MixFog(color, input.fogFactor);
+                color = MixFog(color, input.fogCoord);
                 return half4(color, baseMap.a);
             }
             ENDHLSL
