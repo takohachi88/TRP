@@ -21,7 +21,7 @@ namespace Trp
 	//[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPassObject", fileName = "CustomPassObject")]
 	public abstract class CustomPassObject : ScriptableObject
 	{
-		[SerializeField] private ExecutionPhase _phase;
+		[SerializeField] private ExecutionPhase _phase = ExecutionPhase.BeforeRenderingTransparents;
 		public ExecutionPhase Phase => _phase;
 		public abstract void Execute(ref PassParams passParams);
 	}

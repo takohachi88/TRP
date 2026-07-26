@@ -11,7 +11,8 @@ namespace Trp
 	/// Per-Pixel Linked List Order Independent Transparency.
 	/// Gatherで透明フラグメントをGPU上の連結リストへ格納し、Resolveで深度順に並べて合成する。
 	/// </summary>
-	public sealed class PpllOitPass
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/" + nameof(PpllOitPass), fileName = nameof(PpllOitPass))]
+	public sealed class PpllOitPass : CustomPassObject
 	{
 		// Nodeは「RGBA8、24bit深度+8bitサンプル番号、次Nodeのindex」の3 uint。
 		private const int NodeStride = sizeof(uint) * 3;
@@ -20,31 +21,49 @@ namespace Trp
 		private static readonly ProfilingSampler SamplerClear = ProfilingSampler.Create(nameof(PpllOitPass) + ".Clear", MarkerFlags.Default);
 		private static readonly ProfilingSampler SamplerGather = ProfilingSampler.Create(nameof(PpllOitPass) + ".Gather", MarkerFlags.Default);
 		private static readonly ProfilingSampler SamplerResolve = ProfilingSampler.Create(nameof(PpllOitPass) + ".Resolve", MarkerFlags.Default);
-		private static readonly ShaderTagId IdPpllOit = new("PpllOit");
 		private static readonly int IdHeads = Shader.PropertyToID("_PpllOitHeads");
 		private static readonly int IdNodes = Shader.PropertyToID("_PpllOitNodes");
 		private static readonly int IdMaxNodeCount = Shader.PropertyToID("_PpllOitMaxNodeCount");
 		private static readonly int IdTextureSize = Shader.PropertyToID("_PpllOitTextureSize");
 		private static readonly int IdPixelCount = Shader.PropertyToID("_PpllOitPixelCount");
 
-		private readonly Material _resolveMaterial;
-		private readonly ComputeShader _clearCompute;
-		private readonly int _clearKernel;
+		[SerializeField, Range(1, 16), Tooltip("1ピクセルあたりに確保する平均フラグメント数。ピクセル単位の上限ではなく、画面全体のNode Buffer容量を決める値。")]
+		private int _averageFragmentsPerPixel = 4;
+
+		private Material _resolveMaterial;
+		private ComputeShader _clearCompute;
+		private int _clearKernel;
+		private ShaderTagId _idPpllOit;
 
 		public static bool IsSupported =>
 			SystemInfo.supportsComputeShaders &&
 			SystemInfo.supportedRandomWriteTargetCount >= 3;
 
-		public PpllOitPass(Shader resolveShader, ComputeShader clearCompute)
+		private void OnEnable()
 		{
-			_resolveMaterial = CoreUtils.CreateEngineMaterial(resolveShader);
-			_clearCompute = clearCompute;
-			_clearKernel = clearCompute.FindKernel("ClearPpllOitHeads");
+			// ShaderTagIdはScriptableObjectの生成後に初期化する。
+			_idPpllOit = new ShaderTagId("PpllOit");
 		}
 
-		public void Dispose()
+		private void OnDisable()
 		{
 			CoreUtils.Destroy(_resolveMaterial);
+			_resolveMaterial = null;
+			_clearCompute = null;
+		}
+
+		private bool EnsureResources()
+		{
+			if (_resolveMaterial && _clearCompute) return true;
+
+			// シェーダー参照は利用プロジェクト側のアセットへ重複して持たせず、TRPの共通リソースから取得する。
+			TrpResources resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+			if (resources?.PpllOitResolveShader == null || resources.PpllOitClearCompute == null) return false;
+
+			_resolveMaterial = CoreUtils.CreateEngineMaterial(resources.PpllOitResolveShader);
+			_clearCompute = resources.PpllOitClearCompute;
+			_clearKernel = _clearCompute.FindKernel("ClearPpllOitHeads");
+			return _resolveMaterial;
 		}
 
 		private sealed class PassData
@@ -61,21 +80,23 @@ namespace Trp
 			public Vector4 TextureSize;
 		}
 
-		public void RecordRenderGraph(ref PassParams passParams, int averageFragmentsPerPixel)
+		public override void Execute(ref PassParams passParams)
 		{
+			if (!IsSupported || !EnsureResources()) return;
+
 			RenderGraph renderGraph = passParams.RenderGraph;
 			int width = Mathf.Max(1, passParams.AttachmentSize.x);
 			int height = Mathf.Max(1, passParams.AttachmentSize.y);
 			int pixelCount = width * height;
 
 			// AverageFragmentsPerPixelは総容量の見積もり値。局所的にはこの数を超えて格納できる。
-			long requestedNodeCount = (long)pixelCount * Mathf.Max(1, averageFragmentsPerPixel);
+			long requestedNodeCount = (long)pixelCount * Mathf.Max(1, _averageFragmentsPerPixel);
 			long deviceNodeLimit = Math.Max(1L, SystemInfo.maxGraphicsBufferSize / NodeStride - 1L);
 			int maxNodeCount = (int)Math.Min(requestedNodeCount, Math.Min(deviceNodeLimit, int.MaxValue - 1L));
 			Vector4 textureSize = new(width, height, 1f / width, 1f / height);
 
 			RendererListHandle rendererList = renderGraph.CreateRendererList(
-				new RendererListDesc(IdPpllOit, passParams.CullingResults, passParams.Camera)
+				new RendererListDesc(_idPpllOit, passParams.CullingResults, passParams.Camera)
 				{
 					layerMask = passParams.CommonSettings.TransparentLayerMask,
 					sortingCriteria = SortingCriteria.None,

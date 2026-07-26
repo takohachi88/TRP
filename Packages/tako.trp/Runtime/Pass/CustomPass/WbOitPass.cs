@@ -10,22 +10,40 @@ namespace Trp
 	/// <summary>
 	/// WbOit（Weighted Blended Order Independent Transparency）の描画。
 	/// </summary>
-	public class WbOitPass
+	[CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/" + nameof(WbOitPass), fileName = nameof(WbOitPass))]
+	public sealed class WbOitPass : CustomPassObject
 	{
 		private static readonly ProfilingSampler SamplerDraw = ProfilingSampler.Create(nameof(WbOitPass) + ".Draw", MarkerFlags.Default);
 		private static readonly ProfilingSampler SamplerComposite = ProfilingSampler.Create(nameof(WbOitPass) + ".Composite", MarkerFlags.Default);
-		private static readonly ShaderTagId IdWbOit = new ShaderTagId("WbOit");
 		private static readonly int IdRevealageTexture = Shader.PropertyToID("_RevealageTexture");
-		private readonly Material _material;
 
-		public WbOitPass(Shader shader)
-		{
-			_material = CoreUtils.CreateEngineMaterial(shader);
-		}
+		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 
-		public void Dispose()
+		private ShaderTagId _idWbOit;
+		private Material _material;
+
+		private void OnDisable()
 		{
 			CoreUtils.Destroy(_material);
+			_material = null;
+		}
+
+		private void OnEnable()
+		{
+			// ShaderTagIdはScriptableObjectの生成後に初期化する。
+			_idWbOit = new ShaderTagId("WbOit");
+		}
+
+		private bool EnsureMaterial()
+		{
+			if (_material) return true;
+
+			// シェーダー参照は利用プロジェクト側のアセットへ重複して持たせず、TRPの共通リソースから取得する。
+			TrpResources resources = GraphicsSettings.GetRenderPipelineSettings<TrpResources>();
+			if (resources?.WbOitCompositeShader == null) return false;
+
+			_material = CoreUtils.CreateEngineMaterial(resources.WbOitCompositeShader);
+			return _material;
 		}
 
 		private class PassData
@@ -36,12 +54,14 @@ namespace Trp
 			public Material Material;
 		}
 
-		public void RecordRenderGraph(ref PassParams passParams, float WbOitScale)
+		public override void Execute(ref PassParams passParams)
 		{
+			if (!EnsureMaterial()) return;
+
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			RendererListHandle WbOitList = renderGraph.CreateRendererList(
-				new RendererListDesc(IdWbOit, passParams.CullingResults, passParams.Camera)
+				new RendererListDesc(_idWbOit, passParams.CullingResults, passParams.Camera)
 				{
 					layerMask = passParams.CommonSettings.TransparentLayerMask,
 					sortingCriteria = SortingCriteria.None,//WbOitはソート不要。
@@ -51,7 +71,9 @@ namespace Trp
 
 			//TODO: WbOitなオブジェクトがないなら以下の処理をスキップする。
 
-			TextureDesc desc = new((int)(passParams.AttachmentSize.x * WbOitScale), (int)(passParams.AttachmentSize.y * WbOitScale));
+			int width = Mathf.Max(1, (int)(passParams.AttachmentSize.x * _renderScale));
+			int height = Mathf.Max(1, (int)(passParams.AttachmentSize.y * _renderScale));
+			TextureDesc desc = new(width, height);
 
 			desc.name = "WbOitAccumulation";
 			desc.format = GraphicsFormat.R16G16B16A16_SFloat;

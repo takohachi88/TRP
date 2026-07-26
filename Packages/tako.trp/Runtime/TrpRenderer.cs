@@ -117,8 +117,6 @@ namespace Trp
 		private readonly DepthNormalsPass _depthNormalsPass = new();
 		private readonly GpuOcclusionCullingPass _gpuOcclusionCullingPass = new();
 		private readonly GeometryPass _geometryPass = new();
-		private readonly WbOitPass _wbOitPass;
-		private readonly PpllOitPass _ppllOitPass;
 		private readonly OutlinePass _outlinePass = new();
 		private readonly SkyboxPass _skyboxPass = new();
 		private readonly CopyColorPass _copyColorPass;
@@ -148,8 +146,6 @@ namespace Trp
 			_debugForwardPlusPass = new (resources.DebugForwardPlusTileShader);
 			_copyDepthPass = new(resources.CopyDepthShader);
 			_lutPass = new(resources.PostFxLutShader);
-			_wbOitPass = new(resources.WbOitCompositeShader);
-			_ppllOitPass = new(resources.PpllOitResolveShader, resources.PpllOitClearCompute);
 		}
 
 		/// <summary>
@@ -175,10 +171,6 @@ namespace Trp
 			bool useDepthNormalsTexture = true;
 			bool drawShadow = true;
 			bool useOutline = true;
-			bool useWbOit = true;
-			float wbOitScale = 1f;
-			bool usePpllOit = true;
-			int ppllOitAverageFragmentsPerPixel = 4;
 			int renderingLayerMask = -1;
 			MSAASamples msaa = MSAASamples.None;
 
@@ -213,10 +205,6 @@ namespace Trp
 				useDepthNormalsTexture = cameraData.UseDepthNormalsTexture;
 				drawShadow = cameraData.DrawShadow;
 				useOutline = cameraData.UseOutline;
-				useWbOit = cameraData.UseWbOit;
-				wbOitScale = cameraData.WbOitScale;
-				usePpllOit = cameraData.UsePpllOit;
-				ppllOitAverageFragmentsPerPixel = cameraData.PpllOitAverageFragmentsPerPixel;
 				renderingLayerMask = cameraData.RenderingLayerMask;
 				msaa = _commonSettings.Msaa;
 				sampler = cameraData.Sampler;
@@ -372,11 +360,8 @@ namespace Trp
 				//CameraDepthTextureの作成。
 				if (!depthNormalsRenderedForGpuOcclusion) _depthNormalsPass.RecordRenderGraph(ref passParams);
 
-				//WbOitの描画。
-				if(useWbOit) _wbOitPass.RecordRenderGraph(ref passParams, wbOitScale);
-
-				//Per-Pixel Linked List OITの描画。
-				if (usePpllOit && PpllOitPass.IsSupported) _ppllOitPass.RecordRenderGraph(ref passParams, ppllOitAverageFragmentsPerPixel);
+				//透明オブジェクトより前に実行するCustomPass。
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.BeforeRenderingTransparents);
 
 				//Transparentジオメトリの描画。
 				_geometryPass.RecordRenderGraph(ref passParams, false);
@@ -453,8 +438,6 @@ namespace Trp
 			CoreUtils.Destroy(_coreBlitMaterial);
 			_lutPass.Dispose();
 			_lightingPass.Dispose();
-			_wbOitPass.Dispose();
-			_ppllOitPass.Dispose();
 		}
 	}
 }
