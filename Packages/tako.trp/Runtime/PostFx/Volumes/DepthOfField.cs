@@ -31,6 +31,11 @@ namespace Trp.PostFx
 
 		public EnumParameter<Mode> mode = new(Mode.None);
 
+		/// <summary>
+		/// Physical Cameraの被写界深度に関係するパラメータを使用するか。
+		/// </summary>
+		[Tooltip("Use the focus distance, focal length, and aperture of the rendering Camera when Physical Camera is enabled.")]
+		public BoolParameter usePhysicalProperties = new(false);
 
 		/// <summary>
 		/// The distance to the point of focus.

@@ -9,6 +9,7 @@ namespace TrpEditor.PostFx
 	{
 		private SerializedDataParameter _mode;
 
+		private SerializedDataParameter _usePhysicalProperties;
 		private SerializedDataParameter _focusDistance;
 		private SerializedDataParameter _focalLength;
 		private SerializedDataParameter _aperture;
@@ -22,6 +23,7 @@ namespace TrpEditor.PostFx
 
 			_mode = Unpack(fetchers.Find(x => x.mode));
 
+			_usePhysicalProperties = Unpack(fetchers.Find(x => x.usePhysicalProperties));
 			_focusDistance = Unpack(fetchers.Find(x => x.focusDistance));
 			_focalLength = Unpack(fetchers.Find(x => x.focalLength));
 			_aperture = Unpack(fetchers.Find(x => x.aperture));
@@ -37,9 +39,13 @@ namespace TrpEditor.PostFx
 			switch (_mode.value.intValue)
 			{
 				case (int)DepthOfField.Mode.BokehUrp:
-					PropertyField(_focusDistance);
-					PropertyField(_focalLength);
-					PropertyField(_aperture);
+					PropertyField(_usePhysicalProperties);
+					using (new EditorGUI.DisabledScope(_usePhysicalProperties.value.boolValue))
+					{
+						PropertyField(_focusDistance);
+						PropertyField(_focalLength);
+						PropertyField(_aperture);
+					}
 					PropertyField(_bladeCount);
 					PropertyField(_bladeCurvature);
 					PropertyField(_bladeRotation);

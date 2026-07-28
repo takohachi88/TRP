@@ -134,9 +134,16 @@ namespace Trp.PostFx
 
 			using IUnsafeRenderGraphBuilder builder = passParams.RenderGraph.AddUnsafePass(Sampler.name, out PassData passData, Sampler);
 
-			float F = depthOfField.focalLength.value / 1000f;
-			float A = depthOfField.focalLength.value / depthOfField.aperture.value;
-			float P = depthOfField.focusDistance.value;
+			Camera camera = passParams.Camera;
+			//Volume側の指定とCamera側のPhysical Cameraがともに有効な場合のみ、
+			//被写界深度に直接対応するCameraのパラメータを使用する。
+			bool usePhysicalCamera = depthOfField.usePhysicalProperties.value && camera.usePhysicalProperties;
+			float focalLength = usePhysicalCamera ? camera.focalLength : depthOfField.focalLength.value;
+			float aperture = usePhysicalCamera ? camera.aperture : depthOfField.aperture.value;
+			float P = usePhysicalCamera ? camera.focusDistance : depthOfField.focusDistance.value;
+
+			float F = focalLength / 1000f;
+			float A = focalLength / aperture;
 			float maxCoC = (A * F) / (P - F);
 			float maxRadius = GetMaxBokehRadiusInPixels(passParams.AttachmentSize.y);
 			float rcpAspect = 1f / (wh / (float)hh);

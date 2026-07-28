@@ -24,6 +24,9 @@ namespace TrpEditor
 			public float? OrthographicSize;
 			public float? FieldOfView;
 			public bool UsePhysicalProperties;
+			public float? FocalLength;
+			public float? Aperture;
+			public float? FocusDistance;
 			public Vector2? LensShift;
 			public Camera.GateFitMode? GateFit;
 			public float Near;
@@ -40,6 +43,9 @@ namespace TrpEditor
 				camera.usePhysicalProperties = UsePhysicalProperties;
 				if (OrthographicSize.HasValue) camera.orthographicSize = OrthographicSize.Value;
 				if (FieldOfView.HasValue) camera.fieldOfView = FieldOfView.Value;
+				if (FocalLength.HasValue) camera.focalLength = FocalLength.Value;
+				if (Aperture.HasValue) camera.aperture = Aperture.Value;
+				if (FocusDistance.HasValue) camera.focusDistance = FocusDistance.Value;
 				if (LensShift.HasValue) camera.lensShift = LensShift.Value;
 				if (GateFit.HasValue) camera.gateFit = GateFit.Value;
 				camera.nearClipPlane = Near;
@@ -112,6 +118,9 @@ namespace TrpEditor
 				if (_properties.IsOrthographic)
 				{
 					_properties.OrthographicSize = Mathf.Max(0, EditorGUILayout.FloatField("Orthographic Size", _camera.orthographicSize));
+					_properties.FocalLength = null;
+					_properties.Aperture = null;
+					_properties.FocusDistance = null;
 					_properties.LensShift = null;
 					_properties.GateFit = null;
 				}
@@ -122,13 +131,24 @@ namespace TrpEditor
 					_properties.UsePhysicalProperties = EditorGUILayout.Toggle("Physical Camera", _camera.usePhysicalProperties);
 					if (_properties.UsePhysicalProperties)
 					{
+						EditorGUI.indentLevel++;
+
+						//DepthOfFieldが参照するPhysical Cameraのレンズパラメータ。
+						_properties.FocalLength = Mathf.Max(0.01f, EditorGUILayout.FloatField("Focal Length", _camera.focalLength));
+						_properties.Aperture = EditorGUILayout.Slider("Aperture", _camera.aperture, Camera.kMinAperture, Camera.kMaxAperture);
+						_properties.FocusDistance = Mathf.Max(0.01f, EditorGUILayout.FloatField("Focus Distance", _camera.focusDistance));
 						// 非対称透視投影により、カメラの向きを変えずに消失点を移動する。
 						_properties.LensShift = EditorGUILayout.Vector2Field("Lens Shift", _camera.lensShift);
 						// センサー領域と出力領域のアスペクト比が異なる場合の合わせ方を指定する。
 						_properties.GateFit = (Camera.GateFitMode)EditorGUILayout.EnumPopup("Gate Fit", _camera.gateFit);
+
+						EditorGUI.indentLevel--;
 					}
 					else
 					{
+						_properties.FocalLength = null;
+						_properties.Aperture = null;
+						_properties.FocusDistance = null;
 						_properties.LensShift = null;
 						_properties.GateFit = null;
 					}
