@@ -200,4 +200,4 @@ MonoBehaviour:
         _litMaterial: {fileID: 2100000, guid: d994987f80ef6094ca4071a3100143e1, type: 2}
         _spriteUnlitMaterial: {fileID: 2100000, guid: 26760c13b4380e940a7a62cb3d2de83a, type: 2}
         _uiMaterial: {fileID: 2100000, guid: 57cbf722553ebd54daf0395e57296468, type: 2}
-        _particleUnlitMaterial: {fileID: 2100000, guid: 05c9318fa1bf97e43b0377b0909213c1, type: 2}
+        _particleMaterial: {fileID: 2100000, guid: 05c9318fa1bf97e43b0377b0909213c1, type: 2}

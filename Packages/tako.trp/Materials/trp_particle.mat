@@ -7,14 +7,23 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: trp_particle_unlit
+  m_Name: trp_particle
   m_Shader: {fileID: 4800000, guid: 89e7778894bfae745a31958a0c96f3f1, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords: []
+  m_ValidKeywords:
+  - _BASEUVMODE_NORMAL
+  - _SOFT_PARTICLE
   m_InvalidKeywords:
   - MULTIPLY_RGB_A
   - SOFT_PARTICLE
+  - _BASEMODE_NORMAL
+  - _DISSOLVEMODE_OFF
+  - _DISTORTDISSOLVE_ON
+  - _DISTORTMODE_OFF
+  - _DISTORTRESSOLVE_ON
+  - _USEDISSOLVE_ON
+  - _USEDISTORT_ON
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -31,27 +40,47 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    - _DissolveMap:
+        m_Texture: {fileID: 2800000, guid: 8dc64037bcc75364b8431b182c2858ce, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _DistortMap:
+        m_Texture: {fileID: 2800000, guid: bacd02590a4aaf04d99a7d0eec5f793f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
     - SOFT_PARTICLE: 1
     - _A: 1
     - _AlphaBlend: 3
     - _AlphaMultiplier: 1
+    - _BASEMODE: 0
+    - _BASEUVMODE: 0
     - _BlendDst: 10
     - _BlendOp: 0
     - _BlendSrc: 1
     - _Cull: 2
+    - _DISSOLVEMODE: 0
+    - _DISSOLVE_MODE: 0
+    - _DISTORTMODE: 0
+    - _DISTORT_MODE: 0
+    - _DissolveSmooth: 0.109
+    - _DistortDissolve: 1
+    - _DistortRessolve: 1
+    - _EdgeColorBlendMode: 2
     - _Far: 1
     - _Intensity: 1
     - _MultiplyRgbA: 1
     - _Near: 0
     - _Rgb: 1
-    - _SOFT_PARTICLE: 0
+    - _SOFT_PARTICLE: 1
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilFail: 0
     - _StencilOp: 0
     - _StencilZFail: 0
+    - _UseDissolve: 1
+    - _UseDistort: 1
     - _VertexColorBlend: 0
     - _ZWrite: 0
     m_Colors:

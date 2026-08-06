@@ -104,6 +104,14 @@ float2 Rotate(float2 uv, float radian, float2 center)
                         trigs.x,  trigs.y), uv - center) + center;
 }
 
+float2 Polar(float2 uv, float2 tiling, float2 offset)
+{
+	float radius = length(uv) * 2.0;
+	float theta = atan2(uv.y, uv.x) / (2.0 * PI) + 0.5;
+	return float2(radius, theta) * tiling.yx + offset.yx;
+}
+
+
 void AlphaClip(half alpha, half cutoff)
 {
     #if defined(ALPHA_CLIP)

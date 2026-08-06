@@ -37,7 +37,7 @@ namespace Trp
 		[SerializeField][ResourcePath("Materials/trp_lit.mat")] private Material _litMaterial;
 		[SerializeField][ResourcePath("Materials/trp_sprite_unlit.mat")] private Material _spriteUnlitMaterial;
 		[SerializeField][ResourcePath("Materials/trp_ui_default.mat")] private Material _uiMaterial;
-		[SerializeField][ResourcePath("Materials/trp_particle_unlit.mat")] private Material _particleUnlitMaterial;
+		[SerializeField][ResourcePath("Materials/trp_particle.mat")] private Material _particleMaterial;
 
 		public Shader CameraBlitShader => _cameraBlitShader;
 		public PostFxPassGroup PostFxGroup => _postFxPassGroup;
@@ -56,6 +56,6 @@ namespace Trp
 		public Material LitMaterial => _litMaterial;
 		public Material SpriteUnlitMaterial => _spriteUnlitMaterial;
 		public Material UiMaterial => _uiMaterial;
-		public Material ParticleUnlitMaterial => _particleUnlitMaterial;
+		public Material ParticleMaterial => _particleMaterial;
 	}
 }

@@ -83,7 +83,7 @@ namespace Trp
 		public override Material defaultMaterial => _resources?.LitMaterial;
 		public override Material default2DMaterial => _resources?.SpriteUnlitMaterial;
 		public override Material defaultUIMaterial => _resources?.UiMaterial;
-		public override Material defaultParticleMaterial => _resources?.ParticleUnlitMaterial;
+		public override Material defaultParticleMaterial => _resources?.ParticleMaterial;
 		public override Material defaultLineMaterial => _resources?.UnlitMaterial;
 		public override Material defaultTerrainMaterial => _resources?.UnlitMaterial;
 
