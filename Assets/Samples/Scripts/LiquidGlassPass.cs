@@ -7,9 +7,10 @@ using UnityEngine.Rendering.RenderGraphModule;
 namespace Trp.Sample
 {
     [CreateAssetMenu(menuName = TrpConstants.PATH_CREATE_MENU + "CustomPass/" + nameof(LiquidGlassPass), fileName = nameof(LiquidGlassPass))]
-    public class LiquidGlassPass : CustomPassObject
-    {
+	public class LiquidGlassPass : CustomPassObject
+	{
 		[SerializeField] private Shader _shader;
+		[SerializeField] private LayerMask _layerMask = ~0;
 		[SerializeField, Min(3)] private int _shapeBlurSampleCount = 5;
 		[SerializeField, Min(0)] private float _shapeBlurStrength = 0.1f;
 
@@ -68,6 +69,7 @@ namespace Trp.Sample
 			public Material Material;
 			public RendererListHandle RendererList;
 			public TextureHandle Src;
+			public TextureHandle AttachmentColorCopy;
 			public TextureHandle Dst1;
 			public TextureHandle Dst2;
 			public TextureHandle LiquidData;
@@ -113,10 +115,15 @@ namespace Trp.Sample
 
 			passData.RendererList = renderGraph.CreateRendererList(new RendererListDesc(IdLiquidGlass, passParams.CullingResults, passParams.Camera)
 			{
-				layerMask = passParams.CommonSettings.TransparentLayerMask,
+				// 共通設定ではなく、このLiquid Glassパス専用のLayerだけを描画する。
+				layerMask = _layerMask,
 				renderQueueRange = RenderQueueRange.transparent,
 			});
 			passData.Src = passParams.CameraTextures.AttachmentColor;
+			// Composite中に描画先のAttachmentColorを同時にサンプリングすると、MSAA無効時は
+			// 同一リソースへのread/writeフィードバックになってしまうため、元画像を退避する。
+			GraphicsFormat attachmentColorFormat = passData.Src.GetDescriptor(renderGraph).format;
+			passData.AttachmentColorCopy = CreateTempTexture(renderGraph, passParams.AttachmentSize, 1f, "LiquidGlassAttachmentColorCopy", attachmentColorFormat);
 			passData.Dst1 = CreateTempTexture(renderGraph, passParams.AttachmentSize, 0.5f, "LiquidGlassTemp1");
 			passData.Dst2 = CreateTempTexture(renderGraph, passParams.AttachmentSize, 0.5f, "LiquidGlassTemp2");
 			passData.LiquidData = CreateTempTexture(renderGraph, passParams.AttachmentSize, 1f, "LiquidGlassData");
@@ -128,6 +135,7 @@ namespace Trp.Sample
 
 			builder.UseRendererList(passData.RendererList);
 			builder.UseTexture(passData.Src, AccessFlags.ReadWrite);
+			builder.UseTexture(passData.AttachmentColorCopy, AccessFlags.ReadWrite);
 			builder.UseTexture(passData.Dst1, AccessFlags.ReadWrite);
 			builder.UseTexture(passData.Dst2, AccessFlags.ReadWrite);
 			builder.UseTexture(passData.LiquidData, AccessFlags.ReadWrite);
@@ -140,6 +148,8 @@ namespace Trp.Sample
 			builder.SetRenderFunc<PassData>(static (passData, context) =>
 			{
 				CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
+				// Compositeの入力と出力を分離し、MSAA設定に依存しない描画にする。
+				Blitter.BlitCameraTexture(cmd, passData.Src, passData.AttachmentColorCopy);
 				cmd.SetRenderTarget(passData.LiquidData);
 				cmd.ClearRenderTarget(true, true, Color.clear);
 				cmd.DrawRendererList(passData.RendererList);//UiLiquidGlassパスの描画。
@@ -157,9 +167,9 @@ namespace Trp.Sample
 					Blitter.BlitTexture(cmd, passData.Dst2, passData.LiquidNormal, passData.Material, 7);
 					cmd.SetGlobalTexture(IdLiquidNormal, passData.LiquidNormal);
 				}
-				cmd.SetGlobalTexture(IdAttachmentColor, passData.Src);
+				cmd.SetGlobalTexture(IdAttachmentColor, passData.AttachmentColorCopy);
 
-				Blitter.BlitTexture(cmd, passData.Src, passData.Dst1, passData.Material, 2);//ブラー。
+				Blitter.BlitTexture(cmd, passData.AttachmentColorCopy, passData.Dst1, passData.Material, 2);//ブラー。
 				Blitter.BlitTexture(cmd, passData.Dst1, passData.Dst2, passData.Material, 3);//ブラー。
 
 				Blitter.BlitTexture(cmd, passData.Dst2, passData.Src, passData.Material, 4);//Composite。

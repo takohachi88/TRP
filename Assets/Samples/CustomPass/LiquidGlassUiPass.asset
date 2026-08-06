@@ -14,6 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Trp.LiquidGlassUiPass
   _phase: 2
   _shader: {fileID: 4800000, guid: 266401c46328bfa46a1500d7cbd6c38a, type: 3}
+  _layerMask:
+    serializedVersion: 2
+    m_Bits: 32
   _shapeBlurSampleCount: 13
   _shapeBlurStrength: 0.02
   _blurSampleCount: 9
