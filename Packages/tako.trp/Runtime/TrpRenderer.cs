@@ -329,6 +329,8 @@ namespace Trp
 					ForwardPlusCameraDebugValue = rendererParams.ForwardPlusCameraDebugValue,
 				};
 
+				ExecuteCustomPasses(cameraData, ref passParams, ExecutionPhase.BeforeSetup);
+
 				//ライティングの情報。
 				_lightingPass.RecordRenderGraph(ref passParams, _commonSettings.LightingSettings);
 
