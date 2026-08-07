@@ -55,6 +55,7 @@ namespace Trp
 
 					rendererConfiguration =
 					PerObjectData.ReflectionProbes |
+					PerObjectData.LightProbe |
 					PerObjectData.Lightmaps |
 					PerObjectData.ShadowMask,
 

@@ -15,6 +15,7 @@ Material:
   - _BASEUVMODE_NORMAL
   - _SOFT_PARTICLE
   m_InvalidKeywords:
+  - LIT
   - MULTIPLY_RGB_A
   - SOFT_PARTICLE
   - _BASEMODE_NORMAL
@@ -32,11 +33,16 @@ Material:
   disabledShaderPasses:
   - DepthNormals
   - DepthNormalsOnly
+  - SHADOWCASTER
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _BumpMap:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
@@ -46,6 +52,14 @@ Material:
         m_Offset: {x: 0, y: 0}
     - _DistortMap:
         m_Texture: {fileID: 2800000, guid: bacd02590a4aaf04d99a7d0eec5f793f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MaskMap:
+        m_Texture: {fileID: 0}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _NormalMap:
+        m_Texture: {fileID: 2800000, guid: f6efbe479f0a0c54dbe22712546e8f69, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Ints: []
@@ -59,7 +73,9 @@ Material:
     - _BlendDst: 10
     - _BlendOp: 0
     - _BlendSrc: 1
+    - _BumpScale: 1
     - _Cull: 2
+    - _Cutoff: 0.5
     - _DISSOLVEMODE: 0
     - _DISSOLVE_MODE: 0
     - _DISTORTMODE: 0
@@ -70,10 +86,15 @@ Material:
     - _EdgeColorBlendMode: 2
     - _Far: 1
     - _Intensity: 1
+    - _LIT: 1
+    - _Metallic: 0
     - _MultiplyRgbA: 1
     - _Near: 0
+    - _NormalScale: 1
+    - _OcclusionStrength: 1
     - _Rgb: 1
     - _SOFT_PARTICLE: 1
+    - _Smoothness: 0.5
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilFail: 0

@@ -37,6 +37,12 @@ namespace TrpEditor.ShaderGui
 			EditorGUILayout.Space();
 
 			AlphaBlendMode alphaBlendMode = (AlphaBlendMode)material.GetFloat(ShaderUtility.IdAlphaBlend);
+			if (alphaBlendMode == AlphaBlendMode.AlphaTest)
+			{
+				materialEditor.ShaderProperty(FindProperty("_Cutoff", properties), "Alpha Cutoff");
+				EditorGUILayout.Space();
+			}
+
 			if (alphaBlendMode is not (AlphaBlendMode.Opaque or AlphaBlendMode.AlphaTest))
 			{
 				materialEditor.ShaderProperty(FindProperty("_SOFT_PARTICLE", properties), "SoftParticle");
@@ -72,8 +78,30 @@ namespace TrpEditor.ShaderGui
 				{
 					EditorGUI.indentLevel++;
 					materialEditor.TextureProperty(FindProperty("_DissolveMap", properties), "DissolveMap");
-					if(useDistort) ToggleProperty(FindProperty("_DistortDissolve", properties));
+					materialEditor.ShaderProperty(FindProperty("_DissolveSmooth", properties), "DissolveSmooth");
+					if (useDistort) ToggleProperty(FindProperty("_DistortDissolve", properties));
 					materialEditor.ShaderProperty(FindProperty("_EdgeColorBlendMode", properties), "EdgeColorBlendMode");
+					EditorGUI.indentLevel--;
+				}
+			}
+
+			EditorGUILayout.Space();
+
+			using (new EditorGUILayout.VerticalScope(GUI.skin.box))
+			{
+				MaterialProperty litProperty = FindProperty("_LIT", properties);
+				materialEditor.ShaderProperty(litProperty, "Lit");
+				if (((int)litProperty.floatValue).ToBool())
+				{
+					EditorGUI.indentLevel++;
+
+					materialEditor.ShaderProperty(FindProperty("_MaskMap", properties), "MaskMap (R: Metallic, G: AO, A: Smoothness)");
+					materialEditor.ShaderProperty(FindProperty("_Metallic", properties), "Metallic");
+					materialEditor.ShaderProperty(FindProperty("_Smoothness", properties), "Smoothness");
+					materialEditor.ShaderProperty(FindProperty("_OcclusionStrength", properties), "OcclusionStrength");
+					materialEditor.ShaderProperty(FindProperty("_BumpMap", properties), "BumpMap");
+					materialEditor.ShaderProperty(FindProperty("_BumpScale", properties), "BumpScale");
+
 					EditorGUI.indentLevel--;
 				}
 			}
@@ -82,8 +110,10 @@ namespace TrpEditor.ShaderGui
 
 			materialEditor.ShaderProperty(FindProperty("_Cull", properties), "Cull");
 
-			// DepthNormalsパスの有効/無効を切り替え。
-			material.SetShaderPassEnabled(TrpConstants.PassNames.DEPTH_NORMALS_ONLY, alphaBlendMode is AlphaBlendMode.Opaque or AlphaBlendMode.AlphaTest);
+			// 深度・影パスは、不透明またはアルファテスト時のみ描画する。
+			bool enableDepthPasses = alphaBlendMode is AlphaBlendMode.Opaque or AlphaBlendMode.AlphaTest;
+			material.SetShaderPassEnabled(TrpConstants.PassNames.DEPTH_NORMALS_ONLY, enableDepthPasses);
+			material.SetShaderPassEnabled("ShadowCaster", enableDepthPasses);
 
 			if (alphaBlendMode == AlphaBlendMode.AlphaTest) material.EnableKeyword("_ALPHATEST");
 			else material.DisableKeyword("_ALPHATEST");
