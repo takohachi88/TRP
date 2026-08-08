@@ -1,13 +1,12 @@
 using TakoLib.Common;
 using TakoLib.Common.Extensions;
-using TakoLibEditor.Common;
 using Trp;
 using UnityEditor;
 using UnityEngine;
 
 namespace TrpEditor.ShaderGui
 {
-	public class ParticleGui : TakoLibShaderGui
+	public class ParticleGui : TrpShaderGui
 	{
 		protected override void BasicGui(MaterialEditor materialEditor, MaterialProperty[] properties)
 		{
@@ -25,7 +24,7 @@ namespace TrpEditor.ShaderGui
 			EditorGUILayout.Space();
 
 			Material material = materialEditor.target as Material;
-			ColorBlendGui(material);
+			AlphaBlendMode alphaBlendMode = TrpColorBlendGui(materialEditor, material);
 
 			EditorGUILayout.Space();
 
@@ -36,7 +35,6 @@ namespace TrpEditor.ShaderGui
 
 			EditorGUILayout.Space();
 
-			AlphaBlendMode alphaBlendMode = (AlphaBlendMode)material.GetFloat(ShaderUtility.IdAlphaBlend);
 			if (alphaBlendMode == AlphaBlendMode.AlphaTest)
 			{
 				materialEditor.ShaderProperty(FindProperty("_Cutoff", properties), "Alpha Cutoff");
@@ -111,12 +109,16 @@ namespace TrpEditor.ShaderGui
 			materialEditor.ShaderProperty(FindProperty("_Cull", properties), "Cull");
 
 			// 深度・影パスは、不透明またはアルファテスト時のみ描画する。
-			bool enableDepthPasses = alphaBlendMode is AlphaBlendMode.Opaque or AlphaBlendMode.AlphaTest;
+			bool enableDepthPasses = UsesOpaquePasses(material);
 			material.SetShaderPassEnabled(TrpConstants.PassNames.DEPTH_NORMALS_ONLY, enableDepthPasses);
 			material.SetShaderPassEnabled("ShadowCaster", enableDepthPasses);
 
 			if (alphaBlendMode == AlphaBlendMode.AlphaTest) material.EnableKeyword("_ALPHATEST");
 			else material.DisableKeyword("_ALPHATEST");
+
+			// Opaque の場合だけディゾルブ境界を硬く切る。
+			if (enableDepthPasses && alphaBlendMode != AlphaBlendMode.AlphaTest) material.EnableKeyword("_ALPHAOPAQUE");
+			else material.DisableKeyword("_ALPHAOPAQUE");
 		}
 
 		private void ToggleProperty(MaterialProperty property)

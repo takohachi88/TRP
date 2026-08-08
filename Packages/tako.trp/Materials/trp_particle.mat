@@ -47,11 +47,15 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DissolveMap:
-        m_Texture: {fileID: 2800000, guid: 8dc64037bcc75364b8431b182c2858ce, type: 3}
+        m_Texture: {fileID: 2800000, guid: bacd02590a4aaf04d99a7d0eec5f793f, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DistortMap:
         m_Texture: {fileID: 2800000, guid: bacd02590a4aaf04d99a7d0eec5f793f, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _MainTex:
+        m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MaskMap:
@@ -74,19 +78,20 @@ Material:
     - _BlendOp: 0
     - _BlendSrc: 1
     - _BumpScale: 1
+    - _ColorMask: 15
     - _Cull: 2
     - _Cutoff: 0.5
     - _DISSOLVEMODE: 0
     - _DISSOLVE_MODE: 0
     - _DISTORTMODE: 0
     - _DISTORT_MODE: 0
-    - _DissolveSmooth: 0.109
+    - _DissolveSmooth: 0.461
     - _DistortDissolve: 1
     - _DistortRessolve: 1
-    - _EdgeColorBlendMode: 2
+    - _EdgeColorBlendMode: 1
     - _Far: 1
     - _Intensity: 1
-    - _LIT: 1
+    - _LIT: 0
     - _Metallic: 0
     - _MultiplyRgbA: 1
     - _Near: 0
@@ -99,9 +104,12 @@ Material:
     - _StencilComp: 8
     - _StencilFail: 0
     - _StencilOp: 0
+    - _StencilReadMask: 255
+    - _StencilWriteMask: 255
     - _StencilZFail: 0
     - _UseDissolve: 1
     - _UseDistort: 1
+    - _UseUIAlphaClip: 0
     - _VertexColorBlend: 0
     - _ZWrite: 0
     m_Colors:

@@ -9,7 +9,6 @@ Shader "TRP/Custom/LiquidGlass"
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 10
         [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
         [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
-        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
         [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
     }
 

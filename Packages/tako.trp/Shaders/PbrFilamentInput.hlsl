@@ -25,7 +25,8 @@ half _HexTilingGain;
 half _ShadowNormalDistortion;
 half _SwayAmplitude;
 half _SwayPeriodScale;
-half3 _Padding1;
+half _MultiplyRgbA;
+half2 _Padding1;
 CBUFFER_END
 
 // 頂点カラーRを根元から先端までの揺れウェイトとして使用する。

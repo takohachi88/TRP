@@ -36,13 +36,15 @@ Shader "TRP/Toon"
         _OutlineWidth ("Outline Width", Range(0, 0.1)) = 0.01
         _OutlineLightStrength ("Outline Light Strength", Range(0, 10)) = 1
         _OutlineLightStrengthThreshold ("Outline Light Strength Threshold", Range(0, 4)) = 0.1
-        [Toggle(OUTLINE_SOFT_EDGE)] _OUTLINE_SOFT_EDGE ("Outlien Soft Edge", int) = 0
+        [Toggle(OUTLINE_SOFT_EDGE)] _OUTLINE_SOFT_EDGE ("Outline Soft Edge", int) = 0
 
         [Toggle(TOON_PUNCTUAL_LIGHT)] TOON_PUNCTUAL_LIGHT ("Toon Punctual Light", int) = 0
 
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 0
+        [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
+        [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 0
         
         [Toggle] _ZWrite ("Z Write", int) = 1
         
@@ -92,6 +94,7 @@ Shader "TRP/Toon"
             }
 
             Blend [_BlendSrc][_BlendDst]
+            BlendOp [_BlendOp]
             ZWrite [_ZWrite]
             Cull [_Cull]
 
@@ -175,6 +178,7 @@ Shader "TRP/Toon"
                 output *= _BaseColor;
 
                 output.rgb = MixFog(output.rgb, input.fogCoord);
+                MULTIPLY_RGB_A(output);
 
                 return output;
             }
@@ -259,4 +263,5 @@ Shader "TRP/Toon"
             ENDHLSL
         }
     }
+    CustomEditor "TrpEditor.ShaderGui.ToonGui"
 }

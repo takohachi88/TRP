@@ -36,7 +36,6 @@ Shader "TRP/Particle"
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 10
         [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
         [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
-        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
         [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
 
         [Toggle] _ZWrite ("Z Write", int) = 0
@@ -68,7 +67,6 @@ Shader "TRP/Particle"
         float _Far;
         half _MultiplyRgbA;
         int _VertexColorBlend;
-        int _AlphaBlend;
         half _Cutoff;
 
         TEXTURE2D(_DissolveMap);
@@ -168,11 +166,8 @@ Shader "TRP/Particle"
             // Base Map は Cutoff、ディゾルブとパーティクルのフェードはディザリングで判定する。
             clip(baseAlpha - _Cutoff);
             clip(saturate(dissolveAlpha * vertexAlpha) - dither);
-            #else
-            if (_AlphaBlend == 1)
-            {
-                clip(dissolveAlpha - 0.0001h);
-            }
+            #elif defined(_ALPHAOPAQUE)
+            clip(dissolveAlpha - 0.0001h);
             #endif
         }
 
@@ -244,7 +239,7 @@ Shader "TRP/Particle"
             #pragma fragment Fragment
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
             #pragma shader_feature_local_fragment _SOFT_PARTICLE
-            #pragma shader_feature_local_fragment _ALPHATEST
+            #pragma shader_feature_local_fragment _ _ALPHATEST _ALPHAOPAQUE
             #pragma shader_feature_local_fragment _BASEUVMODE_NORMAL _BASEUVMODE_POLAR
             #pragma shader_feature_local_fragment _ _DISTORTMODE_NORMAL _DISTORTMODE_POLAR
             #pragma shader_feature_local_fragment _ _DISSOLVEMODE_NORMAL _DISSOLVEMODE_POLAR
@@ -347,7 +342,7 @@ Shader "TRP/Particle"
             #pragma target 4.5
             #pragma vertex ShadowVertex
             #pragma fragment ShadowFragment
-            #pragma shader_feature_local_fragment _ALPHATEST
+            #pragma shader_feature_local_fragment _ _ALPHATEST _ALPHAOPAQUE
             #pragma shader_feature_local_fragment _BASEUVMODE_NORMAL _BASEUVMODE_POLAR
             #pragma shader_feature_local_fragment _DISTORTMODE_NORMAL _DISTORTMODE_POLAR
             #pragma shader_feature_local_fragment _DISSOLVEMODE_NORMAL _DISSOLVEMODE_POLAR
@@ -410,7 +405,7 @@ Shader "TRP/Particle"
             #pragma target 4.5
             #pragma vertex DepthNormalsVertex
             #pragma fragment DepthNormalsFragment
-            #pragma shader_feature_local_fragment _ALPHATEST
+            #pragma shader_feature_local_fragment _ _ALPHATEST _ALPHAOPAQUE
             #pragma shader_feature_local_fragment _BASEUVMODE_NORMAL _BASEUVMODE_POLAR
             #pragma shader_feature_local_fragment _DISTORTMODE_NORMAL _DISTORTMODE_POLAR
             #pragma shader_feature_local_fragment _DISSOLVEMODE_NORMAL _DISSOLVEMODE_POLAR

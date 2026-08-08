@@ -41,6 +41,7 @@ half _RimLightWidth;
 half _RimLightSmoothness;
 
 half _LightEffect;
+half _MultiplyRgbA;
 
 CBUFFER_END
 

@@ -10,8 +10,7 @@ Shader "TRP/Unlit"
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendDst ("Blend Dst", int) = 0
         [Enum(UnityEngine.Rendering.BlendOp)] _BlendOp ("Blend Op", int) = 0
-        [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 1
-        [PerRendererData] _AlphaBlend ("Alpha Blend", int) = 3
+        [Toggle(MULTIPLY_RGB_A)] _MultiplyRgbA ("Multiply RGB A", int) = 0
         [PerRendererData] _VertexColorBlend ("Vertex Color Blend", int) = 0
         
         [Toggle] _ZWrite ("Z Write", int) = 1
@@ -45,6 +44,7 @@ Shader "TRP/Unlit"
         Pass
         {
             Blend [_BlendSrc][_BlendDst]
+            BlendOp [_BlendOp]
             ZWrite [_ZWrite]
             Cull [_Cull]
 
@@ -108,6 +108,7 @@ Shader "TRP/Unlit"
                 UNITY_SETUP_INSTANCE_ID(input);
                 half4 output = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, input.uv) * _BaseColor * input.color;
                 output.rgb = MixFog(output.rgb, input.fogCoord);
+                MULTIPLY_RGB_A(output);
                 return output;
             }
 
