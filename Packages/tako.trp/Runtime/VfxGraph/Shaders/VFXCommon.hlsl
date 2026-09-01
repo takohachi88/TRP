@@ -138,19 +138,25 @@ float3 GetWorldStereoOffset()
 
 #endif
 
-/*
 void VFXApplyShadowBias(inout float4 posCS, inout float3 posWS, float3 normalWS)
 {
-    posWS = ApplyShadowBias(posWS, normalWS, _LightDirection);
-    posCS = VFXTransformPositionWorldToClip(posWS);
+    // TRPはShadowPass側のSetGlobalDepthBiasで深度Biasを適用する。
+    // ここでは通常のShadowCasterと同じく、Near Clip面からはみ出す頂点だけを収める。
+    #if UNITY_REVERSED_Z
+    posCS.z = min(posCS.z, posCS.w * UNITY_NEAR_CLIP_VALUE);
+    #else
+    posCS.z = max(posCS.z, posCS.w * UNITY_NEAR_CLIP_VALUE);
+    #endif
 }
 
 void VFXApplyShadowBias(inout float4 posCS, inout float3 posWS)
 {
-    posWS = ApplyShadowBias(posWS, _LightDirection, _LightDirection);
-    posCS = VFXTransformPositionWorldToClip(posWS);
+    #if UNITY_REVERSED_Z
+    posCS.z = min(posCS.z, posCS.w * UNITY_NEAR_CLIP_VALUE);
+    #else
+    posCS.z = max(posCS.z, posCS.w * UNITY_NEAR_CLIP_VALUE);
+    #endif
 }
-*/
 
 float4 VFXApplyAO(float4 color, float4 posCS)
 {

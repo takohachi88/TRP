@@ -7,5 +7,6 @@
 		${VFXInclude("Shaders/ParticlePlanarPrimitives/PassSelection.template")}
 		${VFXIncludeRP("Templates/ParticlePlanarPrimitivesLit/PassDepthNormal.template"),IS_OPAQUE_PARTICLE}
 		${VFXIncludeRP("Templates/ParticlePlanarPrimitivesLit/PassForward.template")}
+		${VFXInclude("Shaders/ParticlePlanarPrimitives/PassShadowCaster.template"),USE_CAST_SHADOWS_PASS}
 	}
 }

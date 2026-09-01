@@ -23,6 +23,8 @@ namespace TrpEditor.VfxGraph
 		public override bool supportsUV => true;
 		public override bool implementsMotionVector => true;
 		public override bool isLitShader => true;
+		// Transparentの不自然な全面Shadowを避け、Opaqueかつ明示的に有効な場合だけ登録する。
+		public override bool hasShadowCasting => isBlendModeOpaque && castShadows;
 		public override CullMode defaultCullMode => CullMode.Back;
 
 		[VFXSetting(VFXSettingAttribute.VisibleFlags.InInspector), SerializeField,
@@ -208,6 +210,9 @@ namespace TrpEditor.VfxGraph
 				// Litのベースカラー合成は固定し、Shader GraphとRay Tracingはこのコンテキストでは扱わない。
 				yield return nameof(colorMapping);
 				yield return nameof(enableRayTracing);
+				// ShadowCasterはOpaqueだけを対象にし、Transparentでは設定自体を表示しない。
+				if (!isBlendModeOpaque)
+					yield return nameof(castShadows);
 
 				if (!VFXViewPreference.displayExperimentalOperator)
 				{
