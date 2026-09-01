@@ -1,7 +1,17 @@
-﻿${VFXBegin:VFXPassForward}"SRPDefaultUnlit"${VFXEnd}
+${VFXBegin:VFXPassForward}"SRPDefaultUnlit"${VFXEnd}
+${VFXBegin:VFXPassDepth}"DepthOnly"${VFXEnd}
 ${VFXBegin:VFXPassDepthNormal}"DepthNormalsOnly"${VFXEnd}
 ${VFXBegin:VFXPassShadow}"ShadowCaster"${VFXEnd}
 ${VFXBegin:VFXPassVelocity}"MotionVectors"${VFXEnd}
+
+// TRPのVFX組み込みシェーダーではShaderGraphのSHADERPASS分岐を利用しない。
+// VFX標準パステンプレートが要求する置換点だけを空で定義しておく。
+${VFXBegin:VFXPassForwardDefine}${VFXEnd}
+${VFXBegin:VFXPassDepthDefine}${VFXEnd}
+${VFXBegin:VFXPassShadowDefine}${VFXEnd}
+${VFXBegin:VFXPassVelocityDefine}${VFXEnd}
+${VFXBegin:VFXPassDepthAdditionalPragma}${VFXEnd}
+${VFXBegin:VFXPassVelocityAdditionalPragma}${VFXEnd}
 
 ${VFXBegin:VFXPassForwardAdditionalPragma}
 #pragma multi_compile_fog

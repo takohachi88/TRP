@@ -1,0 +1,15 @@
+// TRP PBR Forward pass
+Pass
+{
+	Name "ForwardLit"
+	Tags { "LightMode"="Lit" }
+
+	${VFXStencilForward}
+
+	HLSLPROGRAM
+	#pragma target 4.5
+	${VFXPassForwardAdditionalPragma}
+
+	${VFXIncludeRP("Templates/ParticleMeshesLit/PassForwardCommon.template")}
+	ENDHLSL
+}

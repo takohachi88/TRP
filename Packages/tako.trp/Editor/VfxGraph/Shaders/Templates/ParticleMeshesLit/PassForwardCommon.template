@@ -1,0 +1,184 @@
+struct ps_input
+{
+	float4 pos : SV_POSITION;
+	#if USE_FLIPBOOK_INTERPOLATION
+	float4 uv : TEXCOORD0;
+	#else
+		#if USE_FLIPBOOK_ARRAY_LAYOUT
+		float3 uv : TEXCOORD0;
+		#else
+		float2 uv : TEXCOORD0;
+		#endif
+	#endif
+
+	#if VFX_NEEDS_COLOR_INTERPOLATOR
+	nointerpolation float4 color : COLOR0;
+	#endif
+
+	#if USE_SOFT_PARTICLE || USE_ALPHA_TEST || USE_FLIPBOOK_INTERPOLATION || VFX_FEATURE_MOTION_VECTORS_FORWARD
+	// x: inverse soft particle fade distance
+	// y: alpha threshold
+	// z: frame blending factor
+	nointerpolation float3 builtInInterpolants : TEXCOORD1;
+	#endif
+
+	#if USE_FLIPBOOK_MOTIONVECTORS
+	nointerpolation float2 builtInInterpolants2 : TEXCOORD2;
+	#endif
+
+	float3 posWS : TEXCOORD3;
+	float3 normal : TEXCOORD4;
+	#if USE_NORMAL_MAP
+	float4 tangent : TEXCOORD5;
+	#endif
+
+	// x: Metallic、y: Smoothness、z: AO Strength、w: Normal Scale
+	nointerpolation half4 materialProperties : TEXCOORD6;
+	#if TRP_VFX_USE_EMISSION_MAP
+	nointerpolation half3 emissionColor : TEXCOORD7;
+	#endif
+
+	#if VFX_FEATURE_MOTION_VECTORS_FORWARD
+	VFX_DECLARE_MOTION_VECTORS_STORAGE(8,9)
+	#endif
+
+	UNITY_VERTEX_OUTPUT_STEREO
+	VFX_VERTEX_OUTPUT_INSTANCE_INDEX
+};
+
+struct ps_output
+{
+	float4 color : SV_Target0;
+	#if VFX_FEATURE_MOTION_VECTORS_FORWARD
+	float4 outMotionVector : SV_Target1;
+	#elif VFX_WRITE_RENDERING_LAYERS
+	uint outRenderingLayers : SV_Target1;
+	#endif
+};
+
+#define VFX_VARYING_PS_INPUTS ps_input
+#define VFX_VARYING_POSCS pos
+#define VFX_VARYING_COLOR color.rgb
+#define VFX_VARYING_ALPHA color.a
+#define VFX_VARYING_INVSOFTPARTICLEFADEDISTANCE builtInInterpolants.x
+#define VFX_VARYING_ALPHATHRESHOLD builtInInterpolants.y
+#define VFX_VARYING_FRAMEBLEND builtInInterpolants.z
+#define VFX_VARYING_MOTIONVECTORSCALE builtInInterpolants2.xy
+#define VFX_VARYING_UV uv
+#define VFX_VARYING_POSWS posWS
+#define VFX_VARYING_NORMAL normal
+#if USE_NORMAL_MAP
+#define VFX_VARYING_TANGENT tangent
+#define VFX_VARYING_NORMALSCALE materialProperties.w
+#endif
+
+#if VFX_FEATURE_MOTION_VECTORS_FORWARD
+#define VFX_VARYING_VELOCITY_CPOS VFX_DECLARE_MOTION_VECTORS_VARYING_NONJITTER
+#define VFX_VARYING_VELOCITY_CPOS_PREVIOUS VFX_DECLARE_MOTION_VECTORS_VARYING_PREVIOUS
+#endif
+
+${VFXPassForwardDefine}
+
+${VFXBegin:VFXVertexAdditionalProcess}
+${VFXLoadParameter:{metallic}}
+${VFXLoadParameter:{smoothness}}
+${VFXLoadParameter:{occlusionStrength}}
+#if USE_NORMAL_MAP
+${VFXLoadParameter:{normalScale}}
+#else
+const half normalScale = 1.0h;
+#endif
+o.materialProperties = half4(metallic, smoothness, occlusionStrength, normalScale);
+
+#if TRP_VFX_USE_EMISSION_MAP
+${VFXLoadParameter:{emissionColor}}
+o.emissionColor = emissionColor.rgb;
+#endif
+${VFXEnd}
+
+${VFXIncludeRP("Templates/ParticleMeshesLit/Pass.template")}
+
+#include "Packages/tako.trp/ShaderLibrary/PbrLighting.hlsl"
+
+#pragma fragment frag
+ps_output frag(ps_input i
+#if USE_DOUBLE_SIDED
+	, bool frontFace : SV_IsFrontFace
+#endif
+)
+{
+	UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(i);
+	ps_output o = (ps_output)0;
+	VFXTransformPSInputs(i);
+
+#if VFX_USE_GRAPH_VALUES
+	uint instanceActiveIndex = i.VFX_VARYINGS_INSTANCE_ACTIVE_INDEX;
+	${VFXLoadGraphValues}
+#endif
+
+#if !USE_DOUBLE_SIDED
+	const bool frontFace = true;
+#endif
+
+	${VFXComputeNormalWS}
+
+	// VFX標準のColor／Alpha、Base Color Map、Flipbookを同じ経路で合成する。
+	#if USE_BASE_COLOR_MAP_COLOR && USE_BASE_COLOR_MAP_ALPHA
+		#define VFX_TEXTURE_COLOR VFXGetTextureColor(VFX_SAMPLER(mainTexture), i)
+	#elif USE_BASE_COLOR_MAP_COLOR
+		#define VFX_TEXTURE_COLOR half4(VFXGetTextureColor(VFX_SAMPLER(mainTexture), i).rgb, 1.0h)
+	#elif USE_BASE_COLOR_MAP_ALPHA
+		#define VFX_TEXTURE_COLOR half4(1.0h, 1.0h, 1.0h, VFXGetTextureColor(VFX_SAMPLER(mainTexture), i).a)
+	#endif
+	${VFXApplyColor}
+
+	VFXClipFragmentColor(o.color.a, i);
+
+	half4 mask = 1.0h;
+	#if TRP_VFX_USE_MASK_MAP
+	mask = VFXGetTextureColor(VFX_SAMPLER(maskMap), i);
+	#endif
+
+	const half metallic = saturate(mask.r * i.materialProperties.x);
+	const half smoothness = saturate(mask.a * i.materialProperties.y);
+	const half ambientOcclusion = lerp(1.0h, mask.g, i.materialProperties.z);
+	const half3 viewDirectionWS = SafeNormalize(VFXGetViewWorldPosition() - i.posWS);
+	// Particle.shaderと同じく、HDRのParticle Colorも保ったままPBRのBase Colorへ渡す。
+	const PbrMaterialData material = CreatePbrMaterialData(o.color.rgb, metallic, 1.0h - smoothness);
+
+	o.color.rgb = EvaluatePbrLighting(
+		material,
+		i.posWS,
+		normalWS,
+		normalWS,
+		viewDirectionWS,
+		0,
+		ambientOcclusion,
+		1.0h,
+		false,
+		i.pos.xy);
+
+	#if TRP_VFX_USE_EMISSION_MAP
+	o.color.rgb += VFXGetTextureColor(VFX_SAMPLER(emissionMap), i).rgb * i.emissionColor;
+	#endif
+
+	o.color = VFXApplyFog(o.color, i);
+	#if IS_OPAQUE_PARTICLE
+	o.color.a = 1.0h;
+	#else
+	o.color.a = saturate(o.color.a);
+	#endif
+	o.color = VFXTransformFinalColor(o.color, i);
+
+	#if VFX_FEATURE_MOTION_VECTORS_FORWARD
+	${VFXComputeOutputMotionVector}
+	o.outMotionVector = encodedMotionVector;
+	o.outMotionVector.a = o.color.a < i.VFX_VARYING_ALPHATHRESHOLD ? 0.0h : 1.0h;
+	#endif
+
+	#if VFX_WRITE_RENDERING_LAYERS
+	o.outRenderingLayers = EncodeMeshRenderingLayer();
+	#endif
+
+	return o;
+}

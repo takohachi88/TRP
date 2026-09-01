@@ -1,0 +1,15 @@
+// TRP PBR Forward pass for Quad Strip
+Pass
+{
+	Name "ForwardLit"
+	Tags { "LightMode"="Lit" }
+
+	${VFXStencilForward}
+
+	HLSLPROGRAM
+	#pragma target 4.5
+	${VFXPassForwardAdditionalPragma}
+
+	${VFXIncludeRP("Templates/ParticlePlanarPrimitivesLit/PassForwardCommon.template")}
+	ENDHLSL
+}
