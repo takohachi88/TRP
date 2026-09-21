@@ -5,7 +5,7 @@
 ## Project Overview
 
 - このプロジェクトは、UnityでTRPという独自のレンダーパイプラインを制作するプロジェクトです。
-- `unity-cli-loop`（https://github.com/hatayama/unity-cli-loop/tree/v3-beta）を導入済みであり、Unityの操作はこれを通じて行えます。
+- Unity Editorの操作には、Unity公式のUnity CLIと`com.unity.pipeline`パッケージを使用します。
 
 ## Git
 
