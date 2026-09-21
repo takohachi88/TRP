@@ -10,7 +10,7 @@ namespace Trp
 	/// Camera型は継承できないのでこのような形に。
 	/// </summary>
 	[RequireComponent(typeof(Camera)), DisallowMultipleComponent, ExecuteAlways, SupportedOnRenderPipeline(typeof(TrpAsset))]
-	public class TrpCameraData : MonoBehaviour
+	public class TrpCameraData : MonoBehaviour, IAdditionalData
 	{
 		[SerializeField, Range(0.1f, 1f)] private float _renderScale = 1f;
 		[SerializeField] private LayerMask _volumeMask = 1;

@@ -29,16 +29,26 @@ namespace Trp
 	[StructLayout(LayoutKind.Sequential)]
 	internal struct PunctualShadowTileBuffer
 	{
-		public const int STRIDE = Defines.SizeOf.FLOAT4 + Defines.SizeOf.FLOAT4X4;
+		public const int STRIDE = Defines.SizeOf.FLOAT4 * 2 + Defines.SizeOf.FLOAT4X4;
 		public float4 TileData;
+		public float4 FilterData;
 		public Matrix4x4 WorldToShadow;
 
-		public PunctualShadowTileBuffer(Vector2 offset, float scale, float bias, float border, Matrix4x4 worldToShadow)
+		public PunctualShadowTileBuffer(
+			Vector2 offset,
+			float scale,
+			float bias,
+			float border,
+			float referenceClipW,
+			Matrix4x4 worldToShadow)
 		{
 			TileData.x = offset.x * scale + border;
 			TileData.y = offset.y * scale + border;
 			TileData.z = scale - border - border;
 			TileData.w = bias;
+			// ライト範囲端のclip W。現在位置との比から一定のワールド半径へ補正する。
+			FilterData = 0;
+			FilterData.x = referenceClipW;
 			WorldToShadow = worldToShadow;
 		}
 	}
@@ -57,6 +67,7 @@ namespace Trp
 		private int _directionalShadowCount;
 		private int _punctualTileCount;
 
+		private static readonly int IdDirectionalShadowAtlasSplit = Shader.PropertyToID("_DirectionalShadowAtlasSplit");
 		private static readonly int IdDirectionalShadowMap = Shader.PropertyToID("_DirectionalShadowMap");
 		private static readonly int IdCullingSphere0 = Shader.PropertyToID("_CullingSphere0");
 		private static readonly int IdCullingSphere1 = Shader.PropertyToID("_CullingSphere1");
@@ -64,12 +75,14 @@ namespace Trp
 		private static readonly int IdCullingSphere3 = Shader.PropertyToID("_CullingSphere3");
 		private static readonly int IdCullingSphereRadiusSqrs = Shader.PropertyToID("_CullingSphereRadiusSqrs");
 		private static readonly int IdCullingSphereRanges = Shader.PropertyToID("_CullingSphereRanges");
+		private static readonly int IdDirectionalShadowFilterScales = Shader.PropertyToID("_DirectionalShadowFilterScales");
 		private static readonly int IdShadowParams1 = Shader.PropertyToID("_ShadowParams1");
 		private static readonly int IdWorldToDirectionalShadows = Shader.PropertyToID("_WorldToDirectionalShadows");
 		private static readonly int IdPunctualShadowMap = Shader.PropertyToID("_PunctualShadowMap");
 		private static readonly int IdPunctualShadowTileBuffer = Shader.PropertyToID("_PunctualShadowTileBuffer");
 
 		private readonly Matrix4x4[] _worldToDirectionalShadows = new Matrix4x4[MAX_DIRECTIONAL_SHADOW_COUNT * MAX_CASCADE_COUNT];
+		private readonly Vector4[] _directionalShadowFilterScales = new Vector4[MAX_DIRECTIONAL_SHADOW_COUNT * MAX_CASCADE_COUNT];
 		private readonly Vector4[] _cullingSpheres = new Vector4[MAX_CASCADE_COUNT];
 		private readonly PunctualShadowTileBuffer[] _punctualShadowTileBuffer = new PunctualShadowTileBuffer[MAX_PUNCTUAL_TILE_COUNT];
 		private readonly PunctualShadowData[] _punctualShadowData = new PunctualShadowData[MAX_PUNCTUAL_TILE_COUNT];
@@ -259,7 +272,12 @@ namespace Trp
 						shadowData.Light.shadowNearPlane, out Matrix4x4 view, out Matrix4x4 projection, out ShadowSplitData splitData);
 
 					Vector2 offset = new Vector2(tileIndex % splitCount, tileIndex / splitCount) * tileSize;
-					_worldToDirectionalShadows[tileIndex] = GetShadowTransform(projection, view, offset, mapSizeRcp, tileSize);
+					Matrix4x4 worldToShadow = GetShadowTransform(projection, view, offset, mapSizeRcp, tileSize);
+					_worldToDirectionalShadows[tileIndex] = worldToShadow;
+					// Directionalは透視除算がないため、行列からワールド距離→アトラスUVの倍率を直接取得できる。
+					_directionalShadowFilterScales[tileIndex].x = math.max(
+						math.length(new float3(worldToShadow.m00, worldToShadow.m01, worldToShadow.m02)),
+						math.length(new float3(worldToShadow.m10, worldToShadow.m11, worldToShadow.m12)));
 					if (i == 0) _cullingSpheres[cascade] = splitData.cullingSphere;
 
 					RendererListHandle rendererList = renderGraph.CreateShadowRendererList(ref drawingSettings);
@@ -272,6 +290,14 @@ namespace Trp
 						Viewport = new Rect(offset.x, offset.y, tileSize, tileSize),
 					};
 					_splitBuffer[splitOffset + cascade] = splitData;
+				}
+
+				// 第1 Cascadeのテクセル半径を基準に、全Cascadeで同じワールド幅になる倍率へ変換する。
+				float baseScaleRcp = SafeRcp(_directionalShadowFilterScales[i * cascadeCount].x);
+				for (int cascade = 0; cascade < cascadeCount; cascade++)
+				{
+					int tileIndex = i * cascadeCount + cascade;
+					_directionalShadowFilterScales[tileIndex].x *= baseScaleRcp;
 				}
 
 				_perLightInfos[shadowData.LightIndex] = new LightShadowCasterCullingInfo
@@ -313,7 +339,9 @@ namespace Trp
 				}
 				cmd.SetGlobalDepthBias(0, 0);
 
+				cmd.SetGlobalFloat(IdDirectionalShadowAtlasSplit, MapSplitCount(data.ShadowCount * data.CascadeCount));
 				cmd.SetGlobalMatrixArray(IdWorldToDirectionalShadows, shadows._worldToDirectionalShadows);
+				cmd.SetGlobalVectorArray(IdDirectionalShadowFilterScales, shadows._directionalShadowFilterScales);
 				cmd.SetGlobalVector(IdCullingSphere0, shadows._cullingSpheres[0]);
 				cmd.SetGlobalVector(IdCullingSphere1, shadows._cullingSpheres[1]);
 				cmd.SetGlobalVector(IdCullingSphere2, shadows._cullingSpheres[2]);
@@ -462,8 +490,9 @@ namespace Trp
 			float texelSize = light.type == LightType.Spot ? 2f / (tileSize * projection.m00) : 2f / tileSize;
 			float bias = light.shadowNormalBias * texelSize * 1.4142136f;
 			Matrix4x4 worldToShadow = GetShadowTransform(projection, view, tileOffset, mapSizeRcp, tileSize);
+			float referenceClipW = Mathf.Abs(projection.m32 * light.range + projection.m33);
 			_punctualShadowTileBuffer[tileIndex] = new PunctualShadowTileBuffer(
-				tileIndexOffset, tileScale, bias, mapSizeRcp * 0.5f, worldToShadow);
+				tileIndexOffset, tileScale, bias, mapSizeRcp * 0.5f, referenceClipW, worldToShadow);
 
 			RendererListHandle rendererList = renderGraph.CreateShadowRendererList(ref drawingSettings);
 			builder.UseRendererList(rendererList);

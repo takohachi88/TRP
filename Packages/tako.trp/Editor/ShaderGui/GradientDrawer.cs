@@ -33,9 +33,21 @@ namespace TrpEditor.ShaderGui
 		private const int DefaultWidth = 32;
 		private const int MinWidth = 2;
 		private const float ActionButtonWidth = 48f;
+		private const string ClipboardPrefix = "TRP_GRADIENT:";
 
 		private static readonly float LineHeight = EditorGUIUtility.singleLineHeight;
 		private static readonly float Spacing = EditorGUIUtility.standardVerticalSpacing;
+
+		[Serializable]
+		private sealed class GradientClipboardData
+		{
+			public int Version = 1;
+			public int Mode;
+			public Color[] Colors;
+			public float[] ColorTimes;
+			public float[] Alphas;
+			public float[] AlphaTimes;
+		}
 
 		public override float GetPropertyHeight(MaterialProperty prop, string label, MaterialEditor editor)
 		{
@@ -216,7 +228,11 @@ namespace TrpEditor.ShaderGui
 			EditorGUI.indentLevel++;
 			try
 			{
-				EditorGUI.PropertyField(GetLineRect(ref position), gradientProperty, new GUIContent("Gradient"));
+				Rect gradientRect = GetLineRect(ref position);
+				DrawGradientProperty(
+					gradientRect,
+					gradientProperty,
+					gradient => ApplyImporterGradient(importer, gradient));
 
 				Vector2Int size = sizeProperty.vector2IntValue;
 				size.x = Mathf.Max(MinWidth, EditorGUI.IntField(GetLineRect(ref position), "Width", size.x));
@@ -362,7 +378,11 @@ namespace TrpEditor.ShaderGui
 			EditorGUI.indentLevel++;
 			try
 			{
-				EditorGUI.PropertyField(GetLineRect(ref position), gradientProperty, new GUIContent("Gradient"));
+				Rect gradientRect = GetLineRect(ref position);
+				DrawGradientProperty(
+					gradientRect,
+					gradientProperty,
+					gradient => ApplyMaterialGradient(material, data, gradient));
 				widthProperty.intValue = Mathf.Max(
 					MinWidth,
 					EditorGUI.IntField(GetLineRect(ref position), "Width", widthProperty.intValue));
@@ -446,6 +466,137 @@ namespace TrpEditor.ShaderGui
 			EditorUtility.SetDirty(savedMaterial);
 			AssetDatabase.SaveAssetIfDirty(savedMaterial);
 			EditorGUIUtility.PingObject(savedMaterial);
+		}
+
+		private static void DrawGradientProperty(
+			Rect position,
+			SerializedProperty gradientProperty,
+			Action<Gradient> pasteAction)
+		{
+			HandleGradientContextMenu(position, gradientProperty.gradientValue, pasteAction);
+			EditorGUI.PropertyField(position, gradientProperty, new GUIContent("Gradient"));
+		}
+
+		private static void HandleGradientContextMenu(
+			Rect position,
+			Gradient gradient,
+			Action<Gradient> pasteAction)
+		{
+			Event current = Event.current;
+			if (current.type != EventType.ContextClick || !position.Contains(current.mousePosition)) return;
+
+			GenericMenu menu = new();
+			menu.AddItem(new GUIContent("Copy"), false, () => CopyGradient(gradient));
+			if (TryReadGradientFromClipboard(out _))
+			{
+				menu.AddItem(new GUIContent("Paste"), false, () =>
+				{
+					if (TryReadGradientFromClipboard(out Gradient pastedGradient))
+						pasteAction(pastedGradient);
+				});
+			}
+			else
+			{
+				menu.AddDisabledItem(new GUIContent("Paste"));
+			}
+
+			menu.ShowAsContext();
+			current.Use();
+		}
+
+		private static void CopyGradient(Gradient gradient)
+		{
+			if (gradient == null) return;
+
+			GradientColorKey[] colorKeys = gradient.colorKeys;
+			GradientAlphaKey[] alphaKeys = gradient.alphaKeys;
+			GradientClipboardData data = new()
+			{
+				Mode = (int)gradient.mode,
+				Colors = new Color[colorKeys.Length],
+				ColorTimes = new float[colorKeys.Length],
+				Alphas = new float[alphaKeys.Length],
+				AlphaTimes = new float[alphaKeys.Length],
+			};
+
+			for (int i = 0; i < colorKeys.Length; i++)
+			{
+				data.Colors[i] = colorKeys[i].color;
+				data.ColorTimes[i] = colorKeys[i].time;
+			}
+			for (int i = 0; i < alphaKeys.Length; i++)
+			{
+				data.Alphas[i] = alphaKeys[i].alpha;
+				data.AlphaTimes[i] = alphaKeys[i].time;
+			}
+
+			EditorGUIUtility.systemCopyBuffer = ClipboardPrefix + JsonUtility.ToJson(data);
+		}
+
+		private static bool TryReadGradientFromClipboard(out Gradient gradient)
+		{
+			gradient = null;
+			string clipboard = EditorGUIUtility.systemCopyBuffer;
+			if (string.IsNullOrEmpty(clipboard) || !clipboard.StartsWith(ClipboardPrefix, StringComparison.Ordinal))
+				return false;
+
+			GradientClipboardData data;
+			try
+			{
+				data = JsonUtility.FromJson<GradientClipboardData>(clipboard[ClipboardPrefix.Length..]);
+			}
+			catch (ArgumentException)
+			{
+				return false;
+			}
+
+			if (data == null || data.Version != 1 ||
+				data.Colors == null || data.ColorTimes == null || data.Colors.Length != data.ColorTimes.Length || data.Colors.Length == 0 ||
+				data.Alphas == null || data.AlphaTimes == null || data.Alphas.Length != data.AlphaTimes.Length || data.Alphas.Length == 0)
+			{
+				return false;
+			}
+
+			GradientColorKey[] colorKeys = new GradientColorKey[data.Colors.Length];
+			GradientAlphaKey[] alphaKeys = new GradientAlphaKey[data.Alphas.Length];
+			for (int i = 0; i < colorKeys.Length; i++)
+				colorKeys[i] = new GradientColorKey(data.Colors[i], data.ColorTimes[i]);
+			for (int i = 0; i < alphaKeys.Length; i++)
+				alphaKeys[i] = new GradientAlphaKey(data.Alphas[i], data.AlphaTimes[i]);
+
+			gradient = new Gradient
+			{
+				mode = (GradientMode)data.Mode,
+			};
+			gradient.SetKeys(colorKeys, alphaKeys);
+			return true;
+		}
+
+		private static void ApplyImporterGradient(ProcedualTextureImporter importer, Gradient gradient)
+		{
+			if (importer == null || gradient == null) return;
+
+			Undo.RecordObject(importer, "Paste Gradient");
+			SerializedObject importerObject = new(importer);
+			importerObject.Update();
+			importerObject.FindProperty(ImporterGradientPropertyName).gradientValue = gradient;
+			importerObject.ApplyModifiedProperties();
+			importer.SaveAndReimport();
+		}
+
+		private static void ApplyMaterialGradient(Material material, MaterialGradientData data, Gradient gradient)
+		{
+			if (material == null || data == null || data.Texture == null || gradient == null) return;
+
+			Undo.RecordObjects(new UnityEngine.Object[] { material, data, data.Texture }, "Paste Gradient");
+			SerializedObject dataObject = new(data);
+			dataObject.Update();
+			dataObject.FindProperty(DataGradientPropertyName).gradientValue = gradient;
+			dataObject.ApplyModifiedProperties();
+			RegenerateTexture(data);
+			EditorUtility.SetDirty(data);
+			EditorUtility.SetDirty(data.Texture);
+			EditorUtility.SetDirty(material);
 		}
 
 		private static void DeleteMaterialGradient(

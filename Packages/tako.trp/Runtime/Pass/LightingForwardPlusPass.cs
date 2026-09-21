@@ -87,7 +87,7 @@ namespace Trp
 		public struct DirectionalLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = Defines.SizeOf.FLOAT4 * 3;
+			public const int STRIDE = Defines.SizeOf.FLOAT4 * 4;
 
 			/// <summary>
 			/// xyz: 角度
@@ -108,9 +108,11 @@ namespace Trp
 			/// w: light cookieの番号
 			/// </summary>
 			public float4 Data3;
+			public float4 ShadowFilter; // x: ブラー半径、y: 品質
 
 			public DirectionalLightData(ref VisibleLight visibleLight, Light light, int cookieIndex, PerLightShadowData shadowData)
 			{
+				ShadowFilter = TrpLightData.GetFilter(light);
 				Data1 = -visibleLight.localToWorldMatrix.GetColumn(2);
 				Data2 = visibleLight.finalColor.ToFloat4();
 				Data2.w = math.asfloat(light.renderingLayerMask);
@@ -122,12 +124,14 @@ namespace Trp
 		public struct PunctualLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = Defines.SizeOf.FLOAT4 * 5;
+			public const int STRIDE = Defines.SizeOf.FLOAT4 * 6;
 
 			public float4 Data1, Data2, Data3, Data4, Data5;
+			public float4 ShadowFilter; // x: ブラー半径、y: 品質
 			public float CookieIndex => Data4.z;
 			public PunctualLightData(ref VisibleLight visibleLight, Light light, int cookieIndex, PerLightShadowData shadowData)
 			{
+				ShadowFilter = TrpLightData.GetFilter(light);
 				if (visibleLight.lightType is not (LightType.Spot or LightType.Point)) throw new ArgumentException();
 
 				//xyz: 色

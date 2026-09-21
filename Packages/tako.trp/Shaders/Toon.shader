@@ -14,9 +14,11 @@ Shader "TRP/Toon"
         [MainTexture][NoScaleOffset] _ControlMap1 ("Control Map 1", 2D) = "white" {}
         
         // 左端を暗部、右端を明部として参照する横方向のライティング Ramp。
-        [Gradient][NoScaleOffset] _ShadowRamp ("Shadow Ramp", 2D) = "white" {}
+        [Gradient][NoScaleOffset] _ShadingRamp ("Shading Ramp", 2D) = "white" {}
+        [Gradient][NoScaleOffset] _ShadowRamp ("Cast Shadow Ramp", 2D) = "white" {}
         [Toggle] _PunctualLightRamp ("Punctual Light Ramp", int) = 0
-        [Gradient][NoScaleOffset] _PunctualShadowRamp ("Punctual Shadow Ramp", 2D) = "white" {}
+        [Gradient][NoScaleOffset] _PunctualShadingRamp ("Punctual Shading Ramp", 2D) = "white" {}
+        [Gradient][NoScaleOffset] _PunctualShadowRamp ("Punctual Cast Shadow Ramp", 2D) = "white" {}
 
         [Toggle(RIM_LIGHT)] RIM_LIGHT ("Rim Light", int) = 0
         [HDR] _RimLightColor ("Rim Light Color", color) = (1, 1, 1, 1)

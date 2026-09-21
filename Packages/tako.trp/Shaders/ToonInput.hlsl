@@ -5,8 +5,12 @@
 
 TEXTURE2D(_ControlMap1);
 SAMPLER(sampler_ControlMap1);
+TEXTURE2D(_ShadingRamp);
+SAMPLER(sampler_ShadingRamp);
 TEXTURE2D(_ShadowRamp);
 SAMPLER(sampler_ShadowRamp);
+TEXTURE2D(_PunctualShadingRamp);
+SAMPLER(sampler_PunctualShadingRamp);
 TEXTURE2D(_PunctualShadowRamp);
 SAMPLER(sampler_PunctualShadowRamp);
 

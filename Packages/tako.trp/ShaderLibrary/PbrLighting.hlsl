@@ -63,7 +63,7 @@ half3 EvaluatePbrDirectionalLights(
                 positionWS,
                 shadowNormalWS,
                 light.normalBias,
-                light.shadowMapTileStartIndex);
+                light.shadowMapTileStartIndex, light.shadowFilter);
         }
 
         lighting += EvaluatePbrDirect(
@@ -81,6 +81,8 @@ half3 EvaluatePbrPunctualLight(
     int lightIndex,
     PbrMaterialData material,
     float3 positionWS,
+    float3 positionWSdx,
+    float3 positionWSdy,
     half3 normalWS,
     half3 shadowNormalWS,
     half3 viewDirectionWS,
@@ -102,12 +104,14 @@ half3 EvaluatePbrPunctualLight(
     {
         shadowAttenuation = GetPunctualShadow(
             positionWS,
+            positionWSdx,
+            positionWSdy,
             shadowNormalWS,
             light.position,
             light.direction,
             lightDirectionWS,
             light.type,
-            light.shadowMapTileStartIndex);
+            light.shadowMapTileStartIndex, light.shadowFilter);
     }
 
     half3 cookie = 1;
@@ -142,6 +146,9 @@ half3 EvaluatePbrLighting(
     bool useBurleyDiffuse,
     float2 positionPx)
 {
+	// 勾配命令は可変回数のPunctual Lightループへ入れず、フラグメントごとに一度だけ評価する。
+	float3 positionWSdx = ddx(positionWS);
+	float3 positionWSdy = ddy(positionWS);
     // Lightmap／Light Probe には Lambert 積分が含まれるため、ここでは INV_PI を重ねない。
     half3 color = Gi(normalWS, lightmapUv) * material.diffuseColor * ambientOcclusion;
     color += SamplePbrSpecularIbl(
@@ -173,6 +180,8 @@ half3 EvaluatePbrLighting(
                 tile.GetLightIndex(i),
                 material,
                 positionWS,
+                positionWSdx,
+                positionWSdy,
                 normalWS,
                 shadowNormalWS,
                 viewDirectionWS,
