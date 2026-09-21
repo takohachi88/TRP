@@ -5,6 +5,10 @@
 
 TEXTURE2D(_ControlMap1);
 SAMPLER(sampler_ControlMap1);
+TEXTURE2D(_ShadowRamp);
+SAMPLER(sampler_ShadowRamp);
+TEXTURE2D(_PunctualShadowRamp);
+SAMPLER(sampler_PunctualShadowRamp);
 
 CBUFFER_START(UnityPerMaterial)
 
@@ -25,22 +29,13 @@ half _OcclusionStrength;
 half _DetailAlbedoMapScale;
 half _DetailNormalMapScale;
 
-half _ShadowThreshold1;
-half _ShadowThreshold2;
-half _ShadowThreshold3;
-half _ShadowSmoothness1;
-half _ShadowSmoothness2;
-half _ShadowSmoothness3;
-half4 _ShadowColor1;
-half4 _ShadowColor2;
-half4 _ShadowColor3;
+half _PunctualLightRamp;
 
 half3 _RimLightColor;
 half _RimLightStrength;
 half _RimLightWidth;
 half _RimLightSmoothness;
 
-half _LightEffect;
 half _MultiplyRgbA;
 
 CBUFFER_END

@@ -13,17 +13,10 @@ Shader "TRP/Toon"
         //A:
         [MainTexture][NoScaleOffset] _ControlMap1 ("Control Map 1", 2D) = "white" {}
         
-        _ShadowThreshold1 ("Shadow Threshold 1", Range(0, 1)) = 0.2
-        _ShadowThreshold2 ("Shadow Threshold 2", Range(0, 1)) = 0.3
-        _ShadowThreshold3 ("Shadow Threshold 3", Range(0, 1)) = 0.5
-        _ShadowSmoothness1 ("Shadow Smoothness 1", Range(0.001, 0.5)) = 0.1
-        _ShadowSmoothness2 ("Shadow Smoothness 2", Range(0.001, 0.5)) = 0.1
-        _ShadowSmoothness3 ("Shadow Smoothness 3", Range(0.001, 0.5)) = 0.1
-        _ShadowColor1 ("Shadow Color 1", color) = (0.7, 0.7, 0.7, 1)
-        _ShadowColor2 ("Shadow Color 2", color) = (0.6, 0.6, 0.6, 1)
-        _ShadowColor3 ("Shadow Color 3", color) = (0.3, 0.3, 0.3, 1)
-        _LightEffect ("Light Effect", Range(0, 15)) = 1
-        [Toggle(PUNCTUAL_LIGHT_IS_TOON)] PUNCTUAL_LIGHT_IS_TOON ("Punctual Light Is Toon", int) = 1
+        // 左端を暗部、右端を明部として参照する横方向のライティング Ramp。
+        [Gradient][NoScaleOffset] _ShadowRamp ("Shadow Ramp", 2D) = "white" {}
+        [Toggle] _PunctualLightRamp ("Punctual Light Ramp", int) = 0
+        [Gradient][NoScaleOffset] _PunctualShadowRamp ("Punctual Shadow Ramp", 2D) = "white" {}
 
         [Toggle(RIM_LIGHT)] RIM_LIGHT ("Rim Light", int) = 0
         [HDR] _RimLightColor ("Rim Light Color", color) = (1, 1, 1, 1)
@@ -37,8 +30,6 @@ Shader "TRP/Toon"
         _OutlineLightStrength ("Outline Light Strength", Range(0, 10)) = 1
         _OutlineLightStrengthThreshold ("Outline Light Strength Threshold", Range(0, 4)) = 0.1
         [Toggle(OUTLINE_SOFT_EDGE)] _OUTLINE_SOFT_EDGE ("Outline Soft Edge", int) = 0
-
-        [Toggle(TOON_PUNCTUAL_LIGHT)] TOON_PUNCTUAL_LIGHT ("Toon Punctual Light", int) = 0
 
         [Header(Common Settings)]
         [Enum(UnityEngine.Rendering.BlendMode)] _BlendSrc ("Blend Src", int) = 1
@@ -106,10 +97,7 @@ Shader "TRP/Toon"
 
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ LOD_FADE_CROSSFADE
-            #pragma shader_feature_local PUNCTUAL_LIGHT_IS_TOON
-
             #pragma shader_feature _ FOG_LINEAR FOG_EXP FOG_EXP2
-            #pragma shader_feature_local_fragment TOON_PUNCTUAL_LIGHT
             #pragma shader_feature_local_fragment ALPHA_CLIP
             #pragma shader_feature_local_fragment RIM_LIGHT
 

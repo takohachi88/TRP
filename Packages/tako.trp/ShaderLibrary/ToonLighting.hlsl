@@ -1,4 +1,4 @@
-﻿#ifndef TRP_TOON_LIGHTING_INCLUDED
+#ifndef TRP_TOON_LIGHTING_INCLUDED
 #define TRP_TOON_LIGHTING_INCLUDED
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/EntityLighting.hlsl"
@@ -8,21 +8,37 @@
 #include "Packages/tako.trp/ShaderLibrary/Lighting.hlsl"
 
 
-half3 ToonLighting(half3 normalWS, half3 color, half3 direction, half3 lightColor, half attenuation, half3 cookie = 1)
-{	
-	half3 output = color;
-	half lambert = Lambert(normalWS, direction) * attenuation;
-	half toonLambert1 = smoothstep(_ShadowThreshold1 - _ShadowSmoothness1, _ShadowThreshold1 + _ShadowSmoothness1, lambert);
-	half toonLambert2 = smoothstep(_ShadowThreshold2 - _ShadowSmoothness2, _ShadowThreshold2 + _ShadowSmoothness2, lambert);
-	half toonLambert3 = smoothstep(_ShadowThreshold3 - _ShadowSmoothness3, _ShadowThreshold3 + _ShadowSmoothness3, lambert);
-	output = lerp(color * _ShadowColor1.rgb, output + lightColor * 0.1 * _LightEffect, toonLambert1);
-	output = lerp(color * _ShadowColor2.rgb, output + lightColor * 0.066 * _LightEffect, toonLambert2);
-	output = lerp(color * _ShadowColor3.rgb, output + lightColor * 0.033 * _LightEffect, toonLambert3);
-	output *= lightColor * cookie;
-	return output;
+half3 ToonLighting(
+	half3 normalWS,
+	half3 color,
+	half3 direction,
+	half3 lightColor,
+	half lightAttenuation,
+	half shadowAttenuation,
+	half3 cookie = 1,
+	bool punctualLight = false,
+	half3 gi = 0)
+{
+	// 法線陰影と落ち影の暗いほうをRampへ渡し、両方の境界をテクスチャ側で制御する。
+	half lambert = saturate(Lambert(normalWS, direction) * lightAttenuation);
+	half rampU = min(lambert, saturate(shadowAttenuation));
+	// ライトループ内で暗黙のミップ勾配を要求しないよう、LOD 0 を明示してサンプリングする。
+	half3 ramp = SAMPLE_TEXTURE2D_LOD(_ShadowRamp, sampler_ShadowRamp, half2(rampU, 0.5), 0).rgb;
+	
+	// Punctual Light専用のRampを使う場合。
+	if (punctualLight && 0.5 < _PunctualLightRamp)
+	{
+		ramp = SAMPLE_TEXTURE2D_LOD(_PunctualShadowRamp, sampler_PunctualShadowRamp, half2(rampU, 0.5), 0).rgb;
+	}
+	return color * (gi + lightColor * cookie * ramp);
 }
 
-half3 PunctualLighting(int index, float3 positionWS, half3 normalWS, half3 color)
+half3 PunctualLighting(
+	int index,
+	float3 positionWS,
+	half3 normalWS,
+	half3 color,
+	half3 gi)
 {	
 	PunctualLight light = GetPunctualLight(index);
 	
@@ -40,14 +56,23 @@ half3 PunctualLighting(int index, float3 positionWS, half3 normalWS, half3 color
     half shadowAttenuation = 1;
 	//影の適用。
     if (0 < light.attenuation) shadowAttenuation = GetPunctualShadow(positionWS, normalWS, light.position, light.direction, normalizedDirection, light.type, light.shadowMapTileStartIndex);
-	half3 output = ToonLighting(normalWS, color, normalizedDirection, light.color, attenuation * shadowAttenuation, cookie);
-	
-	return output * attenuation;
+	// 距離・スポット減衰は直接光へ適用し、GIは減衰させずRampだけを共有する。
+	return ToonLighting(
+		normalWS,
+		color,
+		normalizedDirection,
+		light.color * attenuation,
+		attenuation,
+		shadowAttenuation,
+		cookie,
+		true,
+		gi);
 }
 
 half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screenUv, half dither)
 {
-	half3 output = Gi(normalWS) * color;
+	half3 gi = Gi(normalWS);
+	half3 output = 0;
 	
 	//cascadeはライトに関わらす一定。
     int cascadeIndex = ComputeCascadeIndex(positionWS, dither);
@@ -57,9 +82,20 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
         DirectionalLight light = GetDirectionalLight(i);
         half3 cookie = 1;
         if (0 <= light.cookieIndex) cookie = SampleDirectionalLightCookie(light.cookieIndex, positionWS);
-        half attenuation = 1;
-        if (0 < light.attenuation) attenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.shadowMapTileStartIndex); //shadowの適用。
-        output += ToonLighting(normalWS, color, light.direction, light.color, attenuation, cookie);
+		half shadowAttenuation = 1;
+		if (0 < light.attenuation) shadowAttenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.shadowMapTileStartIndex); //shadowの適用。
+		output += ToonLighting(
+			normalWS,
+			color,
+			light.direction,
+			light.color,
+			1,
+			shadowAttenuation,
+			cookie,
+			false,
+			gi);
+		// GIは複数ライトへ重複加算せず、最初に評価したRampだけへ含める。
+		gi = 0;
     }
 
 	if (_PunctualLightCount > 0)
@@ -68,11 +104,14 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
 		int lastIndex = tile.GetLastLightIndexInTile();
 		for(int j = tile.GetFirstLightIndexInTile(); j <= lastIndex; j++)
 		{
-			output += PunctualLighting(tile.GetLightIndex(j), positionWS, normalWS, color);
+			output += PunctualLighting(tile.GetLightIndex(j), positionWS, normalWS, color, gi);
+			// Directional Lightがない場合は、最初のPunctual LightがGIを引き継ぐ。
+			gi = 0;
 		}
 	}
 
-	return output;
+	// ライトが一つもない場合は、Rampを適用できないためGIのみを表示する。
+	return output + gi * color;
 }
 
 

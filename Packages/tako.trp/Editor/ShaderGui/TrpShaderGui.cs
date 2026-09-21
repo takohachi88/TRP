@@ -20,7 +20,7 @@ namespace TrpEditor.ShaderGui
 			{
 				if (IsAlphaBlendControlledProperty(property.name) ||
 				    property.name == "_VertexColorBlend" ||
-				    (property.flags & MaterialProperty.PropFlags.HideInInspector) != 0)
+				    (property.propertyFlags & ShaderPropertyFlags.HideInInspector) != 0)
 				{
 					continue;
 				}
