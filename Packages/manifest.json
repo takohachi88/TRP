@@ -6,10 +6,11 @@
     "com.unity.feature.development": "1.0.2",
     "com.unity.memoryprofiler": "1.2.0-pre.1",
     "com.unity.multiplayer.center": "3.0.0",
+    "com.unity.pipeline": "0.7.0-exp.1",
     "com.unity.recorder": "5.1.7",
     "com.unity.render-pipelines.core": "17.7.0",
     "com.unity.timeline": "6.7.0",
-    "com.unity.ugui": "2.7.0",
+    "com.unity.ugui": "7.0.0",
     "com.unity.visualeffectgraph": "17.7.0",
     "takolib.common": "https://github.com/takohachi88/TakoLib.git?path=Packages/takolib.common",
     "com.unity.modules.accessibility": "1.0.0",
@@ -47,8 +48,7 @@
     "com.unity.modules.vehicles": "1.0.0",
     "com.unity.modules.video": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
-    "com.unity.modules.xr": "1.0.0",
-    "com.unity.pipeline": "0.7.0-exp.1"
+    "com.unity.modules.xr": "1.0.0"
   },
   "scopedRegistries": [
     {
