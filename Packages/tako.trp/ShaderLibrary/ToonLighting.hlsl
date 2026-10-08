@@ -32,8 +32,9 @@ half3 ToonLighting(
 		shadingRamp = SAMPLE_TEXTURE2D_LOD(_PunctualShadingRamp, sampler_PunctualShadingRamp, half2(lambert, 0.5), 0).rgb;
 		castShadowRamp = SAMPLE_TEXTURE2D_LOD(_PunctualShadowRamp, sampler_PunctualShadowRamp, half2(castShadow, 0.5), 0).rgb;
 	}
-	// 乗算せず、より暗い原因のRampだけを採用する。
-	half3 ramp = castShadow < lambert ? castShadowRamp : shadingRamp;
+	// 別々の Ramp は同じ入力値でも色が一致しないため、入力値による切り替えは境界を生む。
+	// 評価後の色を RGB ごとの暗い側で合成し、重なりで明るくなる段差や乗算による二重暗化を防ぐ。
+	half3 ramp = min(shadingRamp, castShadowRamp);
 	return color * (gi + lightColor * cookie * ramp);
 }
 

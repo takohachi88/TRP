@@ -122,8 +122,7 @@ namespace TrpEditor
 			bool radiusChanged = EditorGUI.EndChangeCheck();
 			EditorGUI.showMixedValue = mixedQuality;
 			EditorGUI.BeginChangeCheck();
-			quality = (SoftShadowQuality)EditorGUILayout.EnumPopup(
-				new GUIContent("Quality", "Low: 4 / Medium: 8 / High: 16 samples"), quality);
+			quality = (SoftShadowQuality)EditorGUILayout.EnumPopup(new GUIContent("Quality", "Low: 4 / Medium: 8 / High: 16 samples"), quality);
 			bool qualityChanged = EditorGUI.EndChangeCheck();
 			EditorGUI.showMixedValue = false;
 			if (!radiusChanged && !qualityChanged) return;
