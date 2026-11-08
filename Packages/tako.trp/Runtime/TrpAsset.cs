@@ -24,6 +24,12 @@ namespace Trp
 		[SerializeField] private LayerMask _opaqueLayerMask = ~0;
 		[SerializeField] private LayerMask _transparentLayerMask = ~0;
 		public List<CustomPass> CustomPasses;
+		/// <summary>
+		/// SceneViewとPreviewの描画時だけ、カメラへの登録なしで実行するパス。
+		/// 各パスのEnabledと実行フェーズに従う。
+		/// </summary>
+		[Tooltip("SceneView・Previewの描画時だけ実行するCustomPass。各パスのEnabledと実行フェーズに従います。")]
+		public List<CustomPass> EditorCustomPasses = new();
 		public bool UseHdr => _useHdr;
 		public MSAASamples Msaa => _msaaSamples;
 		public LightingForwardPlusSettings LightingSettings => _lightingSettings;

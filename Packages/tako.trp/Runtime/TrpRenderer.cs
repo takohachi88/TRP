@@ -430,6 +430,17 @@ namespace Trp
 				if (pass.PassObject && pass.Enabled && pass.PassObject.Phase == phase) pass.PassObject.Execute(ref passParams);
 			}
 			if (cameraData) cameraData.ExecuteCustomPasses(ref passParams, phase);
+
+			// 共通・カメラ個別のパスに続けて、SceneViewとPreview専用のパスを実行する。
+			// GameカメラやReflectionカメラではこのリストを使用しない。
+			if (passParams.IsSceneViewOrPreview && _commonSettings.EditorCustomPasses != null)
+			{
+				foreach (CustomPass pass in _commonSettings.EditorCustomPasses)
+				{
+					if (pass != null && pass.PassObject && pass.Enabled && pass.PassObject.Phase == phase)
+						pass.PassObject.Execute(ref passParams);
+				}
+			}
 		}
 
 		public void Dispose()
