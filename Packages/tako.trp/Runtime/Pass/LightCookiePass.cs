@@ -75,8 +75,6 @@ namespace Trp
 
 		public void RecordRenderGraph(ref PassParams passParams, int cookieCount)
 		{
-			if (cookieCount <= 0) return; 
-
 			RenderGraph renderGraph = passParams.RenderGraph;
 
 			using IUnsafeRenderGraphBuilder builder = renderGraph.AddUnsafePass(nameof(LightCookiePass), out PassData passData, Sampler);
@@ -92,6 +90,10 @@ namespace Trp
 			builder.SetRenderFunc<PassData>(static (passData, context) =>
 			{
 				CommandBuffer cmd = CommandBufferHelpers.GetNativeCommandBuffer(context.cmd);
+				// D3D11はCookieが0灯でも、シェーダーが宣言したバッファのバインドを要求する。
+				cmd.SetGlobalBuffer(IdLightCookieBuffer, passData.ComputeBuffer);
+				if (passData.CookieCount == 0) return;
+
 				Texture2DAtlas cookieAtlas = passData.CookieAtlas;
 
 				for (int i = 0; i < passData.CookieCount; i++)
@@ -156,7 +158,6 @@ namespace Trp
 				cmd.SetGlobalTexture(IdLightCookieAtlas, cookieAtlas.AtlasTexture);
 
 				passData.ComputeBuffer.SetData(passData.Data, 0, 0, passData.CookieCount);
-				cmd.SetGlobalBuffer(IdLightCookieBuffer, passData.ComputeBuffer);
 			});
 		}
 
