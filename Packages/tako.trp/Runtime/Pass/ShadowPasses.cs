@@ -81,6 +81,8 @@ namespace Trp
 		private static readonly int IdPunctualShadowMap = Shader.PropertyToID("_PunctualShadowMap");
 		private static readonly int IdPunctualShadowTileBuffer = Shader.PropertyToID("_PunctualShadowTileBuffer");
 
+		private static readonly PunctualShadowTileBuffer[] EmptyPunctualShadowTile = new PunctualShadowTileBuffer[1];
+
 		private readonly Matrix4x4[] _worldToDirectionalShadows = new Matrix4x4[MAX_DIRECTIONAL_SHADOW_COUNT * MAX_CASCADE_COUNT];
 		private readonly Vector4[] _directionalShadowFilterScales = new Vector4[MAX_DIRECTIONAL_SHADOW_COUNT * MAX_CASCADE_COUNT];
 		private readonly Vector4[] _cullingSpheres = new Vector4[MAX_CASCADE_COUNT];
@@ -229,6 +231,12 @@ namespace Trp
 
 		public void RecordRenderGraph(ref PassParams passParams)
 		{
+			// 影タイルを使わないシェーダー分岐でも、D3D12 は宣言された SRV の束縛を要求する。
+			if (!passParams.DrawShadow || _punctualTileCount == 0)
+			{
+				RecordEmptyPunctualShadowBuffer(ref passParams);
+			}
+
 			if (!passParams.DrawShadow || _directionalShadowCount + _punctualTileCount == 0) return;
 
 			if (_directionalShadowCount > 0) RecordDirectionalShadows(ref passParams);
@@ -238,6 +246,31 @@ namespace Trp
 			{
 				splitBuffer = _splitBuffer,
 				perLightInfos = _perLightInfos,
+			});
+		}
+
+		private sealed class EmptyPunctualShadowPassData
+		{
+			public BufferHandle TileBuffer;
+		}
+
+		private static void RecordEmptyPunctualShadowBuffer(ref PassParams passParams)
+		{
+			RenderGraph renderGraph = passParams.RenderGraph;
+			using IComputeRenderGraphBuilder builder = renderGraph.AddComputePass(
+				"Bind Empty Punctual Shadow Buffer", out EmptyPunctualShadowPassData passData);
+
+			passData.TileBuffer = renderGraph.CreateBuffer(new BufferDesc(1, PunctualShadowTileBuffer.STRIDE)
+			{
+				name = "Empty Punctual Shadow Tile Buffer",
+			});
+			passParams.LightingResources.PunctualShadowDataBuffer = passData.TileBuffer;
+			builder.UseBuffer(passData.TileBuffer, AccessFlags.Write);
+			builder.AllowGlobalStateModification(true);
+			builder.SetRenderFunc<EmptyPunctualShadowPassData>(static (data, context) =>
+			{
+				context.cmd.SetBufferData(data.TileBuffer, EmptyPunctualShadowTile);
+				context.cmd.SetGlobalBuffer(IdPunctualShadowTileBuffer, data.TileBuffer);
 			});
 		}
 

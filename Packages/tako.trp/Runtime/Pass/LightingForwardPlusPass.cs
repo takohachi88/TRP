@@ -75,6 +75,9 @@ namespace Trp
 		private const int MAX_DIRECTIONAL_LIGHT_COUNT = 4;
 		private const int MAX_PUNCTUAL_LIGHT_COUNT = 64;
 
+		private static readonly PunctualLightData[] EmptyPunctualLightData = new PunctualLightData[1];
+		private static readonly int[] EmptyTileData = new int[1];
+
 		private NativeArray<float4> _lightBounds;
 		private NativeArray<int> _tileData;
 
@@ -298,6 +301,9 @@ namespace Trp
 			passParams.LightingResources.DirectionalLightDataBuffer = passData.DirectionalLightBuffer;
 			builder.UseBuffer(passData.DirectionalLightBuffer, AccessFlags.Write);
 
+			// ライトが0個でも、D3D12はシェーダーで宣言されたバッファの束縛を要求する。
+			int tileBufferLength = 1;
+			passData.FowardPlusTileSettings = new float4(1, 1, 1, 1);
 			if (0 < punctualLightCount)
 			{
 				//CatlikeCodingのロジックを参考に。
@@ -327,26 +333,26 @@ namespace Trp
 				passData.TileCountXY = tileCountXY;
 				passData.DataCountPerTile = dataCountPerTile;
 
-				//プーリングのため最大数で取得。
-				BufferDesc tileBufferDesc = new (tileCount * (lightingSettings.MaxLightCountPerTile + 1), sizeof(int))
-				{
-					name = "Forward+ Tile Buffer",
-				};
-				passData.TileBuffer = renderGraph.CreateBuffer(tileBufferDesc);
-				passParams.LightingResources.ForwardPlusTileBuffer = passData.TileBuffer;
-
-				//プーリングのため最大数で取得。
-				BufferDesc punctualLightBufferDesc = new (MAX_PUNCTUAL_LIGHT_COUNT, PunctualLightData.STRIDE)
-				{
-					name = "Punctual Light Buffer",
-				};
-				passData.PunctualLightBuffer = renderGraph.CreateBuffer(punctualLightBufferDesc);
-				passParams.LightingResources.PunctualLightDataBuffer = passData.PunctualLightBuffer;
+				// プーリングのため、ライトがある場合は設定上の最大数で確保する。
+				tileBufferLength = tileCount * (lightingSettings.MaxLightCountPerTile + 1);
 				passData.FowardPlusTileSettings = new float4(screenUvToTileCoordinates, tileCountXY.x, dataCountPerTile);
 				passData.LightCookieManager = _lightCookiePass;
-				builder.UseBuffer(passData.TileBuffer, AccessFlags.Write);
-				builder.UseBuffer(passData.PunctualLightBuffer, AccessFlags.Write);
 			}
+
+			passData.TileBuffer = renderGraph.CreateBuffer(new BufferDesc(tileBufferLength, sizeof(int))
+			{
+				name = "Forward+ Tile Buffer",
+			});
+			passParams.LightingResources.ForwardPlusTileBuffer = passData.TileBuffer;
+			builder.UseBuffer(passData.TileBuffer, AccessFlags.Write);
+
+			int punctualBufferLength = punctualLightCount > 0 ? MAX_PUNCTUAL_LIGHT_COUNT : 1;
+			passData.PunctualLightBuffer = renderGraph.CreateBuffer(new BufferDesc(punctualBufferLength, PunctualLightData.STRIDE)
+			{
+				name = "Punctual Light Buffer",
+			});
+			passParams.LightingResources.PunctualLightDataBuffer = passData.PunctualLightBuffer;
+			builder.UseBuffer(passData.PunctualLightBuffer, AccessFlags.Write);
 
 			passData.CookieCount = cookieCount;
 
@@ -368,14 +374,17 @@ namespace Trp
 					passData.Pass._tileJobHandle.Complete();
 
 					cmd.SetBufferData(passData.PunctualLightBuffer, passData.PunctualLightData, 0, 0, passData.PunctualLightCount);
-					cmd.SetGlobalBuffer(IdPunctualLightBuffer, passData.PunctualLightBuffer);
-
 					cmd.SetBufferData(passData.TileBuffer, passData.Pass._tileData);
-					cmd.SetGlobalBuffer(IdTileBuffer, passData.TileBuffer);
-
-					cmd.SetGlobalVector(IdFowardPlusTileSettings, passData.FowardPlusTileSettings);
-					cmd.SetGlobalInteger(IdPunctualLightCount, passData.PunctualLightCount);
 				}
+				else
+				{
+					// 1要素のバッファをゼロで初期化する。ライトがないためタイル計算は不要。
+					cmd.SetBufferData(passData.PunctualLightBuffer, EmptyPunctualLightData);
+					cmd.SetBufferData(passData.TileBuffer, EmptyTileData);
+				}
+				cmd.SetGlobalBuffer(IdPunctualLightBuffer, passData.PunctualLightBuffer);
+				cmd.SetGlobalBuffer(IdTileBuffer, passData.TileBuffer);
+				cmd.SetGlobalVector(IdFowardPlusTileSettings, passData.FowardPlusTileSettings);
 				if(passData.Pass._tileData.IsCreated) passData.Pass._tileData.Dispose();
 				passData.Pass._lightBounds.Dispose();
 			});
