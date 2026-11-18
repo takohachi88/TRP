@@ -22,14 +22,16 @@ half ComputeCascadeIndex(float3 positionWS, half dither)
     half4 weights = half4(distancesSqrs < _CullingSphereRadiusSqrs); //内側から順に、(1, 1, 1, 1)→(0, 1, 1, 1)→(0, 0, 1, 1)→(0, 0, 0, 1)→(0, 0, 0, 0)となる。
     weights.yzw = saturate(weights.yzw - weights.xyz); //内側から順に、(1, 0, 0, 0)→(0, 1, 0, 0)→(0, 0, 1, 0)→(0, 0, 0, 1)→(0, 0, 0, 0)となる。
 
-    half index = min(half(4.0) - dot(weights, half4(4, 3, 2, 1)), MAX_CASCADE_COUNT - 1);
+    // シーン切替でカスケード数が減っても、有効なタイルの範囲で参照する。
+    half lastCascade = clamp(half(_ShadowParams1.w) - 1.0h, 0.0h, half(MAX_CASCADE_COUNT - 1));
+    half index = min(half(4.0) - dot(weights, half4(4, 3, 2, 1)), lastCascade);
     index += CascadeFade(
         distancesSqrs[index],
         _CullingSphereRadiusSqrs[index],
         _CullingSphereRanges[index],
         _ShadowParams1.x,
         dither);
-    return min(index, MAX_CASCADE_COUNT - 1);
+    return min(index, lastCascade);
 }
 
 //directional shadowの範囲外のフェードアウトの設定。
@@ -64,7 +66,6 @@ static const float2 shadowDiskOffsets[16] =
 
 half GetDirectionalShadow(half cascadeIndex, float3 positionWS, half3 normalWS, half normalBias, int mapTileStartIndex, float2 filter)
 {
-    const half cascadeCount = _ShadowParams1.w;
     float3 positionSTS = mul(_WorldToDirectionalShadows[mapTileStartIndex + cascadeIndex], float4(positionWS + normalWS * normalBias, 1.0)).xyz;
     
     // 半テクセル内側へ制限し、アトラスの隣接タイルを読まないようにする。

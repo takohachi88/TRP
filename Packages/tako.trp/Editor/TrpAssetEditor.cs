@@ -9,16 +9,8 @@ namespace TrpEditor
 	[CustomEditor(typeof(TrpAsset))]
 	public sealed class TrpAssetEditor : Editor
 	{
-		private const float MinCascadeSize = 0.001f;
-
 		private SerializedProperty _commonSettings;
-		private readonly ShadowCascadeGUI.Cascade[][] _cascadeBuffers =
-		{
-			new ShadowCascadeGUI.Cascade[1],
-			new ShadowCascadeGUI.Cascade[2],
-			new ShadowCascadeGUI.Cascade[3],
-			new ShadowCascadeGUI.Cascade[4],
-		};
+		private readonly ShadowSettingsGUI _shadowSettingsGUI = new();
 
 		private void OnEnable()
 		{
@@ -81,21 +73,49 @@ namespace TrpEditor
 				true);
 			if (!shadowSettings.isExpanded) return;
 
+			using (new EditorGUI.IndentLevelScope())
+			{
+				_shadowSettingsGUI.Draw(shadowSettings);
+				DrawMapSize(shadowSettings.FindPropertyRelative(nameof(ShadowSettings.DirectionalShadowMapSize)), "Directional Map Size");
+				DrawMapSize(shadowSettings.FindPropertyRelative(nameof(ShadowSettings.PunctualShadowMapSize)), "Punctual Map Size");
+			}
+		}
+
+		private static void DrawMapSize(SerializedProperty property, string label)
+		{
+			ShadowSettings.MapSize value = (ShadowSettings.MapSize)property.intValue;
+			property.intValue = (int)(ShadowSettings.MapSize)EditorGUILayout.EnumPopup(label, value);
+		}
+	}
+
+	/// <summary>アセットとシーンの Inspector で共通のカスケード編集 UI を描画する。</summary>
+	internal sealed class ShadowSettingsGUI
+	{
+		private const float MinCascadeSize = 0.001f;
+		private static readonly string[] CascadeCountLabels = { "1", "2", "3", "4" };
+		private static readonly int[] CascadeCountValues = { 1, 2, 3, 4 };
+		private readonly ShadowCascadeGUI.Cascade[][] _cascadeBuffers =
+		{
+			new ShadowCascadeGUI.Cascade[1],
+			new ShadowCascadeGUI.Cascade[2],
+			new ShadowCascadeGUI.Cascade[3],
+			new ShadowCascadeGUI.Cascade[4],
+		};
+
+		public void Draw(SerializedProperty shadowSettings)
+		{
 			SerializedProperty maxDistance = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.MaxShadowDistance));
 			SerializedProperty cascadeCount = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.CascadeCount));
 			SerializedProperty cascadeRatios = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.CascadeRatios));
 			SerializedProperty distanceFade = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.DistanceFade));
 			SerializedProperty cascadeFade = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.CascadeFade));
-			SerializedProperty directionalMapSize = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.DirectionalShadowMapSize));
-			SerializedProperty punctualMapSize = shadowSettings.FindPropertyRelative(nameof(ShadowSettings.PunctualShadowMapSize));
 
-			EditorGUI.indentLevel++;
 			EditorGUILayout.PropertyField(maxDistance);
 			cascadeCount.intValue = EditorGUILayout.IntPopup(
 				"Cascade Count",
 				Mathf.Clamp(cascadeCount.intValue, 1, 4),
-				new[] { "1", "2", "3", "4" },
-				new[] { 1, 2, 3, 4 });
+				CascadeCountLabels,
+				CascadeCountValues);
 
 			int count = cascadeCount.intValue;
 			float distance = Mathf.Max(0.001f, maxDistance.floatValue);
@@ -124,15 +144,6 @@ namespace TrpEditor
 
 			EditorGUILayout.PropertyField(cascadeFade);
 			EditorGUILayout.PropertyField(distanceFade);
-			DrawMapSize(directionalMapSize, "Directional Map Size");
-			DrawMapSize(punctualMapSize, "Punctual Map Size");
-			EditorGUI.indentLevel--;
-		}
-
-		private static void DrawMapSize(SerializedProperty property, string label)
-		{
-			ShadowSettings.MapSize value = (ShadowSettings.MapSize)property.intValue;
-			property.intValue = (int)(ShadowSettings.MapSize)EditorGUILayout.EnumPopup(label, value);
 		}
 
 		private static void RatiosToCascades(Vector3 ratios, ShadowCascadeGUI.Cascade[] cascades)

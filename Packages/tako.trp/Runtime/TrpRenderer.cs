@@ -56,6 +56,7 @@ namespace Trp
 	public struct PassParams
 	{
 		public TrpCommonSettings CommonSettings { get; init; }
+		internal readonly ShadowRenderSettings ShadowSettings { get; init; }
 		public readonly ScriptableRenderContext RenderContext { get; init; }
 		public RenderGraph RenderGraph { get; init; }
 		public readonly Camera Camera { get; init; }
@@ -250,10 +251,14 @@ namespace Trp
 
 			if (camera.cameraType is CameraType.Reflection or CameraType.Preview) ScriptableRenderContext.EmitGeometryForCamera(camera);
 
+			// アクティブシーンの上書きを反映し、カリングとパスで同じ値を使う。
+			ShadowRenderSettings shadowSettings = new(_commonSettings.ShadowSettings, TrpSceneShadowSettings.GetActiveSettings());
+			drawShadow &= shadowSettings.MaxShadowDistance > 0f;
+
 			//カリング。
 			if (camera.TryGetCullingParameters(out ScriptableCullingParameters cullingParameters))
 			{
-				cullingParameters.shadowDistance = Mathf.Min(_commonSettings.ShadowSettings.MaxShadowDistance, camera.farClipPlane);
+				cullingParameters.shadowDistance = Mathf.Min(shadowSettings.MaxShadowDistance, camera.farClipPlane);
 				cullingResults = context.Cull(ref cullingParameters);
 			}
 			else return;//カリング失敗ならこのカメラの描画は中断。
@@ -298,6 +303,7 @@ namespace Trp
 				PassParams passParams = new()
 				{
 					CommonSettings = _commonSettings,
+					ShadowSettings = shadowSettings,
 					RenderContext = context,
 					RenderGraph = renderGraph,
 					Camera = camera,

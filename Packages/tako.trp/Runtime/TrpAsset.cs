@@ -57,6 +57,7 @@ namespace Trp
 	public class TrpAsset : RenderPipelineAsset<Trp>, IGPUResidentRenderPipeline
 	{
 		[SerializeField] private TrpCommonSettings _commonSettings;
+		internal ShadowSettings DefaultShadowSettings => _commonSettings?.ShadowSettings;
 
 		// GPU Resident Drawerは、互換シェーダーを使用するMeshRendererの描画提出を
 		// BatchRendererGroupへ移し、メインスレッドの描画提出コストを削減する。

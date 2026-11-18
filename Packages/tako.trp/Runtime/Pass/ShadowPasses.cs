@@ -130,7 +130,7 @@ namespace Trp
 		private sealed class DirectionalPassData
 		{
 			public ShadowPasses Shadows;
-			public ShadowSettings Settings;
+			public ShadowRenderSettings Settings;
 			public int ShadowCount;
 			public int CascadeCount;
 			public TextureHandle ShadowMap;
@@ -174,7 +174,7 @@ namespace Trp
 			_splitBuffer = new NativeArray<ShadowSplitData>(cullingResults.visibleLights.Length * MAX_TILE_COUNT_PER_LIGHT, Allocator.Temp, NativeArrayOptions.UninitializedMemory);
 		}
 
-		public PerLightShadowData RegisterDirectionalShadow(Light light, int index, CullingResults cullingResults, ShadowSettings settings)
+		public PerLightShadowData RegisterDirectionalShadow(Light light, int index, CullingResults cullingResults, int cascadeCount)
 		{
 			if (_directionalShadowCount >= MAX_DIRECTIONAL_SHADOW_COUNT ||
 			    light.shadows == LightShadows.None ||
@@ -182,12 +182,12 @@ namespace Trp
 			    !cullingResults.GetShadowCasterBounds(index, out _)) return PerLightShadowData.Empty;
 
 			_directionalShadowData[_directionalShadowCount] = new DirectionalShadowData(light, index);
-			int mapTileStartIndex = _directionalShadowCount * settings.CascadeCount;
+			int mapTileStartIndex = _directionalShadowCount * cascadeCount;
 			_directionalShadowCount++;
 			return new PerLightShadowData(LightType.Directional, light.shadowStrength, mapTileStartIndex, light.shadowNormalBias);
 		}
 
-		public PerLightShadowData RegisterPunctualShadow(Light light, int index, CullingResults cullingResults, ShadowSettings settings)
+		public PerLightShadowData RegisterPunctualShadow(Light light, int index, CullingResults cullingResults)
 		{
 			int afterTileCount = _punctualTileCount + PunctualTileConsumeCount(light.type);
 			if (afterTileCount > MAX_PUNCTUAL_TILE_COUNT ||
@@ -278,8 +278,10 @@ namespace Trp
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
 			CullingResults cullingResults = passParams.CullingResults;
-			ShadowSettings settings = passParams.CommonSettings.ShadowSettings;
+			ShadowRenderSettings settings = passParams.ShadowSettings;
 			int cascadeCount = settings.CascadeCount;
+			// カスケード数を減らしたときに、直前の描画で使ったカリング球を持ち越さない。
+			Array.Clear(_cullingSpheres, cascadeCount, MAX_CASCADE_COUNT - cascadeCount);
 			int tileCount = _directionalShadowCount * cascadeCount;
 			int splitCount = MapSplitCount(tileCount);
 			int tileSize = settings.DirectionalShadowMapSize / splitCount;
@@ -407,7 +409,7 @@ namespace Trp
 		{
 			RenderGraph renderGraph = passParams.RenderGraph;
 			CullingResults cullingResults = passParams.CullingResults;
-			ShadowSettings settings = passParams.CommonSettings.ShadowSettings;
+			ShadowRenderSettings settings = passParams.ShadowSettings;
 			int splitCount = MapSplitCount(_punctualTileCount);
 			int tileSize = settings.PunctualShadowMapSize / splitCount;
 			float tileScale = 1f / splitCount;

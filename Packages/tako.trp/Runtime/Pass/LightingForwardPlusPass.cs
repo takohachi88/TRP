@@ -58,6 +58,44 @@ namespace Trp
 		}
 		public int DirectionalShadowMapSize = (int)MapSize.Size2048;
 		public int PunctualShadowMapSize = (int)MapSize.Size2048;
+
+		internal static Vector3 ValidateCascadeRatios(Vector3 ratios, int count)
+		{
+			// 隣り合う分割位置と最後の境界 (1) の間に最小幅を確保する。
+			const float minSize = 0.001f;
+			float previous = 0f;
+			for (int i = 0; i < count - 1; i++)
+			{
+				float remaining = (count - 1 - i) * minSize;
+				ratios[i] = Mathf.Clamp(ratios[i], previous + minSize, 1f - remaining);
+				previous = ratios[i];
+			}
+			return ratios;
+		}
+	}
+
+	/// <summary>カリングからシャドウパスまで共有する、カメラ描画1回分の設定。</summary>
+	internal readonly struct ShadowRenderSettings
+	{
+		public readonly float MaxShadowDistance;
+		public readonly int CascadeCount;
+		public readonly Vector3 CascadeRatios;
+		public readonly float DistanceFade;
+		public readonly float CascadeFade;
+		public readonly int DirectionalShadowMapSize;
+		public readonly int PunctualShadowMapSize;
+
+		public ShadowRenderSettings(ShadowSettings defaults, TrpSceneShadowSettings.Settings sceneSettings)
+		{
+			MaxShadowDistance = sceneSettings?.MaxShadowDistance ?? defaults.MaxShadowDistance;
+			CascadeCount = sceneSettings?.CascadeCount ?? defaults.CascadeCount;
+			CascadeRatios = sceneSettings?.CascadeRatios ?? defaults.CascadeRatios;
+			DistanceFade = sceneSettings?.DistanceFade ?? defaults.DistanceFade;
+			CascadeFade = sceneSettings?.CascadeFade ?? defaults.CascadeFade;
+			// アトラスの解像度は常にパイプラインアセットの設定を使う。
+			DirectionalShadowMapSize = defaults.DirectionalShadowMapSize;
+			PunctualShadowMapSize = defaults.PunctualShadowMapSize;
+		}
 	}
 
 	internal class LightingForwardPlusPass
@@ -258,7 +296,7 @@ namespace Trp
 				if (visibleLight.lightType == LightType.Directional)
 				{
 					if (MAX_DIRECTIONAL_LIGHT_COUNT <= directionalLightCount) continue;
-					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings);
+					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterDirectionalShadow(visibleLight.light, i, passParams.CullingResults, passParams.ShadowSettings.CascadeCount);
 					passData.DirectionalLightData[directionalLightCount] = new DirectionalLightData(ref visibleLight, light, cookieIndex, shadowData);
 					directionalLightCount++;
 				}
@@ -271,7 +309,7 @@ namespace Trp
 					//Jobに渡す都合上Bounds型からfloat4型にする。
 					Rect lightBoundsRect = visibleLight.screenRect;
 					_lightBounds[punctualLightCount] = math.float4(lightBoundsRect.xMin, lightBoundsRect.yMin, lightBoundsRect.xMax, lightBoundsRect.yMax);
-					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterPunctualShadow(visibleLight.light, i, passParams.CullingResults, passParams.CommonSettings.ShadowSettings);
+					if (passParams.DrawShadow) shadowData = _shadowPasses.RegisterPunctualShadow(visibleLight.light, i, passParams.CullingResults);
 					passData.PunctualLightData[punctualLightCount] = new PunctualLightData(ref visibleLight, light, cookieIndex, shadowData);
 					punctualLightCount++;
 				}
