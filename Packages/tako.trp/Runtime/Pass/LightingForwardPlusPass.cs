@@ -128,7 +128,7 @@ namespace Trp
 		public struct DirectionalLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = Defines.SizeOf.FLOAT4 * 4;
+			public const int STRIDE = Defines.SizeOf.FLOAT4 * 6;
 
 			/// <summary>
 			/// xyz: 角度
@@ -149,11 +149,15 @@ namespace Trp
 			/// w: light cookieの番号
 			/// </summary>
 			public float4 Data3;
-			public float4 ShadowFilter; // x: ブラー半径、y: 品質
+			public float4 ShadowFilter; // x: ブラー半径、y: 品質、z: ディザリング有効
+			public float4 ShadowPcss; // x: 光源サイズ、y: 最大半影幅、z: 最大探索距離、w: 有効
+			public float4 ShadowTint; // rgb: 影色、w: 無効／影全体／半影のみ
 
 			public DirectionalLightData(ref VisibleLight visibleLight, Light light, int cookieIndex, PerLightShadowData shadowData)
 			{
 				ShadowFilter = TrpLightData.GetFilter(light);
+				ShadowPcss = shadowData.Pcss;
+				ShadowTint = TrpLightData.GetShadowTint(light);
 				Data1 = -visibleLight.localToWorldMatrix.GetColumn(2);
 				Data2 = visibleLight.finalColor.ToFloat4();
 				Data2.w = math.asfloat(light.renderingLayerMask);
@@ -165,14 +169,18 @@ namespace Trp
 		public struct PunctualLightData
 		{
 			//このstructが何バイトか？
-			public const int STRIDE = Defines.SizeOf.FLOAT4 * 6;
+			public const int STRIDE = Defines.SizeOf.FLOAT4 * 8;
 
 			public float4 Data1, Data2, Data3, Data4, Data5;
-			public float4 ShadowFilter; // x: ブラー半径、y: 品質
+			public float4 ShadowFilter; // x: ブラー半径、y: 品質、z: ディザリング有効
+			public float4 ShadowPcss; // x: 光源サイズ、y: 最大半影幅、z: 最大探索距離、w: 有効
+			public float4 ShadowTint; // rgb: 影色、w: 無効／影全体／半影のみ
 			public float CookieIndex => Data4.z;
 			public PunctualLightData(ref VisibleLight visibleLight, Light light, int cookieIndex, PerLightShadowData shadowData)
 			{
 				ShadowFilter = TrpLightData.GetFilter(light);
+				ShadowPcss = shadowData.Pcss;
+				ShadowTint = TrpLightData.GetShadowTint(light);
 				if (visibleLight.lightType is not (LightType.Spot or LightType.Point)) throw new ArgumentException();
 
 				//xyz: 色

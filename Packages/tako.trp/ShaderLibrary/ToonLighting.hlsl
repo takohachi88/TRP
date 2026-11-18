@@ -45,7 +45,8 @@ half3 PunctualLighting(
 	float3 positionWSdy,
 	half3 normalWS,
 	half3 color,
-	half3 gi)
+	half3 gi,
+	half dither)
 {	
 	PunctualLight light = GetPunctualLight(index);
 	
@@ -62,7 +63,7 @@ half3 PunctualLighting(
 	half attenuation = rangeAttenuation * spotAttenuation;
     half shadowAttenuation = 1;
 	//影の適用。
-    if (0 < light.attenuation) shadowAttenuation = GetPunctualShadow(positionWS, positionWSdx, positionWSdy, normalWS, light.position, light.direction, normalizedDirection, light.type, light.shadowMapTileStartIndex, light.shadowFilter);
+    if (0 < light.attenuation) shadowAttenuation = GetPunctualShadow(positionWS, positionWSdx, positionWSdy, normalWS, light.position, light.direction, normalizedDirection, light.type, light.shadowMapTileStartIndex, light.shadowFilter, light.shadowPcss, dither);
 	// 距離・スポット減衰は直接光へ適用し、GIは減衰させずRampだけを共有する。
 	return ToonLighting(
 		normalWS,
@@ -84,8 +85,11 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
 	half3 gi = Gi(normalWS);
 	half3 output = 0;
 	
-	//cascadeはライトに関わらす一定。
-    int cascadeIndex = ComputeCascadeIndex(positionWS, dither);
+	// 距離フェードとカスケードはDirectional Light間で共有する。
+	half shadowFade = GetDirectionalShadowFade(positionWS);
+	int cascadeIndex = 0;
+	UNITY_BRANCH
+	if (shadowFade < 1) cascadeIndex = ComputeCascadeIndex(positionWS, dither);
 	
 	for(int i = 0; i < _DirectionalLightCount; i++)
 	{
@@ -93,7 +97,13 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
         half3 cookie = 1;
         if (0 <= light.cookieIndex) cookie = SampleDirectionalLightCookie(light.cookieIndex, positionWS);
 		half shadowAttenuation = 1;
-		if (0 < light.attenuation) shadowAttenuation = GetDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.shadowMapTileStartIndex, light.shadowFilter); //shadowの適用。
+		// PCSSの影値だけをRampへ渡す。PBR用TintはToonの色指定に重ねない。
+		UNITY_BRANCH
+		if (0 < light.attenuation && shadowFade < 1)
+		{
+			shadowAttenuation = SampleDirectionalShadow(cascadeIndex, positionWS, normalWS, light.normalBias, light.shadowMapTileStartIndex, light.shadowFilter, light.shadowPcss, positionWSdx, positionWSdy, dither);
+			shadowAttenuation = lerp(shadowAttenuation, 1.0h, shadowFade);
+		}
 		output += ToonLighting(
 			normalWS,
 			color,
@@ -114,7 +124,7 @@ half3 ToonLighting(float3 positionWS, half3 normalWS, half3 color, float2 screen
 		int lastIndex = tile.GetLastLightIndexInTile();
 		for(int j = tile.GetFirstLightIndexInTile(); j <= lastIndex; j++)
 		{
-			output += PunctualLighting(tile.GetLightIndex(j), positionWS, positionWSdx, positionWSdy, normalWS, color, gi);
+			output += PunctualLighting(tile.GetLightIndex(j), positionWS, positionWSdx, positionWSdy, normalWS, color, gi, dither);
 			// Directional Lightがない場合は、最初のPunctual LightがGIを引き継ぐ。
 			gi = 0;
 		}

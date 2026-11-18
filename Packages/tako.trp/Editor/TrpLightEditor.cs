@@ -11,8 +11,6 @@ namespace TrpEditor
 	[SupportedOnRenderPipeline(typeof(TrpAsset))]
 	public class TrpLightEditor : LightEditor
 	{
-		private const float DefaultBlurRadius = 2;
-
 		protected override void OnEnable()
 		{
 			base.OnEnable();
@@ -58,7 +56,7 @@ namespace TrpEditor
 
 			settings.ApplyModifiedProperties();
 			serializedObject.ApplyModifiedProperties();
-			DrawSoftShadowSettings();
+			DrawTrpShadowSettings();
 		}
 
 		private void DrawShadowSettings(bool hasSingleType, LightType lightType, bool isArea)
@@ -96,47 +94,73 @@ namespace TrpEditor
 			}
 		}
 
-		private void DrawSoftShadowSettings()
+		private void DrawTrpShadowSettings()
 		{
-			foreach (Object item in targets)
-				if (((Light)item).shadows != LightShadows.Soft) return;
-
-			((Light)target).TryGetComponent<TrpLightData>(out var first);
-			float radius = first != null ? first.BlurRadius : DefaultBlurRadius;
-			SoftShadowQuality quality = first != null ? first.Quality : SoftShadowQuality.Medium;
-			bool mixedRadius = false;
-			bool mixedQuality = false;
-			foreach (Object item in targets)
+			bool allSoft = true;
+			bool hasDirectional = false;
+			bool hasPunctual = false;
+			Object[] dataTargets = new Object[targets.Length];
+			for (int i = 0; i < targets.Length; i++)
 			{
-				((Light)item).TryGetComponent<TrpLightData>(out var value);
-				mixedRadius |= (value != null ? value.BlurRadius : DefaultBlurRadius) != radius;
-				mixedQuality |= (value != null ? value.Quality : SoftShadowQuality.Medium) != quality;
+				Light light = (Light)targets[i];
+				// TRPがリアルタイム影を描画するライトだけに設定を表示する。
+				if (light.shadows == LightShadows.None || light.lightmapBakeType == LightmapBakeType.Baked ||
+					light.type is not (LightType.Directional or LightType.Point or LightType.Spot)) return;
+				allSoft &= light.shadows == LightShadows.Soft;
+				hasDirectional |= light.type == LightType.Directional;
+				hasPunctual |= light.type != LightType.Directional;
+				light.TryGetComponent<TrpLightData>(out var data);
+				dataTargets[i] = data;
+			}
+
+			// SerializedObjectで複数選択・Undo・Prefab Overrideを共通処理する。
+			// この配列はEditor Inspector専用であり、毎フレームの描画処理には含まれない。
+			using SerializedObject serialized = new(dataTargets);
+			serialized.Update();
+			if (allSoft)
+			{
+				EditorGUILayout.Space();
+				EditorGUILayout.LabelField("TRP Soft Shadow", EditorStyles.boldLabel);
+				EditorGUILayout.PropertyField(serialized.FindProperty("_shadowDithering"),
+					new GUIContent("Shadow Dithering", "画素ごとにPCF／PCSSのサンプル配置を回転します。サンプル数は増やさず、フレーム番号では変化させません。オフ時は回転計算を省略します。"));
+				SerializedProperty pcss = serialized.FindProperty("_pcss");
+				EditorGUILayout.PropertyField(pcss, new GUIContent("PCSS", "遮蔽物との距離に応じて半影幅を変えます。オフ時は既存のPCFを使用し、遮蔽物探索を省略します。"));
+				EditorGUILayout.PropertyField(serialized.FindProperty("_quality"),
+					new GUIContent("Quality", "Low: 4 / Medium: 8 / High: 16 samples。PCSSでは探索とフィルターのそれぞれに使用します。"));
+				if (!pcss.boolValue || pcss.hasMultipleDifferentValues)
+					EditorGUILayout.PropertyField(serialized.FindProperty("_blurRadius"),
+						new GUIContent("Blur Radius", "PCF用の基準テクセル半径。PCSS有効時は使用しません。"));
+				if (pcss.boolValue || pcss.hasMultipleDifferentValues)
+				{
+					EditorGUI.indentLevel++;
+					if (hasDirectional)
+						EditorGUILayout.PropertyField(serialized.FindProperty("_angularDiameter"),
+							new GUIContent("Angular Diameter", "Directional Lightの光源の角直径（度）。大きいほど半影が広がります。"));
+					if (hasPunctual)
+						EditorGUILayout.PropertyField(serialized.FindProperty("_sourceRadius"),
+							new GUIContent("Source Radius", "Spot / Point Lightの仮想光源半径（ワールド単位）。"));
+					EditorGUILayout.PropertyField(serialized.FindProperty("_maxPenumbraSize"),
+						new GUIContent("Max Penumbra Size", "半影フィルターの最大半径（ワールド単位）。広げすぎるとサンプル不足が目立ちます。"));
+					EditorGUILayout.PropertyField(serialized.FindProperty("_maxSamplingDistance"),
+						new GUIContent("Max Sampling Distance", "半影幅の計算に使う遮蔽物との距離の上限（ワールド単位）。これより遠い遮蔽物も影を落とします。"));
+					EditorGUI.indentLevel--;
+				}
 			}
 
 			EditorGUILayout.Space();
-			EditorGUILayout.LabelField("TRP Soft Shadow", EditorStyles.boldLabel);
-			EditorGUI.showMixedValue = mixedRadius;
-			EditorGUI.BeginChangeCheck();
-			radius = Mathf.Max(0, EditorGUILayout.FloatField(
-				new GUIContent("Blur Radius", "基準位置でのテクセル半径。Cascadeやライトからの距離に応じて同じワールド幅へ補正されます。"), radius));
-			bool radiusChanged = EditorGUI.EndChangeCheck();
-			EditorGUI.showMixedValue = mixedQuality;
-			EditorGUI.BeginChangeCheck();
-			quality = (SoftShadowQuality)EditorGUILayout.EnumPopup(new GUIContent("Quality", "Low: 4 / Medium: 8 / High: 16 samples"), quality);
-			bool qualityChanged = EditorGUI.EndChangeCheck();
-			EditorGUI.showMixedValue = false;
-			if (!radiusChanged && !qualityChanged) return;
-
-			foreach (Object item in targets)
+			EditorGUILayout.LabelField("TRP Shadow Tint (PBR Only)", EditorStyles.boldLabel);
+			SerializedProperty enableTint = serialized.FindProperty("_enableShadowTint");
+			EditorGUILayout.PropertyField(enableTint,
+				new GUIContent("Enable Shadow Tint", "PBRのみ影を着色します。オフ時はTintの色計算を省略します。Toonの影色はShadow Rampで設定してください。"));
+			if (enableTint.boolValue || enableTint.hasMultipleDifferentValues)
 			{
-				Light light = (Light)item;
-				if (!light.TryGetComponent<TrpLightData>(out var data))
-					data = Undo.AddComponent<TrpLightData>(light.gameObject);
-				using SerializedObject serialized = new(data);
-				if (radiusChanged) serialized.FindProperty("_blurRadius").floatValue = radius;
-				if (qualityChanged) serialized.FindProperty("_quality").enumValueIndex = (int)quality;
-				serialized.ApplyModifiedProperties();
+				EditorGUI.indentLevel++;
+				EditorGUILayout.PropertyField(serialized.FindProperty("_shadowTint"), new GUIContent("Tint", "影の色。Penumbra Tint有効時は半影の色に使います。"));
+				EditorGUILayout.PropertyField(serialized.FindProperty("_penumbraTint"),
+					new GUIContent("Penumbra Tint", "完全な影は暗く保ち、半影だけを着色します。無彩色ではHDRPと同じく影全体のTintとして扱います。"));
+				EditorGUI.indentLevel--;
 			}
+			serialized.ApplyModifiedProperties();
 		}
 	}
 }

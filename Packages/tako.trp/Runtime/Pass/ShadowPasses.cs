@@ -15,14 +15,16 @@ namespace Trp
 		public float Strength;
 		public float MapTileStartIndex;
 		public float NormalBias;
-		public static PerLightShadowData Empty => new(null, 0, 0, 0);
+		public float4 Pcss;
+		public static PerLightShadowData Empty => default;
 
-		public PerLightShadowData(LightType? type, float strength, float mapTileStartIndex, float normalBias)
+		public PerLightShadowData(LightType? type, float strength, float mapTileStartIndex, float normalBias, float4 pcss)
 		{
 			Type = type;
 			Strength = strength;
 			MapTileStartIndex = mapTileStartIndex;
 			NormalBias = normalBias;
+			Pcss = pcss;
 		}
 	}
 
@@ -100,10 +102,13 @@ namespace Trp
 			public Light Light;
 			public int LightIndex;
 
-			public DirectionalShadowData(Light light, int index)
+			public bool PcssEnabled;
+
+			public DirectionalShadowData(Light light, int index, bool pcssEnabled)
 			{
 				Light = light;
 				LightIndex = index;
+				PcssEnabled = pcssEnabled;
 			}
 		}
 
@@ -112,10 +117,13 @@ namespace Trp
 			public Light Light;
 			public int LightIndex;
 
-			public PunctualShadowData(Light light, int index)
+			public bool PcssEnabled;
+
+			public PunctualShadowData(Light light, int index, bool pcssEnabled)
 			{
 				Light = light;
 				LightIndex = index;
+				PcssEnabled = pcssEnabled;
 			}
 		}
 
@@ -181,10 +189,12 @@ namespace Trp
 			    light.shadowStrength <= 0.00001f ||
 			    !cullingResults.GetShadowCasterBounds(index, out _)) return PerLightShadowData.Empty;
 
-			_directionalShadowData[_directionalShadowCount] = new DirectionalShadowData(light, index);
+			// 影の登録時に一度取得し、ライトバッファとシャドウタイルで共有する。
+			float4 pcss = TrpLightData.GetPcss(light);
+			_directionalShadowData[_directionalShadowCount] = new DirectionalShadowData(light, index, pcss.w > 0);
 			int mapTileStartIndex = _directionalShadowCount * cascadeCount;
 			_directionalShadowCount++;
-			return new PerLightShadowData(LightType.Directional, light.shadowStrength, mapTileStartIndex, light.shadowNormalBias);
+			return new PerLightShadowData(LightType.Directional, light.shadowStrength, mapTileStartIndex, light.shadowNormalBias, pcss);
 		}
 
 		public PerLightShadowData RegisterPunctualShadow(Light light, int index, CullingResults cullingResults)
@@ -195,8 +205,9 @@ namespace Trp
 			    light.shadowStrength <= 0.00001f ||
 			    !cullingResults.GetShadowCasterBounds(index, out _)) return PerLightShadowData.Empty;
 
-			_punctualShadowData[_punctualTileCount] = new PunctualShadowData(light, index);
-			PerLightShadowData result = new(light.type, light.shadowStrength, _punctualTileCount, light.shadowNormalBias);
+			float4 pcss = TrpLightData.GetPcss(light);
+			_punctualShadowData[_punctualTileCount] = new PunctualShadowData(light, index, pcss.w > 0);
+			PerLightShadowData result = new(light.type, light.shadowStrength, _punctualTileCount, light.shadowNormalBias, pcss);
 			_punctualTileCount = afterTileCount;
 			return result;
 		}
@@ -313,6 +324,13 @@ namespace Trp
 					_directionalShadowFilterScales[tileIndex].x = math.max(
 						math.length(new float3(worldToShadow.m00, worldToShadow.m01, worldToShadow.m02)),
 						math.length(new float3(worldToShadow.m10, worldToShadow.m11, worldToShadow.m12)));
+					// PCSS用に絶対倍率も保持する。xだけが後段で第1 Cascade基準に正規化される。
+					if (shadowData.PcssEnabled)
+					{
+						_directionalShadowFilterScales[tileIndex].y = _directionalShadowFilterScales[tileIndex].x;
+						_directionalShadowFilterScales[tileIndex].z = SafeRcp(
+							math.length(new float3(worldToShadow.m20, worldToShadow.m21, worldToShadow.m22)));
+					}
 					if (i == 0) _cullingSpheres[cascade] = splitData.cullingSphere;
 
 					RendererListHandle rendererList = renderGraph.CreateShadowRendererList(ref drawingSettings);
@@ -432,7 +450,7 @@ namespace Trp
 					cullingResults.ComputeSpotShadowMatricesAndCullingPrimitives(lightIndex, out Matrix4x4 view, out Matrix4x4 projection, out ShadowSplitData splitData);
 					_splitBuffer[splitOffset] = splitData;
 					WritePunctualTile(renderGraph, builder, i, splitCount, tileSize, tileScale, mapSizeRcp,
-						shadowData.Light, ref drawingSettings, view, projection, splitData);
+						shadowData.Light, shadowData.PcssEnabled, ref drawingSettings, view, projection, splitData);
 				}
 				else
 				{
@@ -448,7 +466,7 @@ namespace Trp
 						view.m13 = -view.m13;
 						_splitBuffer[splitOffset + face] = splitData;
 						WritePunctualTile(renderGraph, builder, i + face, splitCount, tileSize, tileScale, mapSizeRcp,
-							shadowData.Light, ref drawingSettings, view, projection, splitData);
+							shadowData.Light, shadowData.PcssEnabled, ref drawingSettings, view, projection, splitData);
 					}
 				}
 
@@ -515,6 +533,7 @@ namespace Trp
 			float tileScale,
 			float mapSizeRcp,
 			Light light,
+			bool pcssEnabled,
 			ref ShadowDrawingSettings drawingSettings,
 			Matrix4x4 view,
 			Matrix4x4 projection,
@@ -528,6 +547,14 @@ namespace Trp
 			float referenceClipW = Mathf.Abs(projection.m32 * light.range + projection.m33);
 			_punctualShadowTileBuffer[tileIndex] = new PunctualShadowTileBuffer(
 				tileIndexOffset, tileScale, bias, mapSizeRcp * 0.5f, referenceClipW, worldToShadow);
+			// 深度 = A + B / 距離。逆ZもCPU側の行列変換と同じ符号で扱う。
+			if (pcssEnabled)
+			{
+				float depthSign = SystemInfo.usesReversedZBuffer ? -1f : 1f;
+				_punctualShadowTileBuffer[tileIndex].FilterData.y = (1f - depthSign * projection.m22) * 0.5f;
+				_punctualShadowTileBuffer[tileIndex].FilterData.z = depthSign * projection.m23 * 0.5f;
+				_punctualShadowTileBuffer[tileIndex].FilterData.w = Mathf.Abs(projection.m00) * 0.5f * tileScale;
+			}
 
 			RendererListHandle rendererList = renderGraph.CreateShadowRendererList(ref drawingSettings);
 			builder.UseRendererList(rendererList);

@@ -41,10 +41,17 @@ half3 EvaluatePbrDirectionalLights(
     half3 normalWS,
     half3 shadowNormalWS,
     half3 viewDirectionWS,
-    half cascadeIndex,
-    bool useBurleyDiffuse)
+    float3 positionWSdx,
+    float3 positionWSdy,
+    bool useBurleyDiffuse,
+    half dither)
 {
     half3 lighting = 0;
+    // 距離フェードとカスケードはDirectional Light間で共有する。
+    half shadowFade = GetDirectionalShadowFade(positionWS);
+    half cascadeIndex = 0;
+    UNITY_BRANCH
+    if (shadowFade < 1) cascadeIndex = ComputeCascadeIndex(positionWS, dither);
 
     for (int i = 0; i < _DirectionalLightCount; i++)
     {
@@ -56,14 +63,16 @@ half3 EvaluatePbrDirectionalLights(
         }
 
         half attenuation = 1;
-        if (0 < light.attenuation)
+        UNITY_BRANCH
+        if (0 < light.attenuation && shadowFade < 1)
         {
-            attenuation = GetDirectionalShadow(
+            attenuation = SampleDirectionalShadow(
                 cascadeIndex,
                 positionWS,
                 shadowNormalWS,
                 light.normalBias,
-                light.shadowMapTileStartIndex, light.shadowFilter);
+                light.shadowMapTileStartIndex, light.shadowFilter, light.shadowPcss, positionWSdx, positionWSdy, dither);
+            attenuation = lerp(attenuation, 1.0h, shadowFade);
         }
 
         lighting += EvaluatePbrDirect(
@@ -71,7 +80,7 @@ half3 EvaluatePbrDirectionalLights(
             normalWS,
             viewDirectionWS,
             light.direction,
-            useBurleyDiffuse) * light.color * cookie * attenuation;
+            useBurleyDiffuse) * light.color * cookie * GetPbrShadowColor(attenuation, light.shadowTint);
     }
 
     return lighting;
@@ -86,7 +95,8 @@ half3 EvaluatePbrPunctualLight(
     half3 normalWS,
     half3 shadowNormalWS,
     half3 viewDirectionWS,
-    bool useBurleyDiffuse)
+    bool useBurleyDiffuse,
+    half dither)
 {
     PunctualLight light = GetPunctualLight(lightIndex);
     float3 surfaceToLight = light.position - positionWS;
@@ -99,38 +109,45 @@ half3 EvaluatePbrPunctualLight(
     half spotAttenuation = saturate(dot(light.direction, lightDirectionWS) * light.spotAngles.x + light.spotAngles.y);
     spotAttenuation = Pow2(spotAttenuation);
 
-    half shadowAttenuation = 1;
-    if (0 < light.attenuation)
+    // 寄与がない画素では影、Cookie、BRDFをまとめて省く。
+    half3 lighting = 0;
+    UNITY_BRANCH
+    if (rangeAttenuation > 0 && spotAttenuation > 0)
     {
-        shadowAttenuation = GetPunctualShadow(
-            positionWS,
-            positionWSdx,
-            positionWSdy,
-            shadowNormalWS,
-            light.position,
-            light.direction,
+        half shadowAttenuation = 1;
+        if (0 < light.attenuation)
+        {
+            shadowAttenuation = GetPunctualShadow(
+                positionWS,
+                positionWSdx,
+                positionWSdy,
+                shadowNormalWS,
+                light.position,
+                light.direction,
+                lightDirectionWS,
+                light.type,
+                light.shadowMapTileStartIndex, light.shadowFilter, light.shadowPcss, dither);
+        }
+
+        half3 cookie = 1;
+        if (0 <= light.cookieIndex)
+        {
+            cookie = SamplePunctualLightCookie(light.cookieIndex, positionWS, light.type);
+        }
+
+        lighting = EvaluatePbrDirect(
+            material,
+            normalWS,
+            viewDirectionWS,
             lightDirectionWS,
-            light.type,
-            light.shadowMapTileStartIndex, light.shadowFilter);
+            useBurleyDiffuse)
+            * light.color
+            * cookie
+            * rangeAttenuation
+            * spotAttenuation
+            * GetPbrShadowColor(shadowAttenuation, light.shadowTint);
     }
-
-    half3 cookie = 1;
-    if (0 <= light.cookieIndex)
-    {
-        cookie = SamplePunctualLightCookie(light.cookieIndex, positionWS, light.type);
-    }
-
-    return EvaluatePbrDirect(
-        material,
-        normalWS,
-        viewDirectionWS,
-        lightDirectionWS,
-        useBurleyDiffuse)
-        * light.color
-        * cookie
-        * rangeAttenuation
-        * spotAttenuation
-        * shadowAttenuation;
+    return lighting;
 }
 
 // サーフェスの作り方に依存しない、TRP 共通の PBR 照明評価。
@@ -159,15 +176,15 @@ half3 EvaluatePbrLighting(
         specularIblStrength);
 
     half dither = InterleavedGradientNoise(positionPx, 0);
-    half cascadeIndex = ComputeCascadeIndex(positionWS, dither);
     color += EvaluatePbrDirectionalLights(
         material,
         positionWS,
         normalWS,
         shadowNormalWS,
         viewDirectionWS,
-        cascadeIndex,
-        useBurleyDiffuse);
+        positionWSdx,
+        positionWSdy,
+        useBurleyDiffuse, dither);
 
     if (0 < _PunctualLightCount)
     {
@@ -185,7 +202,7 @@ half3 EvaluatePbrLighting(
                 normalWS,
                 shadowNormalWS,
                 viewDirectionWS,
-                useBurleyDiffuse);
+                useBurleyDiffuse, dither);
         }
     }
 

@@ -12,7 +12,9 @@ struct DirectionalLight
     half3 direction;
     half3 color;
     half attenuation;
-    float2 shadowFilter; // テクセル半径と品質
+    float4 shadowFilter; // x: テクセル半径、y: 品質、z: ディザリング有効
+    float4 shadowPcss;
+    half4 shadowTint;
     int shadowMapTileStartIndex;
     half normalBias;
     int cookieIndex;
@@ -24,7 +26,9 @@ DirectionalLight GetDirectionalLight(int index)
     DirectionalLight light = (DirectionalLight)0;
     light.direction = buffer.data1.xyz;
     light.color = buffer.data2.xyz;
-    light.shadowFilter = buffer.shadowFilter.xy;
+    light.shadowFilter = buffer.shadowFilter;
+    light.shadowPcss = buffer.shadowPcss;
+    light.shadowTint = buffer.shadowTint;
     light.attenuation = buffer.data3.x;
     light.shadowMapTileStartIndex = buffer.data3.y;
     light.normalBias = buffer.data3.z;
@@ -44,7 +48,9 @@ struct PunctualLight
 	half2 spotAngles;
     int cookieIndex;
     half attenuation;
-    float2 shadowFilter; // テクセル半径と品質
+    float4 shadowFilter; // x: テクセル半径、y: 品質、z: ディザリング有効
+    float4 shadowPcss;
+    half4 shadowTint;
     int shadowMapTileStartIndex;
     int type;//spot:0, point:2（UnityEngine.LightTypeに準拠。）
 };
@@ -59,7 +65,9 @@ PunctualLight GetPunctualLight(int index)
 	light.rangeInverseSquare = buffer.data3.w;
 	light.spotAngles = buffer.data4.xy;
     light.cookieIndex = buffer.data4.z;
-    light.shadowFilter = buffer.shadowFilter.xy;
+    light.shadowFilter = buffer.shadowFilter;
+    light.shadowPcss = buffer.shadowPcss;
+    light.shadowTint = buffer.shadowTint;
     light.attenuation = buffer.data5.x;
     light.shadowMapTileStartIndex = buffer.data5.y;
     light.type = buffer.data5.z;
