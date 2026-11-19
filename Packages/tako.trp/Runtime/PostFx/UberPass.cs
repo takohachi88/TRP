@@ -10,6 +10,7 @@ namespace Trp.PostFx
 	/// 一旦以下の順で実行する。
 	/// Mosaic
 	/// Posterization
+	/// Auto Exposure
 	/// LUT
 	/// AdvancedVignette
 	/// </summary>
@@ -33,14 +34,28 @@ namespace Trp.PostFx
 
 		private static readonly int IdLutParams = Shader.PropertyToID("_LutParams");
 		private static readonly int IdLut = Shader.PropertyToID("_Lut");
+		private static readonly int IdAutoExposure = Shader.PropertyToID("_AutoExposure");
+		private LocalKeyword _keywordAutoExposure;
+		private AutoExposurePass _autoExposurePass;
 
 
 		protected override void OnInitialize()
 		{
 			_keywordLut = new(PassShader, "_LUT");
 			_keywordVignette = new(PassShader, "_VIGNETTE");
+			_keywordAutoExposure = new(PassShader, "_AUTO_EXPOSURE");
 			base.OnInitialize();
+			_autoExposurePass = new(PassMaterial);
 		}
+
+		protected override void OnDispose()
+		{
+			_autoExposurePass?.Dispose();
+			base.OnDispose();
+		}
+
+		internal TextureHandle RecordAutoExposure(ref PassParams passParams, TextureHandle src, VolumeStack volumeStack)
+			=> _autoExposurePass.RecordRenderGraph(ref passParams, src, volumeStack);
 
 		public class PassData
 		{
@@ -59,6 +74,8 @@ namespace Trp.PostFx
 			public Mosaic Mosaic;
 			public int LutSize;
 			public TextureHandle Lut;
+			public TextureHandle AutoExposure;
+			public LocalKeyword KeywordAutoExposure;
 		}
 
 		public override LastTarget RecordRenderGraph(ref PassParams passParams, TextureHandle src, TextureHandle dst, VolumeStack volumeStack)
@@ -71,8 +88,9 @@ namespace Trp.PostFx
 			bool usePosterization = posterization && posterization.IsActive();
 			bool useVignette = advancedVignette && advancedVignette.IsActive();
 			bool useLut = passParams.CameraTextures.PostProcessLut.IsValid();
+			TextureHandle autoExposure = passParams.CameraTextures.AutoExposure;
 
-			if (!useLut && !useMosaic && !usePosterization && !useVignette) return LastTarget.None;
+			if (!useLut && !useMosaic && !usePosterization && !useVignette && !autoExposure.IsValid()) return LastTarget.None;
 
 			using IRasterRenderGraphBuilder builder = passParams.RenderGraph.AddRasterRenderPass(Sampler.name, out PassData passData, Sampler);
 
@@ -96,6 +114,9 @@ namespace Trp.PostFx
 
 			passData.UseLut = useLut;
 			if (passData.UseLut) builder.UseTexture(passData.Lut, AccessFlags.Read);
+			passData.AutoExposure = autoExposure;
+			passData.KeywordAutoExposure = _keywordAutoExposure;
+			if (autoExposure.IsValid()) builder.UseTexture(autoExposure, AccessFlags.Read);
 
 			builder.AllowPassCulling(false);
 			builder.AllowGlobalStateModification(true);
@@ -124,6 +145,9 @@ namespace Trp.PostFx
 				}
 
 				material.SetKeyword(passData.KeywordLut, passData.UseLut);
+				bool useAutoExposure = passData.AutoExposure.IsValid();
+				material.SetKeyword(passData.KeywordAutoExposure, useAutoExposure);
+				if (useAutoExposure) material.SetTexture(IdAutoExposure, passData.AutoExposure);
 				if (passData.UseLut)
 				{
 					int lutSize = passData.LutSize;

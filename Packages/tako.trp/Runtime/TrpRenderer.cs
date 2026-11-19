@@ -39,6 +39,7 @@ namespace Trp
 		internal TextureHandle TargetColor { get; set; }
 		internal TextureHandle TargetDepth { get; set; }
 		public TextureHandle PostProcessLut { get; set; }
+		internal TextureHandle AutoExposure { get; set; }
 	}
 
 	public class LightingResources

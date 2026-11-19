@@ -12,12 +12,15 @@ namespace Trp.PostFx
 	public class PostFxPassGroup : ScriptableObject
 	{
 		[SerializeField] private PostFxPassBase[] _passes;
+		private UberPass _uberPass;
 
 		public void Initialize()
 		{
+			_uberPass = null;
 			foreach (PostFxPassBase pass in _passes)
 			{
 				pass.Initialize();
+				if (_uberPass == null && pass is UberPass uber) _uberPass = uber;
 			}
 		}
 
@@ -27,6 +30,11 @@ namespace Trp.PostFx
 			TextureHandle src = passParams.CameraTextures.AttachmentColor;
 
 			VolumeStack volumeStack = VolumeManager.instance.stack;
+
+			// Bloomなどを合成する前のHDRカラーで測光し、露出のフィードバックを避ける。
+			passParams.CameraTextures.AutoExposure = _uberPass != null
+				? _uberPass.RecordAutoExposure(ref passParams, src, volumeStack)
+				: default;
 
 			TextureDesc desc = new(passParams.AttachmentSize.x, passParams.AttachmentSize.y)
 			{

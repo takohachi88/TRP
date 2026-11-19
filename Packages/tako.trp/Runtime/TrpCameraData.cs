@@ -52,6 +52,13 @@ namespace Trp
 		public bool DrawShadow => _drawShadow;
 		public bool UseOutline => _useOutline;
 
+		internal uint AutoExposureResetVersion { get; private set; }
+
+		/// <summary>
+		/// カメラカット時に呼ぶと、次の描画でその場の明るさから露出を初期化する。
+		/// </summary>
+		public void ResetAutoExposure() => AutoExposureResetVersion++;
+
 		/// <summary>
 		/// このカメラに登録されたアクティブなパスを全て実行する。
 		/// </summary>
